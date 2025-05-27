@@ -47,7 +47,7 @@ const StatusNfeList: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-full">
-        <Icon Icon={FaSpinner} size={36} spinning className="text-primary" />
+        <Icon IconComponent={FaSpinner} size={36} spinning className="text-primary" />
       </div>
     );
   }
@@ -60,7 +60,7 @@ const StatusNfeList: React.FC = () => {
           to="/status-nfe/novo"
           className="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark flex items-center"
         >
-          <Icon Icon={FaPlus} className="mr-2" />
+          <Icon IconComponent={FaPlus} className="mr-2" />
           Novo Status
         </Link>
       </div>
@@ -112,7 +112,7 @@ const StatusNfeList: React.FC = () => {
                     to={`/status-nfe/${status.id}`}
                     className="text-primary hover:text-primary-dark mr-4"
                   >
-                    <Icon Icon={FaEdit} className="inline" />
+                    <Icon IconComponent={FaEdit} className="inline" />
                   </Link>
                   <button
                     onClick={() => handleDelete(status.id)}
@@ -120,9 +120,9 @@ const StatusNfeList: React.FC = () => {
                     className="text-red-600 hover:text-red-900"
                   >
                     {deleting === status.id ? (
-                      <Icon Icon={FaSpinner} spinning className="inline" />
+                      <Icon IconComponent={FaSpinner} spinning className="inline" />
                     ) : (
-                      <Icon Icon={FaTrash} className="inline" />
+                      <Icon IconComponent={FaTrash} className="inline" />
                     )}
                   </button>
                 </td>

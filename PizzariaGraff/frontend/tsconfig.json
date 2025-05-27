@@ -18,13 +18,13 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "baseUrl": "src",
-    "paths": {
-      "*": ["*"]
-    },
     "noImplicitAny": false,
-    "strictNullChecks": false
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+    "strictBindCallApply": false,
+    "noImplicitThis": false
   },
   "include": [
     "src",

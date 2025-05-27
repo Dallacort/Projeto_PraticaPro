@@ -1,8 +1,27 @@
 import api from './api';
 import { formatToBackend, formatFromBackend } from '../utils/dateUtils';
-import { Nfe, Cliente, FormaPagamento, CondicaoPagamento, ModalidadeNfe, Cidade, Estado, Pais, StatusNfe } from '../types';
+import { Nfe, Cliente, FormaPagamento, CondicaoPagamento, ModalidadeNfe, Cidade, Estado, Pais, StatusNfe, MovimentacaoNfe, ItemNfe } from '../types';
 
-const isDevelopmentMode = process.env.REACT_APP_USE_MOCK_DATA === 'true';
+// Exportar funções individuais para compatibilidade com código existente
+export const getNfes = async (): Promise<Nfe[]> => {
+  return nfeService.list();
+};
+
+export const getNfe = async (id: number): Promise<Nfe | null> => {
+  return nfeService.getById(id);
+};
+
+export const createNfe = async (nfe: Omit<Nfe, 'id'>): Promise<Nfe> => {
+  return nfeService.create(nfe);
+};
+
+export const updateNfe = async (id: number, nfe: Omit<Nfe, 'id'>): Promise<Nfe> => {
+  return nfeService.update(id, nfe);
+};
+
+export const deleteNfe = async (id: number): Promise<void> => {
+  return nfeService.delete(id);
+};
 
 export interface NfeInput {
   numero: string;
@@ -50,161 +69,82 @@ const adaptNfeToApi = (nfe: NfeInput): any => {
   };
 };
 
-// Mock para desenvolvimento
-export const mockNfes: Nfe[] = [
-  {
-    id: 1,
-    numeroNf: '000001',
-    dataEmissao: '2024-03-20',
-    dataRecebimento: '2024-03-20',
-    valorTotal: 1500.00,
-    observacao: 'Primeira venda do dia',
-    cliente: {
-      id: 1,
-      nome: 'Cliente Exemplo',
-      cpfCnpj: '123.456.789-00',
-      email: 'cliente@exemplo.com',
-      telefone: '11999999999',
-      cidade: {
-        id: 1,
-        nome: 'São Paulo',
-        estado: {
-          id: 1,
-          nome: 'São Paulo',
-          uf: 'SP',
-          pais: {
-            id: '1',
-            nome: 'Brasil',
-            codigo: '076',
-            sigla: 'BR'
-          }
-        }
-      },
-      ativo: true
-    },
-    formaPagamento: {
-      id: 1,
-      descricao: 'Cartão de Crédito',
-      ativo: true
-    },
-    condicaoPagamento: {
-      id: 1,
-      codigo: 'A_VISTA',
-      nome: 'À Vista',
-      descricao: 'À Vista',
-      numeroParcelas: 1,
-      diasPrimeiraParcela: 0,
-      diasEntreParcelas: 0,
-      ativo: true
-    },
-    statusNfe: {
-      id: 1,
-      descricao: 'EMITIDA',
-      ativo: true
-    },
-    modalidadeNfe: {
-      id: 1,
-      descricao: 'Saída'
+const nfeService = {
+  // Busca todas as NFEs
+  async list(): Promise<Nfe[]> {
+    try {
+      const response = await api.get('/nfes');
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar NFEs:', error);
+      throw error;
+    }
+  },
+  
+  // Busca uma NFE pelo ID
+  async getById(id: number): Promise<Nfe | null> {
+    try {
+      const response = await api.get(`/nfes/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Erro ao buscar NFE com ID ${id}:`, error);
+      throw error;
+    }
+  },
+  
+  // Cria uma nova NFE
+  async create(nfe: Omit<Nfe, 'id'>): Promise<Nfe> {
+    try {
+      const response = await api.post('/nfes', nfe);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao criar NFE:', error);
+      throw error;
+    }
+  },
+  
+  // Atualiza uma NFE existente
+  async update(id: number, nfe: Omit<Nfe, 'id'>): Promise<Nfe> {
+    try {
+      const response = await api.put(`/nfes/${id}`, nfe);
+      return response.data;
+    } catch (error) {
+      console.error(`Erro ao atualizar NFE com ID ${id}:`, error);
+      throw error;
+    }
+  },
+  
+  // Exclui uma NFE
+  async delete(id: number): Promise<void> {
+    try {
+      await api.delete(`/nfes/${id}`);
+    } catch (error) {
+      console.error(`Erro ao excluir NFE com ID ${id}:`, error);
+      throw error;
+    }
+  },
+  
+  // Busca as movimentações de uma NFE
+  async getMovimentacoes(nfeId: number): Promise<MovimentacaoNfe[]> {
+    try {
+      const response = await api.get(`/nfes/${nfeId}/movimentacoes`);
+      return response.data;
+    } catch (error) {
+      console.error(`Erro ao buscar movimentações da NFE ${nfeId}:`, error);
+      throw error;
+    }
+  },
+  
+  // Busca os itens de uma NFE
+  async getItens(nfeId: number): Promise<ItemNfe[]> {
+    try {
+      const response = await api.get(`/nfes/${nfeId}/itens`);
+      return response.data;
+    } catch (error) {
+      console.error(`Erro ao buscar itens da NFE ${nfeId}:`, error);
+      throw error;
     }
   }
-];
-
-export const getNfes = async (): Promise<Nfe[]> => {
-  if (isDevelopmentMode) {
-    console.log('Usando dados mock para getNfes()');
-    return mockNfes;
-  }
-
-  try {
-    const response = await api.get('/nfes');
-    return response.data.map(adaptNfeFromApi);
-  } catch (error) {
-    console.error('Erro ao buscar notas fiscais:', error);
-    throw error;
-  }
 };
 
-export const getNfe = async (id: string): Promise<Nfe> => {
-  if (isDevelopmentMode) {
-    console.log(`Usando dados mock para getNfe(${id})`);
-    const nfe = mockNfes.find(n => n.id === Number(id));
-    if (!nfe) throw new Error('Nota fiscal não encontrada');
-    return nfe;
-  }
-
-  try {
-    const response = await api.get(`/nfes/${id}`);
-    return adaptNfeFromApi(response.data);
-  } catch (error) {
-    console.error(`Erro ao buscar nota fiscal com ID ${id}:`, error);
-    throw error;
-  }
-};
-
-export const createNfe = async (nfe: NfeInput): Promise<Nfe> => {
-  if (isDevelopmentMode) {
-    console.log('Usando dados mock para createNfe()', nfe);
-    const newNfe: Nfe = {
-      ...mockNfes[0],
-      id: Math.max(...mockNfes.map(n => n.id)) + 1,
-      numeroNf: nfe.numero,
-      dataEmissao: nfe.dataEmissao,
-      dataRecebimento: nfe.dataRecebimento,
-      valorTotal: nfe.valorTotal,
-      observacao: nfe.observacao
-    };
-    mockNfes.push(newNfe);
-    return newNfe;
-  }
-
-  try {
-    const response = await api.post('/nfes', adaptNfeToApi(nfe));
-    return adaptNfeFromApi(response.data);
-  } catch (error) {
-    console.error('Erro ao criar nota fiscal:', error);
-    throw error;
-  }
-};
-
-export const updateNfe = async (id: string, nfe: NfeInput): Promise<Nfe> => {
-  if (isDevelopmentMode) {
-    console.log(`Usando dados mock para updateNfe(${id})`, nfe);
-    const index = mockNfes.findIndex(n => n.id === Number(id));
-    if (index === -1) throw new Error('Nota fiscal não encontrada');
-    const updatedNfe = {
-      ...mockNfes[index],
-      numeroNf: nfe.numero,
-      dataEmissao: nfe.dataEmissao,
-      dataRecebimento: nfe.dataRecebimento,
-      valorTotal: nfe.valorTotal,
-      observacao: nfe.observacao
-    };
-    mockNfes[index] = updatedNfe;
-    return updatedNfe;
-  }
-
-  try {
-    const response = await api.put(`/nfes/${id}`, adaptNfeToApi(nfe));
-    return adaptNfeFromApi(response.data);
-  } catch (error) {
-    console.error(`Erro ao atualizar nota fiscal com ID ${id}:`, error);
-    throw error;
-  }
-};
-
-export const deleteNfe = async (id: string): Promise<void> => {
-  if (isDevelopmentMode) {
-    console.log(`Usando dados mock para deleteNfe(${id})`);
-    const index = mockNfes.findIndex(n => n.id === Number(id));
-    if (index === -1) throw new Error('Nota fiscal não encontrada');
-    mockNfes.splice(index, 1);
-    return;
-  }
-
-  try {
-    await api.delete(`/nfes/${id}`);
-  } catch (error) {
-    console.error(`Erro ao excluir nota fiscal com ID ${id}:`, error);
-    throw error;
-  }
-}; 
+export default nfeService; 

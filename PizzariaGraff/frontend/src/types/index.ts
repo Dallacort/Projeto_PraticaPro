@@ -7,15 +7,19 @@ export interface Pais {
   sigla: string;
   dataCadastro?: string;
   ultimaModificacao?: string;
+  ativo?: boolean;
 }
 
 export interface Estado {
   id: number;
   nome: string;
   uf: string;
-  pais: Pais;
+  paisId?: string;
+  paisNome?: string;
+  pais?: Pais;
   dataCadastro?: string;
   ultimaModificacao?: string;
+  ativo?: boolean;
 }
 
 export interface Cidade {
@@ -24,12 +28,14 @@ export interface Cidade {
   estado: Estado;
   dataCadastro?: string;
   ultimaModificacao?: string;
+  ativo?: boolean;
 }
 
 export interface Cliente {
   id: number;
   nome: string;
   cpfCnpj: string;
+  inscricaoEstadual?: string;
   email?: string;
   telefone?: string;
   endereco?: string;
@@ -64,18 +70,19 @@ export interface ParcelaCondicaoPagamento {
 
 export interface CondicaoPagamento {
   id: number;
-  codigo: string;
-  nome: string;
-  descricao: string;
+  condicaoPagamento: string;
   numeroParcelas: number;
+  numeroTotalParcelas?: number;
   diasPrimeiraParcela: number;
   diasEntreParcelas: number;
   percentualJuros?: number;
   percentualMulta?: number;
   percentualDesconto?: number;
   formaPagamentoPadraoId?: number | null;
+  formaPagamentoPadraoNome?: string;
   formaPagamentoPadrao?: FormaPagamento;
   parcelas?: ParcelaCondicaoPagamento[];
+  parcelasCondicaoPagamento?: ParcelaCondicaoPagamento[];
   parcelasCondPagto?: ParcelaCondicaoPagamento[];
   ativo: boolean;
   dataCadastro?: string;
@@ -87,6 +94,7 @@ export interface Fornecedor {
   razaoSocial: string;
   nomeFantasia: string;
   cnpj: string;
+  inscricaoEstadual?: string;
   email?: string;
   telefone?: string;
   endereco?: string;
@@ -102,9 +110,18 @@ export interface Fornecedor {
 
 export interface Produto {
   id: number;
+  codigo?: string;
   nome: string;
-  quantidade: number;
-  valor: number;
+  descricao?: string;
+  precoVenda?: number;
+  precoCusto?: number;
+  unidade?: string;
+  estoque?: number;
+  estoqueMinimo?: number;
+  estoqueMaximo?: number;
+  quantidade?: number;
+  valor?: number;
+  ativo?: boolean;
   dataCadastro?: string;
   ultimaModificacao?: string;
 }
@@ -122,6 +139,7 @@ export interface Transportadora {
   razaoSocial: string;
   nomeFantasia: string;
   cnpj: string;
+  inscricaoEstadual?: string;
   email?: string;
   telefone?: string;
   endereco?: string;
@@ -131,6 +149,7 @@ export interface Transportadora {
   cep?: string;
   cidade: Cidade;
   ativo: boolean;
+  nome?: string;
   veiculos: any[];
   itens: any[];
   dataCadastro?: string;
@@ -141,6 +160,11 @@ export interface Veiculo {
   id: number;
   descricao: string;
   placa: string;
+  anoModelo?: string;
+  anoFabricacao?: string;
+  capacidadeCarga?: number;
+  observacoes?: string;
+  ativo?: boolean;
   transportadora: Transportadora;
   dataCadastro?: string;
   ultimaModificacao?: string;
@@ -164,7 +188,9 @@ export interface StatusNfe {
 
 export interface ModalidadeNfe {
   id: number;
+  codigo?: string;
   descricao: string;
+  ativo?: boolean;
   dataCadastro?: string;
   ultimaModificacao?: string;
 }
@@ -220,6 +246,7 @@ export interface Funcionario {
   cidade: Cidade;
   cargo: string;
   salario: number;
+  dataContratacao?: string;
   dataAdmissao?: string;
   dataDemissao?: string;
   ativo: boolean;

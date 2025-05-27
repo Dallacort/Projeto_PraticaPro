@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
-import EntityLink from '../../components/EntityLink';
-import { getCidades, deleteCidade } from '../../services/cidadeService';
+import { getCidades, deleteCidade, getCidade } from '../../services/cidadeService';
 import { Cidade } from '../../types';
+import { FaEye, FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import CidadeViewModal from '../../components/modals/CidadeViewModal';
 
 const CidadeList: React.FC = () => {
   const [cidades, setCidades] = useState<Cidade[]>([]);
@@ -13,35 +15,55 @@ const CidadeList: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedCidadeView, setSelectedCidadeView] = useState<Cidade | null>(null);
+  const [viewModalLoading, setViewModalLoading] = useState(false);
+
   const fetchCidades = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Buscando lista de cidades...');
       const data = await getCidades();
-      console.log('Cidades recebidas:', data);
       setCidades(data);
     } catch (err) {
       console.error('Erro ao buscar cidades:', err);
       setError('Não foi possível carregar a lista de cidades. Tente novamente mais tarde.');
+      toast.error('Falha ao carregar cidades.');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    console.log('CidadeList montado ou location alterada, carregando cidades...');
     fetchCidades();
   }, [fetchCidades, location.key]);
+
+  const handleView = async (id: string | number) => {
+    setViewModalLoading(true);
+    setIsViewModalOpen(true);
+    try {
+      const cidadeData = await getCidade(Number(id));
+      setSelectedCidadeView(cidadeData);
+    } catch (err) {
+      console.error('Erro ao buscar cidade para visualização:', err);
+      toast.error('Erro ao carregar detalhes da cidade.');
+      setIsViewModalOpen(false);
+    } finally {
+      setViewModalLoading(false);
+    }
+  };
+
+  const closeViewModal = () => {
+    setIsViewModalOpen(false);
+    setSelectedCidadeView(null);
+  };
 
   const handleEdit = (id: string | number) => {
     navigate(`/cidades/${id}`);
   };
 
   const handleCreate = () => {
-    console.log('Redirecionando para criar nova cidade');
-    // Use replace para forçar um recarregamento completo da página e garantir que o componente seja corretamente inicializado
-    window.location.href = '/cidades/novo';
+    navigate('/cidades/novo');
   };
 
   const handleDelete = async (id: string | number) => {
@@ -51,10 +73,10 @@ const CidadeList: React.FC = () => {
         setDeleteLoading(numericId);
         await deleteCidade(numericId);
         setCidades(cidades.filter(c => c.id !== numericId));
-        alert('Cidade excluída com sucesso!');
+        toast.success('Cidade excluída com sucesso!');
       } catch (err) {
         console.error('Erro ao excluir cidade:', err);
-        alert('Erro ao excluir cidade. Verifique se não há registros dependentes.');
+        toast.error('Erro ao excluir cidade. Verifique se não há registros dependentes.');
       } finally {
         setDeleteLoading(null);
       }
@@ -99,6 +121,15 @@ const CidadeList: React.FC = () => {
           )}
         </div>
       )
+    },
+    {
+      header: 'Status',
+      accessor: 'ativo',
+      cell: (item: Cidade) => (
+        <span className={`px-2 py-1 rounded text-xs ${item.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          {item.ativo ? 'Ativo' : 'Inativo'}
+        </span>
+      )
     }
   ];
 
@@ -120,55 +151,49 @@ const CidadeList: React.FC = () => {
   }
 
   return (
-    <div className="px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Cidades</h1>
-        <div className="flex space-x-2">
-          <button
-            onClick={fetchCidades}
-            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center"
-            disabled={loading}
-          >
-            <svg className={`w-5 h-5 mr-2 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Atualizar
-          </button>
-          <button
-            onClick={handleCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Nova Cidade
-          </button>
-        </div>
+    <div className="flex flex-col h-full w-full p-4">
+      <div className="flex justify-between items-center mb-6 pb-4 border-b">
+        <h1 className="text-xl font-bold text-gray-800">Cidades</h1>
+        <button
+          onClick={handleCreate}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center text-sm"
+        >
+          <FaPlus className="mr-2" />
+          Nova Cidade
+        </button>
       </div>
       
-      {cidades.length === 0 && !loading ? (
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <p className="text-gray-500 mb-4">Nenhuma cidade cadastrada ainda.</p>
-          <button
-            onClick={handleCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Cadastrar Primeira Cidade
-          </button>
-        </div>
-      ) : (
-        <DataTable
-          columns={columns}
-          data={cidades}
-          loading={loading}
-          onEdit={handleEdit}
-          onDelete={deleteLoading === null ? handleDelete : undefined}
-          emptyMessage="Nenhuma cidade cadastrada"
-        />
-      )}
+      <div className="flex-grow overflow-auto">
+        {cidades.length === 0 && !loading && !error ? (
+          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+            <p className="text-gray-500 mb-4">Nenhuma cidade cadastrada ainda.</p>
+            <button
+              onClick={handleCreate}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md inline-flex items-center text-sm"
+            >
+              <FaPlus className="mr-2" />
+              Cadastrar Primeira Cidade
+            </button>
+          </div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={cidades}
+            loading={loading}
+            onView={handleView}
+            onEdit={handleEdit}
+            onDelete={deleteLoading === null ? handleDelete : undefined}
+            emptyMessage="Nenhuma cidade encontrada."
+          />
+        )}
+      </div>
+
+      <CidadeViewModal 
+        isOpen={isViewModalOpen}
+        onClose={closeViewModal}
+        cidade={selectedCidadeView}
+        loading={viewModalLoading}
+      />
     </div>
   );
 };

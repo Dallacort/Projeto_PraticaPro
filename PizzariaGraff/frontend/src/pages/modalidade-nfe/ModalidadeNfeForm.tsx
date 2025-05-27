@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import FormField from '../../components/FormField';
 import { 
@@ -7,6 +7,7 @@ import {
   updateModalidadeNfe,
   mockModalidadesNfe
 } from '../../services/modalidadeNfeService';
+import { ModalidadeNfe } from '../../types';
 
 const ModalidadeNfeForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,7 +37,7 @@ const ModalidadeNfeForm: React.FC = () => {
         setError(null);
         
         if (id) {
-          const modalidadeData = await getModalidadeNfe(id);
+          const modalidadeData = await getModalidadeNfe(Number(id));
           if (modalidadeData) {
             setFormData({
               codigo: modalidadeData.codigo,
@@ -91,7 +92,7 @@ const ModalidadeNfeForm: React.FC = () => {
         await createModalidadeNfe(formData);
         alert('Modalidade de NFe cadastrada com sucesso!');
       } else if (id) {
-        await updateModalidadeNfe(id, formData);
+        await updateModalidadeNfe(Number(id), formData);
         alert('Modalidade de NFe atualizada com sucesso!');
       }
       navigate('/modalidades-nfe');

@@ -1,187 +1,116 @@
 import api from './api';
-import { Funcionario, Cidade, Estado } from '../types';
+import { Funcionario } from '../types';
 
-// Função de adaptação de cidade da API
-function adaptCidadeFromApi(cidadeApi: any): Cidade {
-  return {
-    id: cidadeApi.id,
-    nome: cidadeApi.nome,
-    estado: {
-      id: cidadeApi.estado?.id || 0,
-      nome: cidadeApi.estado?.nome || '',
-      uf: cidadeApi.estado?.uf || '',
-      pais: cidadeApi.estado?.pais || { 
-        id: '',
-        nome: '',
-        codigo: '',
-        sigla: '' 
+// Adaptador para converter dados da API para o frontend
+const adaptFuncionarioFromApi = (funcionario: any): Funcionario => {
+  // Criar uma estrutura aninhada de cidade, estado e país se necessário
+  let cidade = null;
+  if (funcionario.cidade) {
+    cidade = funcionario.cidade;
+  } else if (funcionario.cidadeId && funcionario.cidadeNome) {
+    cidade = {
+      id: funcionario.cidadeId,
+      nome: funcionario.cidadeNome,
+      estado: null
+    };
+    
+    // Se temos informações do estado, adicionar
+    if (funcionario.estadoId && funcionario.estadoNome) {
+      cidade.estado = {
+        id: funcionario.estadoId,
+        nome: funcionario.estadoNome,
+        uf: funcionario.estadoUf || '',
+        pais: null
+      };
+      
+      // Se temos informações do país, adicionar
+      if (funcionario.paisId && funcionario.paisNome) {
+        cidade.estado.pais = {
+          id: funcionario.paisId,
+          nome: funcionario.paisNome,
+          codigo: funcionario.paisCodigo || '',
+          sigla: funcionario.paisSigla || ''
+        };
       }
     }
-  };
-}
-
-// Dados de exemplo para uso em caso de falha da API
-export const funcionariosMock: Funcionario[] = [
-  {
-    id: 1,
-    nome: 'João Silva',
-    cpf: '123.456.789-00',
-    rg: '12.345.678-9',
-    dataNascimento: '1990-01-01',
-    telefone: '(11) 99999-9999',
-    email: 'joao.silva@example.com',
-    endereco: 'Rua Exemplo',
-    numero: '123',
-    complemento: 'Apto 101',
-    bairro: 'Centro',
-    cep: '12345-678',
-    cidade: {
-      id: 1,
-      nome: 'São Paulo',
-      estado: {
-        id: 1,
-        nome: 'São Paulo',
-        uf: 'SP',
-        pais: {
-          id: '1',
-          nome: 'Brasil',
-          codigo: '55',
-          sigla: 'BR'
-        }
-      }
-    },
-    cargo: 'Desenvolvedor',
-    salario: 5000,
-    dataAdmissao: '2020-01-01',
-    dataDemissao: '',
-    ativo: true,
-    dataCadastro: '2020-01-01',
-    ultimaModificacao: '2023-01-01'
-  }
-];
-
-// Adaptar dados do funcionário recebido da API para o formato do frontend
-export function adaptFuncionarioFromApi(funcionario: any): Funcionario {
-  console.log('Adaptando funcionário da API:', funcionario);
-  
-  // Verificar se há cidade encadeada e adaptar
-  let cidadeAdaptada: Cidade | null = null;
-  if (funcionario.cidade) {
-    cidadeAdaptada = adaptCidadeFromApi(funcionario.cidade);
   }
 
   return {
     id: funcionario.id,
     nome: funcionario.nome || '',
     cpf: funcionario.cpf || '',
-    rg: funcionario.rg || '',
-    dataNascimento: funcionario.dataNascimento || '',
-    telefone: funcionario.telefone || '',
     email: funcionario.email || '',
+    telefone: funcionario.telefone || '',
     endereco: funcionario.endereco || '',
-    numero: funcionario.numero || '',
-    complemento: funcionario.complemento || '',
-    bairro: funcionario.bairro || '',
-    cep: funcionario.cep || '',
-    cidade: cidadeAdaptada || { 
-      id: 0, 
-      nome: '', 
-      estado: { 
-        id: 0, 
-        nome: '', 
-        uf: '',
-        pais: { 
-          id: '',
-          nome: '',
-          codigo: '',
-          sigla: ''
-        } 
-      } 
-    },
     cargo: funcionario.cargo || '',
     salario: funcionario.salario || 0,
-    dataAdmissao: funcionario.dataAdmissao || '',
-    dataDemissao: funcionario.dataDemissao || '',
-    ativo: funcionario.ativo !== false,
-    dataCadastro: funcionario.dataCadastro || '',
-    ultimaModificacao: funcionario.ultimaModificacao || ''
+    dataContratacao: funcionario.dataContratacao || null,
+    cidade: cidade,
+    ativo: funcionario.ativo === undefined ? true : funcionario.ativo,
+    dataCadastro: funcionario.dataCadastro || null,
+    ultimaModificacao: funcionario.ultimaModificacao || null
   };
-}
+};
 
-// Adaptar dados do funcionário do frontend para enviar à API
-export function adaptFuncionarioToApi(funcionario: Omit<Funcionario, 'id'>): any {
-  console.log('Adaptando funcionário para API:', funcionario);
-  
+// Adaptador para converter dados do frontend para a API
+const adaptFuncionarioToApi = (funcionario: Omit<Funcionario, 'id' | 'dataCadastro' | 'ultimaModificacao'>): any => {
   return {
     nome: funcionario.nome,
-    cpf: funcionario.cpf,
-    rg: funcionario.rg,
-    dataNascimento: funcionario.dataNascimento,
-    telefone: funcionario.telefone,
-    email: funcionario.email,
-    endereco: funcionario.endereco,
-    numero: funcionario.numero,
-    complemento: funcionario.complemento,
-    bairro: funcionario.bairro,
-    cep: funcionario.cep,
-    cidadeId: funcionario.cidade?.id,
-    cargo: funcionario.cargo,
-    salario: funcionario.salario,
-    dataAdmissao: funcionario.dataAdmissao,
-    dataDemissao: funcionario.dataDemissao,
+    cpf: funcionario.cpf || '',
+    email: funcionario.email || '',
+    telefone: funcionario.telefone || '',
+    endereco: funcionario.endereco || '',
+    cargo: funcionario.cargo || '',
+    salario: funcionario.salario || 0,
+    dataContratacao: funcionario.dataContratacao || null,
+    cidadeId: funcionario.cidade?.id || null,
     ativo: funcionario.ativo
   };
-}
+};
 
 // Busca todos os funcionários
 export const getFuncionarios = async (): Promise<Funcionario[]> => {
   try {
-    console.log('Buscando funcionários na API...');
     const response = await api.get('/funcionario');
-    console.log('Resposta da API (funcionários):', response.data);
     
-    if (!response.data || !Array.isArray(response.data)) {
-      console.warn('API retornou dados inválidos para funcionários. Usando dados mockados.');
-      return funcionariosMock;
+    if (Array.isArray(response.data)) {
+      return response.data.map(adaptFuncionarioFromApi);
     }
     
-    return response.data.map(adaptFuncionarioFromApi);
+    throw new Error('Resposta inválida da API para funcionários');
   } catch (error) {
     console.error('Erro ao buscar funcionários:', error);
-    console.warn('Usando dados mockados para funcionários devido a erro na API.');
-    return funcionariosMock;
+    throw error;
   }
 };
 
-// Busca um funcionário por ID
-export const getFuncionario = async (id: number | string): Promise<Funcionario | null> => {
+// Busca um funcionário pelo ID
+export const getFuncionario = async (id: number): Promise<Funcionario | null> => {
   try {
-    console.log(`Buscando funcionário com ID ${id} na API...`);
     const response = await api.get(`/funcionario/${id}`);
-    console.log(`Resposta da API (funcionário ${id}):`, response.data);
     
-    if (!response.data || !response.data.id) {
-      console.warn(`API retornou dados inválidos para funcionário ${id}. Usando dados mockados.`);
-      return funcionariosMock.find(f => String(f.id) === String(id)) || null;
+    if (response.data) {
+      return adaptFuncionarioFromApi(response.data);
     }
     
-    return adaptFuncionarioFromApi(response.data);
+    throw new Error(`Resposta inválida da API para funcionário ${id}`);
   } catch (error) {
     console.error(`Erro ao buscar funcionário ${id}:`, error);
-    console.warn(`Usando dados mockados para funcionário ${id} devido a erro na API.`);
-    return funcionariosMock.find(f => String(f.id) === String(id)) || null;
+    throw error;
   }
 };
 
 // Cria um novo funcionário
-export const createFuncionario = async (funcionario: Omit<Funcionario, 'id'>): Promise<Funcionario> => {
+export const createFuncionario = async (funcionario: Omit<Funcionario, 'id' | 'dataCadastro' | 'ultimaModificacao'>): Promise<Funcionario> => {
   try {
-    console.log('Criando novo funcionário na API:', funcionario);
-    const funcionarioApi = adaptFuncionarioToApi(funcionario);
-    const response = await api.post('/funcionario', funcionarioApi);
-    console.log('Resposta da API (criar funcionário):', response.data);
+    const dataToSend = adaptFuncionarioToApi(funcionario);
+    const response = await api.post('/funcionario', dataToSend);
     
-    return adaptFuncionarioFromApi(response.data);
+    if (response.data) {
+      return adaptFuncionarioFromApi(response.data);
+    }
+    
+    throw new Error('Resposta inválida da API ao criar funcionário');
   } catch (error) {
     console.error('Erro ao criar funcionário:', error);
     throw error;
@@ -189,14 +118,16 @@ export const createFuncionario = async (funcionario: Omit<Funcionario, 'id'>): P
 };
 
 // Atualiza um funcionário existente
-export const updateFuncionario = async (id: number | string, funcionario: Omit<Funcionario, 'id'>): Promise<Funcionario> => {
+export const updateFuncionario = async (id: number, funcionario: Omit<Funcionario, 'id' | 'dataCadastro' | 'ultimaModificacao'>): Promise<Funcionario> => {
   try {
-    console.log(`Atualizando funcionário ${id} na API:`, funcionario);
-    const funcionarioApi = adaptFuncionarioToApi(funcionario);
-    const response = await api.put(`/funcionario/${id}`, funcionarioApi);
-    console.log(`Resposta da API (atualizar funcionário ${id}):`, response.data);
+    const dataToSend = adaptFuncionarioToApi(funcionario);
+    const response = await api.put(`/funcionario/${id}`, dataToSend);
     
-    return adaptFuncionarioFromApi(response.data);
+    if (response.data) {
+      return adaptFuncionarioFromApi(response.data);
+    }
+    
+    throw new Error(`Resposta inválida da API ao atualizar funcionário ${id}`);
   } catch (error) {
     console.error(`Erro ao atualizar funcionário ${id}:`, error);
     throw error;
@@ -204,11 +135,9 @@ export const updateFuncionario = async (id: number | string, funcionario: Omit<F
 };
 
 // Exclui um funcionário
-export const deleteFuncionario = async (id: number | string): Promise<void> => {
+export const deleteFuncionario = async (id: number): Promise<void> => {
   try {
-    console.log(`Excluindo funcionário ${id} na API...`);
     await api.delete(`/funcionario/${id}`);
-    console.log(`Funcionário ${id} excluído com sucesso.`);
   } catch (error) {
     console.error(`Erro ao excluir funcionário ${id}:`, error);
     throw error;

@@ -89,7 +89,7 @@ const StatusNfeForm: React.FC = () => {
     return (
       <div className="flex justify-center items-center h-full">
         <div className="text-primary">
-          <Icon Icon={FaSpinner} size={24} spinning />
+          <Icon IconComponent={FaSpinner} size={24} spinning />
         </div>
       </div>
     );
@@ -132,7 +132,7 @@ const StatusNfeForm: React.FC = () => {
           >
             {saving ? (
               <div className="inline mr-2">
-                <Icon Icon={FaSpinner} size={16} spinning />
+                <Icon IconComponent={FaSpinner} size={16} spinning />
               </div>
             ) : null}
             Salvar

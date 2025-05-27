@@ -24,7 +24,6 @@ const FormaPagamentoList: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      console.log('Modo de desenvolvimento:', process.env.REACT_APP_USE_MOCK_DATA);
       console.log('Buscando formas de pagamento...');
       
       // Usar o serviço que já verifica se está em modo de desenvolvimento
@@ -34,36 +33,7 @@ const FormaPagamentoList: React.FC = () => {
       setFormasPagamento(data);
     } catch (error: any) {
       console.error('Erro ao buscar formas de pagamento:', error);
-      
-      // Se estiver em modo de desenvolvimento, usar dados mockados em caso de erro
-      if (process.env.REACT_APP_USE_MOCK_DATA === 'true') {
-        console.warn('Usando dados mockados em caso de erro');
-        setFormasPagamento([
-          {
-            id: 1,
-            descricao: 'Dinheiro',
-            ativo: true,
-            dataCadastro: new Date(),
-            ultimaModificacao: new Date()
-          },
-          {
-            id: 2,
-            descricao: 'Cartão de Crédito',
-            ativo: true,
-            dataCadastro: new Date(),
-            ultimaModificacao: new Date()
-          },
-          {
-            id: 3,
-            descricao: 'Cartão de Débito',
-            ativo: true,
-            dataCadastro: new Date(),
-            ultimaModificacao: new Date()
-          }
-        ]);
-      } else {
-        setError('Não foi possível carregar as formas de pagamento. Tente novamente mais tarde.');
-      }
+      setError('Não foi possível carregar as formas de pagamento. Tente novamente mais tarde.');
     } finally {
       setLoading(false);
     }
@@ -90,23 +60,9 @@ const FormaPagamentoList: React.FC = () => {
         setDeleteLoading(prev => ({ ...prev, [idStr]: true }));
         console.log('Excluindo forma de pagamento com ID:', id);
         
-        try {
-          await FormaPagamentoService.delete(Number(id));
-          await fetchFormasPagamento();
-          alert('Forma de pagamento excluída com sucesso!');
-        } catch (deleteError: any) {
-          console.error('Erro específico ao excluir forma de pagamento:', deleteError);
-          
-          // Se estiver em modo de desenvolvimento, continuar mesmo com erro
-          if (process.env.REACT_APP_USE_MOCK_DATA === 'true') {
-            console.warn('Continuando em modo de desenvolvimento mesmo com erro');
-            // Remover o item da lista localmente
-            setFormasPagamento(prev => prev.filter(item => item.id !== id));
-            alert('Forma de pagamento excluída com sucesso! (Modo de desenvolvimento)');
-          } else {
-            throw deleteError;
-          }
-        }
+        await FormaPagamentoService.delete(Number(id));
+        await fetchFormasPagamento();
+        alert('Forma de pagamento excluída com sucesso!');
       } catch (error) {
         console.error('Erro ao excluir forma de pagamento:', error);
         alert('Erro ao excluir forma de pagamento. Tente novamente.');

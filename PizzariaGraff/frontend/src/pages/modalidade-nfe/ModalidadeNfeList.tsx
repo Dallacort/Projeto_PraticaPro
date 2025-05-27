@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ModalidadeNfe, getModalidadesNfe, deleteModalidadeNfe, mockModalidadesNfe } from '../../services/modalidadeNfeService';
+import { getModalidadesNfe, deleteModalidadeNfe, mockModalidadesNfe } from '../../services/modalidadeNfeService';
+import { ModalidadeNfe } from '../../types';
 import DataTable from '../../components/DataTable';
 
 const ModalidadeNfeList: React.FC = () => {
@@ -48,7 +49,7 @@ const ModalidadeNfeList: React.FC = () => {
       try {
         const idStr = id.toString();
         setDeleteLoading(prev => ({ ...prev, [idStr]: true }));
-        await deleteModalidadeNfe(idStr);
+        await deleteModalidadeNfe(Number(idStr));
         await fetchModalidadesNfe();
         alert('Modalidade de NFe excluída com sucesso!');
       } catch (error) {

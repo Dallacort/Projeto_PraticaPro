@@ -1,48 +1,6 @@
 import api from './api';
 import { Cidade, Estado } from '../types';
 
-// Dados mock para usar em caso de falha da API
-const mockCidades: Cidade[] = [
-  {
-    id: 1,
-    nome: 'São Paulo',
-    estado: {
-      id: 1,
-      nome: 'São Paulo',
-      uf: 'SP',
-      pais: {
-        id: 'BRA',
-        nome: 'Brasil',
-        codigo: '55',
-        sigla: 'BR'
-      },
-      dataCadastro: '2023-01-01T00:00:00',
-      ultimaModificacao: '2023-01-01T00:00:00'
-    },
-    dataCadastro: '2023-01-01T00:00:00',
-    ultimaModificacao: '2023-01-01T00:00:00'
-  },
-  {
-    id: 2,
-    nome: 'Rio de Janeiro',
-    estado: {
-      id: 2,
-      nome: 'Rio de Janeiro',
-      uf: 'RJ',
-      pais: {
-        id: 'BRA',
-        nome: 'Brasil',
-        codigo: '55',
-        sigla: 'BR'
-      },
-      dataCadastro: '2023-01-01T00:00:00',
-      ultimaModificacao: '2023-01-01T00:00:00'
-    },
-    dataCadastro: '2023-01-01T00:00:00',
-    ultimaModificacao: '2023-01-01T00:00:00'
-  }
-];
-
 // Adaptador para converter dados da API para o frontend
 export const adaptCidadeFromApi = (apiCidade: any): Cidade => {
   // Assegurar que os dados são consistentes
@@ -51,6 +9,7 @@ export const adaptCidadeFromApi = (apiCidade: any): Cidade => {
   const estadoNome = apiCidade.estadoNome || (apiCidade.estado && apiCidade.estado.nome);
   const paisId = apiCidade.paisId || (apiCidade.estado && apiCidade.estado.pais && apiCidade.estado.pais.id);
   const paisNome = apiCidade.paisNome || (apiCidade.estado && apiCidade.estado.pais && apiCidade.estado.pais.nome);
+  const estadoAtivo = apiCidade.estado?.ativo !== undefined ? apiCidade.estado.ativo : true;
 
   return {
     id: apiCidade.id,
@@ -59,6 +18,7 @@ export const adaptCidadeFromApi = (apiCidade: any): Cidade => {
       id: estadoId || 0,
       nome: estadoNome || '',
       uf: estadoUf || '',
+      ativo: estadoAtivo,
       pais: {
         id: paisId || '',
         nome: paisNome || '',
@@ -66,6 +26,7 @@ export const adaptCidadeFromApi = (apiCidade: any): Cidade => {
         sigla: ''
       }
     },
+    ativo: apiCidade.ativo !== undefined ? apiCidade.ativo : true,
     dataCadastro: apiCidade.dataCadastro || null,
     ultimaModificacao: apiCidade.ultimaModificacao || apiCidade.dataModificacao || null
   };
@@ -75,7 +36,8 @@ export const adaptCidadeFromApi = (apiCidade: any): Cidade => {
 const adaptCidadeToApi = (cidade: Omit<Cidade, 'id'>): any => {
   return {
     nome: cidade.nome,
-    estadoId: cidade.estado.id // A API espera estadoId diretamente
+    estadoId: cidade.estado.id, // A API espera estadoId diretamente
+    ativo: cidade.ativo !== undefined ? cidade.ativo : true
   };
 };
 
@@ -95,28 +57,7 @@ export const getCidades = async (): Promise<Cidade[]> => {
     return cidades;
   } catch (error) {
     console.error('Erro ao buscar cidades:', error);
-    
-    // Retornar dados mockados em caso de falha
-    console.log('Retornando dados mockados para cidades');
-    return [
-      {
-        id: 1,
-        nome: 'São Paulo',
-        estado: {
-          id: 1,
-          nome: 'São Paulo',
-          uf: 'SP',
-          pais: {
-            id: 'BRA',
-            nome: 'Brasil',
-            codigo: '55',
-            sigla: 'BR'
-          }
-        },
-        dataCadastro: '2023-01-01T10:00:00',
-        ultimaModificacao: '2023-01-01T10:00:00'
-      }
-    ];
+    throw error;
   }
 };
 
@@ -130,29 +71,7 @@ export const getCidade = async (id: number): Promise<Cidade | null> => {
     return adaptCidadeFromApi(response.data);
   } catch (error) {
     console.error(`Erro ao buscar cidade com ID ${id}:`, error);
-    
-    // Retornar cidade mockada para testes
-    if (id === 1) {
-      return {
-        id: 1,
-        nome: 'São Paulo',
-        estado: {
-          id: 1,
-          nome: 'São Paulo',
-          uf: 'SP',
-          pais: {
-            id: 'BRA',
-            nome: 'Brasil',
-            codigo: '55',
-            sigla: 'BR'
-          }
-        },
-        dataCadastro: '2023-01-01T10:00:00',
-        ultimaModificacao: '2023-01-01T10:00:00'
-      };
-    }
-    
-    return null;
+    throw error;
   }
 };
 
@@ -162,10 +81,7 @@ export const createCidade = async (cidade: Omit<Cidade, 'id'>): Promise<Cidade> 
     console.log('Criando nova cidade:', cidade);
     
     // Adaptar dados para API
-    const cidadeApiFormat = {
-      nome: cidade.nome,
-      estadoId: cidade.estado.id
-    };
+    const cidadeApiFormat = adaptCidadeToApi(cidade);
     
     console.log('Dados formatados para API:', cidadeApiFormat);
     const response = await api.post('/cidades', cidadeApiFormat);
@@ -184,10 +100,7 @@ export const updateCidade = async (id: number, cidade: Omit<Cidade, 'id'>): Prom
     console.log(`Atualizando cidade ${id}:`, cidade);
     
     // Adaptar dados para API
-    const cidadeApiFormat = {
-      nome: cidade.nome,
-      estadoId: cidade.estado.id
-    };
+    const cidadeApiFormat = adaptCidadeToApi(cidade);
     
     console.log('Dados formatados para API:', cidadeApiFormat);
     const response = await api.put(`/cidades/${id}`, cidadeApiFormat);

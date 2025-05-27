@@ -6,16 +6,20 @@ import FormaPagamentoService from '../../services/FormaPagamentoService';
 import FormField from '../../components/FormField';
 import { toast } from 'react-toastify';
 import Icon from '../../components/Icon';
-import { FaPlus, FaTrash, FaSpinner } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaSpinner, FaSearch, FaArrowLeft } from 'react-icons/fa';
+import FormaPagamentoModal from '../../components/FormaPagamentoModal';
 
-const CondicaoPagamentoForm: React.FC = () => {
+interface CondicaoPagamentoFormProps {
+  mode?: 'edit' | 'view';
+}
+
+const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'edit' }) => {
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
+  const isViewMode = mode === 'view';
 
   const [formData, setFormData] = useState<CondicaoPagamentoInput>({
-    codigo: '',
-    nome: '',
-    descricao: '',
+    condicaoPagamento: '',
     numeroParcelas: 1,
     diasPrimeiraParcela: 0,
     diasEntreParcelas: 0,
@@ -26,11 +30,20 @@ const CondicaoPagamentoForm: React.FC = () => {
     parcelas: [],
     ativo: true
   });
+  
+  // Estado para armazenar dados da entidade original, incluindo datas
+  const [entityData, setEntityData] = useState<{
+    dataCadastro?: string;
+    ultimaModificacao?: string;
+  }>({});
 
   const [formasPagamento, setFormasPagamento] = useState<FormaPagamento[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isFormaPagamentoModalOpen, setIsFormaPagamentoModalOpen] = useState(false);
+  const [currentParcelaIndex, setCurrentParcelaIndex] = useState<number | null>(null);
+  const [isFormaPagamentoPadraoModal, setIsFormaPagamentoPadraoModal] = useState(false);
 
   const fetchFormasPagamento = useCallback(async () => {
     console.log('Iniciando fetchFormasPagamento');
@@ -62,15 +75,19 @@ const CondicaoPagamentoForm: React.FC = () => {
           console.log('Dados da condição carregada:', data); // Adicionar log para debug
           console.log('formaPagamentoPadraoId recebido:', data.formaPagamentoPadraoId);
           
+          // Guardar as datas no estado separado
+          setEntityData({
+            dataCadastro: data.dataCadastro,
+            ultimaModificacao: data.ultimaModificacao
+          });
+          
           // Garante que formaPagamentoPadraoId não seja undefined
           const formaPagamentoPadraoId = data.formaPagamentoPadraoId !== undefined ? 
             data.formaPagamentoPadraoId : 
             null;
             
           setFormData({
-            codigo: data.codigo,
-            nome: data.nome,
-            descricao: data.descricao,
+            condicaoPagamento: data.condicaoPagamento,
             numeroParcelas: data.numeroParcelas,
             diasPrimeiraParcela: data.diasPrimeiraParcela,
             diasEntreParcelas: data.diasEntreParcelas,
@@ -165,7 +182,7 @@ const CondicaoPagamentoForm: React.FC = () => {
         const novasParcelas = CondicaoPagamentoService.generateParcelas(tempCondicao);
         
         // Preservar as formas de pagamento das parcelas existentes se possível
-        if (prev.parcelas && prev.parcelas.length > 0) {
+        if (prev.parcelas && Array.isArray(prev.parcelas) && prev.parcelas.length > 0) {
           novasParcelas.forEach((novaParcela, index) => {
             // Se existe uma parcela correspondente no array anterior, tentar manter a forma de pagamento
             if (index < prev.parcelas!.length) {
@@ -200,199 +217,253 @@ const CondicaoPagamentoForm: React.FC = () => {
 
   const handleParcelaChange = (index: number, field: keyof ParcelaCondicaoPagamento, value: any) => {
     setFormData(prev => {
-      const parcelas = [...(prev.parcelas || [])];
+      const updatedParcelas = [...prev.parcelas];
+      const parcela = { ...updatedParcelas[index] };
       
-      // Se estiver mudando a forma de pagamento, também atualizar a descrição
-      if (field === 'formaPagamentoId') {
-        const formaPagamentoSelecionada = formasPagamento.find(fp => fp.id === parseInt(value, 10));
-        parcelas[index] = {
-          ...parcelas[index],
-          [field]: value === '' ? null : parseInt(value, 10),
-          formaPagamentoDescricao: formaPagamentoSelecionada ? formaPagamentoSelecionada.descricao : ''
-        };
+      // Processar o valor conforme o tipo do campo
+      if (field === 'dias' || field === 'numero') {
+        parcela[field] = parseInt(value, 10) || 0;
+      } else if (field === 'percentual') {
+        parcela[field] = parseFloat(value) || 0;
+      } else if (field === 'formaPagamentoId') {
+        if (value === '') {
+          parcela[field] = null;
+          parcela.formaPagamentoDescricao = '';
+        } else {
+          parcela[field] = parseInt(value, 10);
+          // Buscar descrição se disponível
+          const formaPagamento = formasPagamento.find(fp => fp.id === parseInt(value, 10));
+          if (formaPagamento) {
+            parcela.formaPagamentoDescricao = formaPagamento.descricao;
+          }
+        }
       } else {
-        parcelas[index] = {
-          ...parcelas[index],
-          [field]: field === 'percentual' || field === 'dias' 
-            ? parseFloat(value) || 0
-            : value
-        };
+        // Tratar o campo como uma string para evitar o erro de tipo
+        (parcela as any)[field] = value;
       }
       
-      return { ...prev, parcelas };
+      updatedParcelas[index] = parcela;
+      return { ...prev, parcelas: updatedParcelas };
     });
   };
 
   const addParcela = () => {
     setFormData(prev => {
-      // Aumentar o número de parcelas
-      const novoNumeroParcelas = prev.parcelas ? prev.parcelas.length + 1 : 1;
+      // Verificar se já existe alguma parcela para usar como base
+      const ultimaParcela = prev.parcelas.length > 0 
+        ? prev.parcelas[prev.parcelas.length - 1] 
+        : null;
       
-      // Criar um objeto temporário com o novo número de parcelas
-      const tempCondicao: CondicaoPagamento = {
-        ...prev,
-        numeroParcelas: novoNumeroParcelas,
-        id: parseInt(id || '0'),
-        ativo: prev.ativo
+      const novaParcela: ParcelaCondicaoPagamento = {
+        numero: prev.parcelas.length + 1,
+        dias: ultimaParcela 
+          ? ultimaParcela.dias + (prev.diasEntreParcelas || 30) 
+          : (prev.diasPrimeiraParcela || 0),
+        percentual: 100 / (prev.parcelas.length + 1),
+        formaPagamentoId: prev.formaPagamentoPadraoId || null
       };
       
-      // Usar o serviço para gerar as parcelas com base nos dados atuais
-      const novasParcelas = CondicaoPagamentoService.generateParcelas(tempCondicao);
-      
-      // Preservar as formas de pagamento das parcelas existentes
-      if (prev.parcelas && prev.parcelas.length > 0) {
-        prev.parcelas.forEach((parcela, index) => {
-          if (index < novasParcelas.length && parcela.formaPagamentoId) {
-            novasParcelas[index].formaPagamentoId = parcela.formaPagamentoId;
-          }
-        });
+      // Se temos formaPagamentoPadraoId, buscar a descrição
+      if (prev.formaPagamentoPadraoId) {
+        const formaPagamento = formasPagamento.find(fp => fp.id === prev.formaPagamentoPadraoId);
+        if (formaPagamento) {
+          novaParcela.formaPagamentoDescricao = formaPagamento.descricao;
+        }
       }
       
-      return {
-        ...prev,
-        numeroParcelas: novoNumeroParcelas,
-        parcelas: novasParcelas
-      };
+      // Redistribuir o percentual entre todas as parcelas
+      const novasParcelas = [...prev.parcelas, novaParcela].map((parcela, index, arr) => ({
+        ...parcela,
+        percentual: 100 / arr.length
+      }));
+      
+      return { ...prev, parcelas: novasParcelas };
     });
   };
 
   const removeParcela = (index: number) => {
     setFormData(prev => {
-      if (!prev.parcelas || prev.parcelas.length <= 1) {
-        // Não permite remover a última parcela
-        return prev;
+      if (prev.parcelas.length <= 1) {
+        return prev; // Não permitir remover a última parcela
       }
       
-      // Diminuir o número de parcelas
-      const novoNumeroParcelas = prev.parcelas.length - 1;
+      // Remover a parcela no índice especificado
+      const parcelasAtualizadas = prev.parcelas.filter((_, i) => i !== index);
       
-      // Criar um objeto temporário com o novo número de parcelas
-      const tempCondicao: CondicaoPagamento = {
-        ...prev,
-        numeroParcelas: novoNumeroParcelas,
-        id: parseInt(id || '0'),
-        ativo: prev.ativo
-      };
+      // Atualizar os números das parcelas para manter a sequência
+      const parcelasReordenadas = parcelasAtualizadas.map((parcela, i) => ({
+        ...parcela,
+        numero: i + 1
+      }));
       
-      // Usar o serviço para gerar as parcelas com base nos dados atuais
-      const novasParcelas = CondicaoPagamentoService.generateParcelas(tempCondicao);
+      // Redistribuir o percentual entre as parcelas restantes
+      const percentualPorParcela = 100 / parcelasReordenadas.length;
+      const parcelasComPercentualAtualizado = parcelasReordenadas.map((parcela, i, arr) => {
+        // Se é a última parcela, ajustar para garantir que a soma seja exatamente 100%
+        if (i === arr.length - 1) {
+          const somaAnterior = arr.slice(0, -1).reduce((sum, p) => sum + p.percentual, 0);
+          return { ...parcela, percentual: 100 - somaAnterior };
+        }
+        return { ...parcela, percentual: percentualPorParcela };
+      });
       
-      // Mapear as formas de pagamento das parcelas existentes para as novas,
-      // pulando a parcela a ser removida
-      const parcelasExistentes = prev.parcelas.filter((_, i) => i !== index);
-      if (parcelasExistentes && parcelasExistentes.length > 0) {
-        parcelasExistentes.forEach((parcela, i) => {
-          if (i < novasParcelas.length && parcela.formaPagamentoId) {
-            novasParcelas[i].formaPagamentoId = parcela.formaPagamentoId;
-          }
-        });
-      }
-      
-      return {
-        ...prev,
-        numeroParcelas: novoNumeroParcelas,
-        parcelas: novasParcelas
-      };
+      return { ...prev, parcelas: parcelasComPercentualAtualizado };
     });
   };
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.codigo?.trim()) {
-      newErrors.codigo = 'Código é obrigatório';
+    const errors: Record<string, string> = {};
+    
+    if (!formData.condicaoPagamento?.trim()) {
+      errors.condicaoPagamento = "Condição de pagamento é obrigatória";
     }
-
-    if (!formData.nome?.trim()) {
-      newErrors.nome = 'Nome é obrigatório';
+    
+    if (!formData.numeroParcelas || formData.numeroParcelas <= 0) {
+      errors.numeroParcelas = "Número de parcelas deve ser maior que zero";
     }
-
-    if (!formData.descricao?.trim()) {
-      newErrors.descricao = 'Descrição é obrigatória';
-    }
-
-    if (formData.numeroParcelas < 1) {
-      newErrors.numeroParcelas = 'O número de parcelas deve ser pelo menos 1';
-    }
-
-    // Dias não podem ser negativos
+    
     if (formData.diasPrimeiraParcela < 0) {
-      newErrors.diasPrimeiraParcela = 'O valor não pode ser negativo';
+      errors.diasPrimeiraParcela = "Dias para primeira parcela não pode ser negativo";
     }
-
+    
     if (formData.diasEntreParcelas < 0) {
-      newErrors.diasEntreParcelas = 'O valor não pode ser negativo';
+      errors.diasEntreParcelas = "Dias entre parcelas não pode ser negativo";
     }
-
-    // Validar percentuais
-    if (formData.percentualJuros < 0) {
-      newErrors.percentualJuros = 'O valor não pode ser negativo';
-    }
-
-    if (formData.percentualMulta < 0) {
-      newErrors.percentualMulta = 'O valor não pode ser negativo';
-    }
-
-    if (formData.percentualDesconto < 0) {
-      newErrors.percentualDesconto = 'O valor não pode ser negativo';
-    }
-
-    // Validar parcelas
-    if (!formData.parcelas?.length) {
-      newErrors.parcelas = 'É necessário pelo menos uma parcela';
+    
+    // Verificar parcelas
+    if (!formData.parcelas || formData.parcelas.length === 0) {
+      errors.parcelas = "É necessário pelo menos uma parcela";
     } else {
-      // Verificar se a soma dos percentuais das parcelas é 100%
-      const somaPercentuais = formData.parcelas.reduce((soma, parcela) => soma + parcela.percentual, 0);
-      if (Math.abs(somaPercentuais - 100) > 0.01) {
-        newErrors.parcelas = 'A soma dos percentuais deve ser 100%';
+      let totalPercent = 0;
+      formData.parcelas.forEach((parcela, index) => {
+        totalPercent += parcela.percentual;
+        if (!parcela.numero || parcela.numero <= 0) {
+          errors[`parcelas[${index}].numero`] = "Número da parcela deve ser maior que zero";
+        }
+      });
+      
+      // Verificar se o total é próximo de 100%
+      if (Math.abs(totalPercent - 100) > 0.01) {
+        errors.parcelas = `A soma dos percentuais das parcelas deve ser 100%. Atual: ${totalPercent.toFixed(2)}%`;
       }
     }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    
+    return errors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) {
+    
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      const firstError = Object.values(validationErrors)[0];
+      toast.error(`Erro de validação: ${firstError}`);
       return;
     }
-
-    // Log dos dados antes de enviar
-    console.log('Enviando dados para salvar:', {
-      ...formData,
-      parcelas: formData.parcelas?.map(p => ({
-        numero: p.numero,
-        dias: p.dias,
-        percentual: p.percentual,
-        formaPagamentoId: p.formaPagamentoId
-      }))
-    });
-
+    
     setSaving(true);
+    
     try {
       if (id && id !== 'novo') {
+        // Atualizar condição existente
         await CondicaoPagamentoService.update(Number(id), formData);
         toast.success('Condição de pagamento atualizada com sucesso!');
       } else {
+        // Criar nova condição
         await CondicaoPagamentoService.create(formData);
         toast.success('Condição de pagamento criada com sucesso!');
       }
+      
+      // Redirecionar para a lista após salvar
       navigate('/condicoes-pagamento');
-    } catch (error) {
-      console.error('Erro ao salvar condição de pagamento:', error);
-      toast.error('Erro ao salvar condição de pagamento');
+    } catch (error: any) {
+      // Tratar mensagens de erro específicas
+      const errorMessage = error?.response?.data?.message || 'Erro ao salvar condição de pagamento';
+      toast.error(errorMessage);
+      console.error('Erro ao salvar:', error);
     } finally {
       setSaving(false);
     }
+  };
+
+  // Funções para abrir modal para forma de pagamento padrão
+  const handleOpenFormaPagamentoPadraoModal = () => {
+    setIsFormaPagamentoPadraoModal(true);
+    setIsFormaPagamentoModalOpen(true);
+    setCurrentParcelaIndex(null);
+  };
+
+  // Função para abrir modal para forma de pagamento de parcela
+  const handleOpenParcelaFormaPagamentoModal = (index: number) => {
+    setIsFormaPagamentoPadraoModal(false);
+    setIsFormaPagamentoModalOpen(true);
+    setCurrentParcelaIndex(index);
+  };
+
+  // Função para selecionar forma de pagamento do modal
+  const handleSelectFormaPagamento = (formaPagamento: FormaPagamento) => {
+    if (isFormaPagamentoPadraoModal) {
+      // Atualizar forma de pagamento padrão diretamente no estado
+      setFormData(prev => ({
+        ...prev,
+        formaPagamentoPadraoId: formaPagamento.id
+      }));
+      
+      // Verificar se o campo afeta as parcelas
+      const tempCondicao: CondicaoPagamento = {
+        ...formData,
+        id: parseInt(id || '0'),
+        ativo: formData.ativo,
+        formaPagamentoPadraoId: formaPagamento.id,
+        formaPagamentoPadrao: formaPagamento
+      };
+      
+      // Se temos parcelas, atualizar com a nova forma de pagamento padrão
+      if (formData.numeroParcelas > 0) {
+        const novasParcelas = CondicaoPagamentoService.generateParcelas(tempCondicao);
+        
+        // Preservar as formas de pagamento das parcelas existentes
+        if (formData.parcelas && formData.parcelas.length > 0) {
+          novasParcelas.forEach((novaParcela, index) => {
+            // Aplicar a nova forma de pagamento para todas as parcelas
+            novaParcela.formaPagamentoId = formaPagamento.id;
+            novaParcela.formaPagamentoDescricao = formaPagamento.descricao;
+            
+            // Manter outros dados da parcela como número e dias
+            if (index < formData.parcelas.length) {
+              const parcelaAnterior = formData.parcelas[index];
+              novaParcela.numero = parcelaAnterior.numero;
+              novaParcela.dias = parcelaAnterior.dias;
+            }
+          });
+        }
+        
+        setFormData(prev => ({
+          ...prev,
+          formaPagamentoPadraoId: formaPagamento.id,
+          parcelas: novasParcelas
+        }));
+      }
+    } else if (currentParcelaIndex !== null) {
+      // Atualizar forma de pagamento da parcela
+      handleParcelaChange(currentParcelaIndex, 'formaPagamentoId', formaPagamento.id.toString());
+    }
+    
+    // Fechar o modal após a seleção
+    setIsFormaPagamentoModalOpen(false);
+  };
+
+  // Função para fechar o modal
+  const handleCloseFormaPagamentoModal = () => {
+    setIsFormaPagamentoModalOpen(false);
   };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-full">
         <div className="text-primary">
-          <Icon Icon={FaSpinner} size={24} spinning />
+          <Icon IconComponent={FaSpinner} size={24} spinning />
         </div>
       </div>
     );
@@ -402,197 +473,210 @@ const CondicaoPagamentoForm: React.FC = () => {
   console.log('Estado atual de formasPagamento:', formasPagamento);
 
   return (
-    <div className="flex flex-col h-full w-full">
-      {formasPagamento.length === 0 && (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
-          <p className="font-bold">Atenção</p>
-          <p>Nenhuma forma de pagamento foi carregada. Por favor, verifique se existem formas de pagamento cadastradas e ativas.</p>
-        </div>
-      )}
-      {/* Debug para formaPagamentoPadraoId */}
-      <div className="hidden">
-        <pre>formaPagamentoPadraoId: {JSON.stringify(formData.formaPagamentoPadraoId)}</pre>
-      </div>
-      <div className="flex justify-between items-center p-4 border-b">
+    <div className="flex flex-col bg-white shadow-md rounded-lg overflow-hidden max-w-4xl w-full mx-auto my-4">
+      <div className="flex justify-between items-center bg-gray-50 p-4 border-b">
         <h1 className="text-xl font-bold text-gray-800">
-        {id && id !== 'novo' ? 'Editar Condição de Pagamento' : 'Nova Condição de Pagamento'}
-      </h1>
+          {isViewMode ? 'Visualizar' : id && id !== 'novo' ? 'Editar' : 'Nova'} Condição de Pagamento
+        </h1>
+        {isViewMode && (
+          <button
+            type="button"
+            onClick={() => navigate('/condicoes-pagamento')}
+            className="px-3 py-1 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none flex items-center"
+          >
+            <FaArrowLeft className="mr-1" /> Voltar
+          </button>
+        )}
       </div>
 
-      <div className="p-4 flex-grow overflow-auto">
-        <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-6 mx-auto max-w-4xl">
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <FormField
-              label="Código"
-              name="codigo"
-              value={formData.codigo}
-              onChange={handleChange}
-              error={errors.codigo}
-              required
-              placeholder="Ex: A_VISTA, PARCELADO_30_60_90"
-            />
-
-            <FormField
-              label="Nome"
-              name="nome"
-              value={formData.nome}
-              onChange={handleChange}
-              error={errors.nome}
-              required
-              placeholder="Ex: À Vista, Parcelado 30/60/90"
-            />
-          </div>
-
-          <div className="mb-6">
-        <FormField
-          label="Descrição"
-          name="descricao"
-          value={formData.descricao}
-          onChange={handleChange}
-          error={errors.descricao}
-          required
-              placeholder="Ex: Pagamento à vista, Parcelamento em 3x de 30/60/90 dias"
-            />
-          </div>
-
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <FormField
-              label="Número de Parcelas"
-              name="numeroParcelas"
-              type="number"
-              value={formData.numeroParcelas.toString()}
-              onChange={handleChange}
-              error={errors.numeroParcelas}
-              required
-            />
-
-          <FormField
-            label="Dias Primeira Parcela"
-            name="diasPrimeiraParcela"
-            type="number"
-            value={formData.diasPrimeiraParcela.toString()}
-            onChange={handleChange}
-            error={errors.diasPrimeiraParcela}
-            required
-          />
-
-          <FormField
-            label="Dias Entre Parcelas"
-            name="diasEntreParcelas"
-            type="number"
-            value={formData.diasEntreParcelas.toString()}
-            onChange={handleChange}
-            error={errors.diasEntreParcelas}
-            required
-          />
-
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                Forma de Pagamento Padrão
-              </label>
-              <select
-                name="formaPagamentoPadraoId"
-                value={formData.formaPagamentoPadraoId || ''}
-                onChange={handleChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              >
-                <option value="">Selecione...</option>
-                {formasPagamento.map(forma => (
-                  <option 
-                    key={forma.id} 
-                    value={forma.id}
-                  >
-                    {forma.descricao}
-                  </option>
-                ))}
-              </select>
-              <div className="text-xs text-gray-600 mt-1">
-                ID selecionado: {formData.formaPagamentoPadraoId || 'Nenhum'}
+      {loading ? (
+        <div className="p-4 flex justify-center items-center">
+          <span className="inline-flex items-center">
+            <FaSpinner className="animate-spin mr-2" />
+            Carregando...
+          </span>
+        </div>
+      ) : (
+        <form onSubmit={isViewMode ? (e) => e.preventDefault() : handleSubmit} className="p-4 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Dados básicos */}
+            <div className="col-span-1 md:col-span-2 border-b pb-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">Dados Básicos</h2>
+                {!isViewMode && (
+                  <div className="flex items-center">
+                    <label className="flex items-center cursor-pointer">
+                      <span className="mr-2 text-sm font-medium text-gray-700">Ativo</span>
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          name="ativo"
+                          checked={formData.ativo}
+                          onChange={handleChange}
+                          className="sr-only"
+                          disabled={isViewMode}
+                        />
+                        <div className={`block w-14 h-8 rounded-full ${formData.ativo ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                        <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform ${formData.ativo ? 'translate-x-6' : ''}`}></div>
+                      </div>
+                    </label>
+                  </div>
+                )}
+                {isViewMode && (
+                  <span className={`px-2 py-1 rounded text-xs ${formData.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {formData.ativo ? 'Ativo' : 'Inativo'}
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  name="condicaoPagamento"
+                  label="Condição de Pagamento"
+                  placeholder="Digite a condição de pagamento"
+                  value={formData.condicaoPagamento || ''}
+                  onChange={handleChange}
+                  required
+                  error={errors.condicaoPagamento}
+                  disabled={isViewMode}
+                />
+                
+                <FormField
+                  name="numeroParcelas"
+                  label="Número de Parcelas"
+                  type="number"
+                  value={formData.numeroParcelas || 1}
+                  onChange={handleChange}
+                  required
+                  error={errors.numeroParcelas}
+                  disabled={isViewMode}
+                />
+                
+                <FormField
+                  name="diasPrimeiraParcela"
+                  label="Dias para 1ª Parcela"
+                  type="number"
+                  value={formData.diasPrimeiraParcela || 0}
+                  onChange={handleChange}
+                  error={errors.diasPrimeiraParcela}
+                  disabled={isViewMode}
+                />
+                
+                <FormField
+                  name="diasEntreParcelas"
+                  label="Dias Entre Parcelas"
+                  type="number"
+                  value={formData.diasEntreParcelas || 0}
+                  onChange={handleChange}
+                  disabled={formData.numeroParcelas <= 1 || isViewMode}
+                  error={errors.diasEntreParcelas}
+                />
+                
+                <FormField
+                  name="percentualJuros"
+                  label="Percentual de Juros (%)"
+                  type="number"
+                  value={formData.percentualJuros || 0}
+                  onChange={handleChange}
+                  step="0.01"
+                  error={errors.percentualJuros}
+                  disabled={isViewMode}
+                />
+                
+                <FormField
+                  name="percentualMulta"
+                  label="Percentual de Multa (%)"
+                  type="number"
+                  value={formData.percentualMulta || 0}
+                  onChange={handleChange}
+                  step="0.01"
+                  error={errors.percentualMulta}
+                  disabled={isViewMode}
+                />
+                
+                <FormField
+                  name="percentualDesconto"
+                  label="Percentual de Desconto (%)"
+                  type="number"
+                  value={formData.percentualDesconto || 0}
+                  onChange={handleChange}
+                  step="0.01"
+                  error={errors.percentualDesconto}
+                  disabled={isViewMode}
+                />
+                
+                <div className="col-span-1 md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Forma de Pagamento Padrão
+                  </label>
+                  {!isViewMode ? (
+                    <div 
+                      className="flex-1 border border-gray-300 rounded-md p-2 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
+                      onClick={handleOpenFormaPagamentoPadraoModal}
+                    >
+                      {formData.formaPagamentoPadraoId ? 
+                        formasPagamento.find(f => f.id === formData.formaPagamentoPadraoId)?.descricao || 'Forma não encontrada'
+                        : 
+                        <span className="text-gray-500">Clique para selecionar uma forma de pagamento</span>
+                      }
+                    </div>
+                  ) : (
+                    <div className="flex-1 border border-gray-300 rounded-md p-2 bg-gray-50">
+                      {formData.formaPagamentoPadraoId ? 
+                        formasPagamento.find(f => f.id === formData.formaPagamentoPadraoId)?.descricao || 'Forma não encontrada'
+                        : 
+                        <span className="text-gray-500">Nenhuma forma de pagamento selecionada</span>
+                      }
+                    </div>
+                  )}
+                  {errors.formaPagamentoPadraoId && (
+                    <p className="mt-2 text-sm text-red-600">
+                      {errors.formaPagamentoPadraoId}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <FormField
-              label="Percentual de Juros (%)"
-              name="percentualJuros"
-              type="number"
-              step="0.01"
-              value={formData.percentualJuros?.toString() || '0'}
-              onChange={handleChange}
-              error={errors.percentualJuros}
-            />
-
-            <FormField
-              label="Percentual de Multa (%)"
-              name="percentualMulta"
-              type="number"
-              step="0.01"
-              value={formData.percentualMulta?.toString() || '0'}
-              onChange={handleChange}
-              error={errors.percentualMulta}
-            />
-
-            <FormField
-              label="Percentual de Desconto (%)"
-              name="percentualDesconto"
-              type="number"
-              step="0.01"
-              value={formData.percentualDesconto?.toString() || '0'}
-              onChange={handleChange}
-              error={errors.percentualDesconto}
-            />
-        </div>
-
-        <div className="mb-4">
-            <label className="flex items-center mb-2">
-            <input
-              type="checkbox"
-              name="ativo"
-              checked={formData.ativo}
-              onChange={handleChange}
-              className="form-checkbox h-5 w-5 text-primary"
-            />
-            <span className="ml-2">Ativo</span>
-          </label>
-        </div>
-
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-bold">Parcelas</h3>
-              <button
-                type="button"
-                onClick={addParcela}
-                className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 flex items-center"
-              >
-                <Icon Icon={FaPlus} className="mr-1" size={12} />
-                Adicionar Parcela
-              </button>
-            </div>
-            
-            {errors.parcelas && (
-              <div className="text-red-500 text-sm mb-2">{errors.parcelas}</div>
-            )}
-            
-            <div className="bg-gray-50 p-4 rounded-md">
+            {/* Parcelas */}
+            <div className="col-span-1 md:col-span-2 border-b pb-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">Parcelas</h2>
+                {!isViewMode && (
+                  <button
+                    type="button"
+                    onClick={addParcela}
+                    className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none flex items-center"
+                    disabled={isViewMode}
+                  >
+                    <FaPlus className="mr-1" /> Adicionar Parcela
+                  </button>
+                )}
+              </div>
+              
+              {errors.parcelas && (
+                <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 mb-4 rounded">
+                  <p>{errors.parcelas}</p>
+                </div>
+              )}
+              
               {formData.parcelas && formData.parcelas.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-100">
+                    <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Parcela
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Nº
                         </th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Dias
                         </th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Percentual (%)
                         </th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Forma de Pagamento
                         </th>
-                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Ações
                         </th>
                       </tr>
@@ -600,60 +684,71 @@ const CondicaoPagamentoForm: React.FC = () => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {formData.parcelas.map((parcela, index) => (
                         <tr key={index}>
-                          <td className="px-4 py-2 whitespace-nowrap">
-                            {parcela.numero}
-                          </td>
-                          <td className="px-4 py-2">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <input
                               type="number"
-                              min="0"
+                              value={parcela.numero}
+                              onChange={(e) => handleParcelaChange(index, 'numero', e.target.value)}
+                              className="block w-16 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                              min="1"
+                              disabled={isViewMode}
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <input
+                              type="number"
                               value={parcela.dias}
                               onChange={(e) => handleParcelaChange(index, 'dias', e.target.value)}
-                              className="shadow appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                              className="block w-20 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                              min="0"
+                              disabled={isViewMode}
                             />
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <input
                               type="number"
-                              min="0"
-                              max="100"
-                              step="0.01"
                               value={parcela.percentual}
                               onChange={(e) => handleParcelaChange(index, 'percentual', e.target.value)}
-                              className="shadow appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                              className="block w-24 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                              step="0.01"
+                              min="0"
+                              max="100"
+                              disabled={isViewMode}
                             />
                           </td>
-                          <td className="px-4 py-2">
-                            <select
-                              value={parcela.formaPagamentoId || ''}
-                              onChange={(e) => handleParcelaChange(index, 'formaPagamentoId', e.target.value)}
-                              className="shadow appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            >
-                              <option value="">Selecione...</option>
-                              {formasPagamento.map(forma => (
-                                <option 
-                                  key={forma.id} 
-                                  value={forma.id}
-                                >
-                                  {forma.descricao}
-                                </option>
-                              ))}
-                            </select>
-                            {parcela.formaPagamentoDescricao && !parcela.formaPagamentoId && (
-                              <div className="text-xs text-red-600 mt-1">
-                                {parcela.formaPagamentoDescricao} (forma de pagamento removida)
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {!isViewMode ? (
+                              <div 
+                                className="flex-1 border border-gray-300 rounded-md p-2 bg-gray-50 max-w-xs truncate cursor-pointer hover:bg-gray-100 transition"
+                                onClick={() => handleOpenParcelaFormaPagamentoModal(index)}
+                              >
+                                {parcela.formaPagamentoId ? 
+                                  (formasPagamento.find(f => f.id === parcela.formaPagamentoId)?.descricao || 'Forma não encontrada')
+                                  : 
+                                  <span className="text-gray-500">Clique para selecionar</span>
+                                }
+                              </div>
+                            ) : (
+                              <div className="flex-1 border border-gray-300 rounded-md p-2 bg-gray-50 max-w-xs truncate">
+                                {parcela.formaPagamentoId ? 
+                                  (formasPagamento.find(f => f.id === parcela.formaPagamentoId)?.descricao || 'Forma não encontrada')
+                                  : 
+                                  <span className="text-gray-500">Nenhuma forma selecionada</span>
+                                }
                               </div>
                             )}
                           </td>
-                          <td className="px-4 py-2 text-center">
-                            <button
-                              type="button"
-                              onClick={() => removeParcela(index)}
-                              disabled={formData.parcelas?.length === 1}
-                              className="text-red-500 hover:text-red-700 disabled:opacity-50"
-                            >
-                              <Icon Icon={FaTrash} size={16} />
-                            </button>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {!isViewMode && (
+                              <button
+                                type="button"
+                                onClick={() => removeParcela(index)}
+                                className="text-red-600 hover:text-red-900"
+                                disabled={formData.parcelas.length <= 1 || isViewMode}
+                              >
+                                <FaTrash />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -661,37 +756,65 @@ const CondicaoPagamentoForm: React.FC = () => {
                   </table>
                 </div>
               ) : (
-                <div className="text-center p-4 text-gray-500">
-                  Nenhuma parcela adicionada. Clique em "Adicionar Parcela" para começar.
+                <div className="bg-yellow-50 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+                  <p>Nenhuma parcela configurada.</p>
                 </div>
               )}
             </div>
           </div>
-
-          <div className="flex justify-end gap-4 mt-6">
+          
+          <div className="flex justify-end space-x-4 pt-4 border-t">
+            <div className="flex-1 text-sm text-gray-500">
+              {id && id !== 'novo' && (
+                <div className="flex flex-col">
+                  <span className="font-medium mb-1">Informações do Registro:</span>
+                  {entityData.dataCadastro && (
+                    <span className="mb-1 ml-2">Cadastrado em: {new Date(entityData.dataCadastro).toLocaleDateString('pt-BR')}</span>
+                  )}
+                  {entityData.ultimaModificacao && (
+                    <span className="ml-2">Última modificação: {new Date(entityData.ultimaModificacao).toLocaleDateString('pt-BR')}</span>
+                  )}
+                </div>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => navigate('/condicoes-pagamento')}
-              className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600"
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none"
             >
-              Cancelar
+              {isViewMode ? 'Voltar' : 'Cancelar'}
             </button>
-            
-          <button
-            type="submit"
-            disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded disabled:opacity-50"
-          >
-            {saving ? (
-              <div className="inline mr-2">
-                <Icon Icon={FaSpinner} size={16} spinning />
-              </div>
-            ) : null}
-            Salvar
-          </button>
-        </div>
-      </form>
-      </div>
+            {!isViewMode && (
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50"
+                disabled={saving}
+              >
+                {saving ? (
+                  <span className="inline-flex items-center">
+                    <FaSpinner className="animate-spin mr-2" />
+                    Salvando...
+                  </span>
+                ) : (
+                  'Salvar'
+                )}
+              </button>
+            )}
+          </div>
+        </form>
+      )}
+
+      {/* Modal de Forma de Pagamento */}
+      {!isViewMode && (
+        <FormaPagamentoModal 
+          isOpen={isFormaPagamentoModalOpen}
+          onClose={handleCloseFormaPagamentoModal}
+          onSelect={handleSelectFormaPagamento}
+          initialFormasPagamento={formasPagamento}
+          modalType={isFormaPagamentoPadraoModal ? 'padrao' : 'parcela'}
+          parcelaNumero={currentParcelaIndex !== null ? formData.parcelas[currentParcelaIndex]?.numero : undefined}
+        />
+      )}
     </div>
   );
 };

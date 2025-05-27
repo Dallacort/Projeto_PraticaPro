@@ -90,8 +90,8 @@ const ProdutoForm: React.FC = () => {
     const errors: string[] = [];
     
     if (!formData.nome) errors.push("Nome é obrigatório");
-    if (formData.quantidade < 0) errors.push("Quantidade não pode ser negativa");
-    if (formData.valor < 0) errors.push("Valor não pode ser negativo");
+    if ((formData.quantidade ?? 0) < 0) errors.push("Quantidade não pode ser negativa");
+    if ((formData.valor ?? 0) < 0) errors.push("Valor não pode ser negativo");
     
     return errors;
   };
@@ -210,22 +210,22 @@ const ProdutoForm: React.FC = () => {
                 label="Quantidade"
                 name="quantidade"
                 type="number"
-                value={formData.quantidade.toString()}
+                value={(formData.quantidade ?? 0).toString()}
                 onChange={handleChange}
                 required
                 placeholder="0"
-                error={formData.quantidade < 0 && error ? 'Quantidade não pode ser negativa' : undefined}
+                error={(formData.quantidade ?? 0) < 0 && error ? 'Quantidade não pode ser negativa' : undefined}
               />
               
               <FormField
                 label="Valor"
                 name="valor"
                 type="number"
-                value={formData.valor.toString()}
+                value={(formData.valor ?? 0).toString()}
                 onChange={handleChange}
                 required
                 placeholder="0.00"
-                error={formData.valor < 0 && error ? 'Valor não pode ser negativo' : undefined}
+                error={(formData.valor ?? 0) < 0 && error ? 'Valor não pode ser negativo' : undefined}
               />
             </div>
           </div>

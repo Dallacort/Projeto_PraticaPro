@@ -5,12 +5,16 @@ import CondicaoPagamentoService from '../../services/condicaoPagamentoService';
 import { formatDate } from '../../utils/formatters';
 import { toast } from 'react-toastify';
 import DataTable from '../../components/DataTable';
+import { CondicaoPagamentoViewModal } from '../../components/modals';
 
 const CondicaoPagamentoList: React.FC = () => {
   const [condicoesList, setCondicoesList] = useState<CondicaoPagamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<{ [key: string]: boolean }>({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [selectedCondicao, setSelectedCondicao] = useState<CondicaoPagamento | null>(null);
   const navigate = useNavigate();
 
   const fetchCondicoesPagamento = useCallback(async () => {
@@ -31,6 +35,21 @@ const CondicaoPagamentoList: React.FC = () => {
   useEffect(() => {
     fetchCondicoesPagamento();
   }, [fetchCondicoesPagamento]);
+
+  const handleView = async (id: string | number) => {
+    setModalLoading(true);
+    setModalOpen(true);
+    try {
+      const condicao = await CondicaoPagamentoService.getById(Number(id));
+      setSelectedCondicao(condicao);
+    } catch (error) {
+      console.error('Erro ao carregar condição de pagamento:', error);
+      toast.error('Erro ao carregar detalhes da condição de pagamento');
+      setModalOpen(false);
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
   const handleEdit = (id: string | number) => {
     navigate(`/condicoes-pagamento/${id}`);
@@ -57,18 +76,15 @@ const CondicaoPagamentoList: React.FC = () => {
     }
   };
 
+  const closeModal = () => {
+    setModalOpen(false);
+    setSelectedCondicao(null);
+  };
+
   const columns = [
     {
-      header: 'Código',
-      accessor: 'codigo'
-    },
-    {
-      header: 'Nome',
-      accessor: 'nome'
-    },
-    {
-      header: 'Descrição',
-      accessor: 'descricao'
+      header: 'Condição de Pagamento',
+      accessor: 'condicaoPagamento'
     },
     {
       header: 'Dias 1ª Parcela',
@@ -147,11 +163,20 @@ const CondicaoPagamentoList: React.FC = () => {
           data={condicoesList}
           loading={loading}
           emptyMessage="Nenhuma condição de pagamento encontrada."
+          onView={handleView}
           onEdit={handleEdit}
           onDelete={handleDelete}
           title="Lista de Condições de Pagamento"
         />
       </div>
+
+      {/* Usar o componente modal específico para visualização */}
+      <CondicaoPagamentoViewModal
+        isOpen={modalOpen}
+        onClose={closeModal}
+        condicaoPagamento={selectedCondicao}
+        loading={modalLoading}
+      />
     </div>
   );
 };

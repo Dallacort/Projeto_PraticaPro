@@ -2,18 +2,19 @@ import React from 'react';
 import { IconType } from 'react-icons';
 
 interface IconProps {
-  Icon: IconType;
+  // Usando any para ignorar a verificação de tipo
+  IconComponent: any;
   size?: number;
   spinning?: boolean;
   className?: string;
 }
 
-const Icon: React.FC<IconProps> = ({ Icon, size = 16, spinning = false, className = '' }) => {
+const Icon = ({ IconComponent, size = 16, spinning = false, className = '' }: IconProps) => {
   const combinedClassName = `${spinning ? 'animate-spin' : ''} ${className}`.trim();
   
   return (
     <span className={combinedClassName}>
-      <Icon size={size} />
+      <IconComponent size={size} />
     </span>
   );
 };

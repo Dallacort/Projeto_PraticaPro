@@ -80,7 +80,7 @@ const ProdutoList: React.FC = () => {
     { 
       header: 'Quantidade', 
       accessor: 'quantidade',
-      cell: (item: Produto) => item.quantidade.toString()
+      cell: (item: Produto) => item.quantidade !== undefined ? item.quantidade.toString() : '0'
     },
     { 
       header: 'Valor', 

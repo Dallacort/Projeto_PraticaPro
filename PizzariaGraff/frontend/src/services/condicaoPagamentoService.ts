@@ -1,119 +1,48 @@
 import { CondicaoPagamento, ParcelaCondicaoPagamento } from '../types';
 import api from './api';
 import { formatToBackend, formatFromBackend } from '../utils/dateUtils';
-
-const isDevelopmentMode = process.env.REACT_APP_USE_MOCK_DATA === 'true';
+import axios from 'axios';
 
 export type CondicaoPagamentoInput = Omit<CondicaoPagamento, 'id' | 'dataCadastro' | 'ultimaModificacao' | 'formaPagamentoPadrao'> & {
   formaPagamentoPadraoId?: number | null;
+  parcelas: ParcelaCondicaoPagamento[];
 };
-
-const mockCondicoesPagamento: CondicaoPagamento[] = [
-  {
-    id: 1,
-    codigo: "A_VISTA",
-    nome: "À Vista",
-    descricao: 'Pagamento à vista',
-    numeroParcelas: 1,
-    diasPrimeiraParcela: 0,
-    diasEntreParcelas: 0,
-    percentualJuros: 0,
-    percentualMulta: 0,
-    percentualDesconto: 0,
-    formaPagamentoPadraoId: 1,
-    ativo: true,
-    parcelas: [
-      {
-        id: 1,
-        numero: 1,
-        dias: 0,
-        percentual: 100,
-        formaPagamentoId: 1
-      }
-    ],
-    dataCadastro: '2024-01-01',
-    ultimaModificacao: '2024-01-01'
-  },
-  {
-    id: 2,
-    codigo: "30_60_90",
-    nome: "Parcelado 30/60/90",
-    descricao: 'Parcelamento em 3x de 30/60/90 dias',
-    numeroParcelas: 3,
-    diasPrimeiraParcela: 30,
-    diasEntreParcelas: 30,
-    percentualJuros: 1.5,
-    percentualMulta: 2,
-    percentualDesconto: 1,
-    formaPagamentoPadraoId: 1,
-    parcelas: [
-      {
-        id: 2,
-        numero: 1,
-        dias: 30,
-        percentual: 33,
-        formaPagamentoId: 1
-      },
-      {
-        id: 3,
-        numero: 2,
-        dias: 60,
-        percentual: 33,
-        formaPagamentoId: 1
-      },
-      {
-        id: 4,
-        numero: 3,
-        dias: 90,
-        percentual: 34,
-        formaPagamentoId: 1
-      }
-    ],
-    ativo: true,
-    dataCadastro: '2024-01-01',
-    ultimaModificacao: '2024-01-01'
-  },
-  {
-    id: 3,
-    codigo: "30_DIAS",
-    nome: "30 dias",
-    descricao: 'Pagamento em 30 dias',
-    numeroParcelas: 1,
-    diasPrimeiraParcela: 30,
-    diasEntreParcelas: 0,
-    percentualJuros: 0,
-    percentualMulta: 0,
-    percentualDesconto: 0,
-    formaPagamentoPadraoId: 1,
-    parcelas: [
-      {
-        id: 5,
-        numero: 1,
-        dias: 30,
-        percentual: 100,
-        formaPagamentoId: 1
-      }
-    ],
-    ativo: true,
-    dataCadastro: '2024-01-01',
-    ultimaModificacao: '2024-01-01'
-  }
-];
 
 const CondicaoPagamentoService = {
   async list(): Promise<CondicaoPagamento[]> {
-    if (isDevelopmentMode) {
-      console.log('Usando dados mock para CondicaoPagamentoService.list()');
-      return mockCondicoesPagamento;
+    try {
+      const response = await api.get<CondicaoPagamento[]>('/condicoes-pagamento');
+      return this.processarDados(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar condições de pagamento:', error);
+      throw error;
     }
+  },
 
-    const response = await api.get<CondicaoPagamento[]>('/condicoes-pagamento');
-    // Mapear o campo parcelasCondPagto para parcelas e gerar parcelas automaticamente quando necessário
-    return response.data.map(condicao => {
+  // Método para processar os dados recebidos do backend
+  processarDados(data: any[]): CondicaoPagamento[] {
+    // Mapear os campos de parcelas recebidos do backend para o formato esperado pelo frontend
+    return data.map(condicao => {
       // Mapear todas as parcelas recebidas do backend para o formato esperado pelo frontend
       let parcelas: ParcelaCondicaoPagamento[] = [];
-      if (condicao.parcelasCondPagto && condicao.parcelasCondPagto.length > 0) {
-        // @ts-ignore - O backend retorna parcelasCondPagto que tem uma estrutura diferente
+      
+      // Primeiro verificar parcelasCondicaoPagamento (novo formato da API)
+      if (condicao.parcelasCondicaoPagamento && condicao.parcelasCondicaoPagamento.length > 0) {
+        console.log(`Condição ${condicao.id} tem ${condicao.parcelasCondicaoPagamento.length} parcelas em parcelasCondicaoPagamento`);
+        
+        parcelas = condicao.parcelasCondicaoPagamento.map((parcela: any) => ({
+          id: parcela.id,
+          numero: parcela.numero,
+          dias: parcela.dias,
+          percentual: parcela.percentual,
+          formaPagamentoId: parcela.formaPagamentoId || null,
+          formaPagamentoDescricao: parcela.formaPagamentoNome || ''
+        }));
+      } 
+      // Depois verificar parcelasCondPagto (formato antigo)
+      else if (condicao.parcelasCondPagto && condicao.parcelasCondPagto.length > 0) {
+        console.log(`Condição ${condicao.id} tem ${condicao.parcelasCondPagto.length} parcelas em parcelasCondPagto`);
+        
         parcelas = condicao.parcelasCondPagto.map((parcela: any) => ({
           id: parcela.id,
           numero: parcela.numero,
@@ -122,40 +51,57 @@ const CondicaoPagamentoService = {
           formaPagamentoId: parcela.formaPagamentoId || null,
           formaPagamentoDescricao: parcela.formaPagamentoDescricao || ''
         }));
+      } 
+      // Por último, verificar se já existe em parcelas
+      else if (condicao.parcelas && Array.isArray(condicao.parcelas) && condicao.parcelas.length > 0) {
+        parcelas = condicao.parcelas;
       }
       
       const mappedCondicao = {
         ...condicao,
         parcelas: parcelas
       };
-      
-      // Se não tiver parcelas mas tiver numeroParcelas > 0, gerar parcelas automaticamente
-      if ((!mappedCondicao.parcelas || mappedCondicao.parcelas.length === 0) && mappedCondicao.numeroParcelas > 0) {
-        console.log(`Condição ${mappedCondicao.id} tem ${mappedCondicao.numeroParcelas} parcelas definidas mas não retornou parcelas. Gerando automaticamente...`);
-        
-        const parcelas = CondicaoPagamentoService.generateParcelas(mappedCondicao);
-        
-        mappedCondicao.parcelas = parcelas;
-      }
       
       return mappedCondicao;
     });
   },
 
   async listAtivos(): Promise<CondicaoPagamento[]> {
-    if (isDevelopmentMode) {
-      console.log('Usando dados mock para CondicaoPagamentoService.listAtivos()');
-      return mockCondicoesPagamento.filter(condicao => condicao.ativo);
+    try {
+      const response = await api.get<CondicaoPagamento[]>('/condicoes-pagamento/ativos');
+      return this.processarDados(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar condições de pagamento ativas:', error);
+      throw error;
     }
+  },
 
-    const response = await api.get<CondicaoPagamento[]>('/condicoes-pagamento/ativos');
-    // Mapear o campo parcelasCondPagto para parcelas e gerar parcelas automaticamente quando necessário
-    return response.data.map(condicao => {
+  async getById(id: number): Promise<CondicaoPagamento> {
+    try {
+      const response = await api.get<CondicaoPagamento>(`/condicoes-pagamento/${id}`);
+      console.log('Dados recebidos do backend:', response.data);
+      
       // Mapear todas as parcelas recebidas do backend para o formato esperado pelo frontend
       let parcelas: ParcelaCondicaoPagamento[] = [];
-      if (condicao.parcelasCondPagto && condicao.parcelasCondPagto.length > 0) {
-        // @ts-ignore - O backend retorna parcelasCondPagto que tem uma estrutura diferente
-        parcelas = condicao.parcelasCondPagto.map((parcela: any) => ({
+      
+      // Primeiro verificar parcelasCondicaoPagamento (novo formato da API)
+      if (response.data.parcelasCondicaoPagamento && response.data.parcelasCondicaoPagamento.length > 0) {
+        console.log(`Condição ${id} tem ${response.data.parcelasCondicaoPagamento.length} parcelas em parcelasCondicaoPagamento`);
+        
+        parcelas = response.data.parcelasCondicaoPagamento.map((parcela: any) => ({
+          id: parcela.id,
+          numero: parcela.numero,
+          dias: parcela.dias,
+          percentual: parcela.percentual,
+          formaPagamentoId: parcela.formaPagamentoId || null,
+          formaPagamentoDescricao: parcela.formaPagamentoNome || ''
+        }));
+      } 
+      // Verificar formato antigo (parcelasCondPagto)
+      else if (response.data.parcelasCondPagto && response.data.parcelasCondPagto.length > 0) {
+        console.log(`Condição ${id} tem ${response.data.parcelasCondPagto.length} parcelas em parcelasCondPagto`);
+        
+        parcelas = response.data.parcelasCondPagto.map((parcela: any) => ({
           id: parcela.id,
           numero: parcela.numero,
           dias: parcela.dias,
@@ -164,195 +110,195 @@ const CondicaoPagamentoService = {
           formaPagamentoDescricao: parcela.formaPagamentoDescricao || ''
         }));
       }
+      // Se não tiver parcelas, gera automaticamente
+      else {
+        console.log(`Condição ${id} não tem parcelas, gerando automaticamente`);
+        
+        const tempCondicao: CondicaoPagamento = {
+          ...response.data,
+          id: id,
+          ativo: response.data.ativo !== false
+        };
+        
+        parcelas = this.generateParcelas(tempCondicao);
+      }
       
-      const mappedCondicao = {
-        ...condicao,
-        parcelas: parcelas
+      // Certifique-se de que o formaPagamentoPadraoId seja explicitamente mapeado
+      const condicao = {
+        ...response.data,
+        parcelas: parcelas,
+        formaPagamentoPadraoId: response.data.formaPagamentoPadraoId !== undefined ? 
+          response.data.formaPagamentoPadraoId : 
+          null
       };
       
-      // Se não tiver parcelas mas tiver numeroParcelas > 0, gerar parcelas automaticamente
-      if ((!mappedCondicao.parcelas || mappedCondicao.parcelas.length === 0) && mappedCondicao.numeroParcelas > 0) {
-        console.log(`Condição ${mappedCondicao.id} tem ${mappedCondicao.numeroParcelas} parcelas definidas mas não retornou parcelas. Gerando automaticamente...`);
-        
-        const parcelas = CondicaoPagamentoService.generateParcelas(mappedCondicao);
-        
-        mappedCondicao.parcelas = parcelas;
-      }
+      // Registrar para debug
+      console.log('Condição mapeada:', condicao);
+      console.log('formaPagamentoPadraoId mapeado:', condicao.formaPagamentoPadraoId);
+      console.log('parcelas mapeadas:', condicao.parcelas);
       
-      return mappedCondicao;
-    });
-  },
-
-  async getById(id: number): Promise<CondicaoPagamento> {
-    if (isDevelopmentMode) {
-      console.log(`Usando dados mock para CondicaoPagamentoService.getById(${id})`);
-      const condicao = mockCondicoesPagamento.find(c => c.id === id);
-      if (!condicao) {
-        throw new Error('Condição de pagamento não encontrada');
-      }
       return condicao;
+    } catch (error) {
+      console.error('Erro ao buscar condição de pagamento:', error);
+      throw error;
     }
-
-    const response = await api.get<CondicaoPagamento>(`/condicoes-pagamento/${id}`);
-    console.log('Dados recebidos do backend:', response.data);
-    
-    // Mapear todas as parcelas recebidas do backend para o formato esperado pelo frontend
-    let parcelas: ParcelaCondicaoPagamento[] = [];
-    if (response.data.parcelasCondPagto && response.data.parcelasCondPagto.length > 0) {
-      // @ts-ignore - O backend retorna parcelasCondPagto que tem uma estrutura diferente 
-      parcelas = response.data.parcelasCondPagto.map((parcela: any) => ({
-        id: parcela.id,
-        numero: parcela.numero,
-        dias: parcela.dias,
-        percentual: parcela.percentual,
-        formaPagamentoId: parcela.formaPagamentoId || null,
-        formaPagamentoDescricao: parcela.formaPagamentoDescricao || ''
-      }));
-    }
-    
-    // Certifique-se de que o formaPagamentoPadraoId seja explicitamente mapeado
-    // e não seja undefined ou nulo, a menos que realmente seja nulo no backend
-    const condicao = {
-      ...response.data,
-      parcelas: parcelas,
-      formaPagamentoPadraoId: response.data.formaPagamentoPadraoId !== undefined ? 
-        response.data.formaPagamentoPadraoId : 
-        null
-    };
-    
-    // Registrar para debug
-    console.log('formaPagamentoPadraoId mapeado:', condicao.formaPagamentoPadraoId);
-    
-    // Se não tiver parcelas mas tiver numeroParcelas > 0, gerar parcelas automaticamente
-    if ((!condicao.parcelas || condicao.parcelas.length === 0) && condicao.numeroParcelas > 0) {
-      console.log(`Condição ${id} tem ${condicao.numeroParcelas} parcelas definidas mas não retornou parcelas. Gerando automaticamente...`);
-      
-      const parcelas = CondicaoPagamentoService.generateParcelas(condicao);
-      
-      condicao.parcelas = parcelas;
-      console.log('Parcelas geradas automaticamente:', parcelas);
-    }
-    
-    return condicao;
   },
 
   async create(data: CondicaoPagamentoInput): Promise<CondicaoPagamento> {
-    if (isDevelopmentMode) {
-      console.log('Usando dados mock para CondicaoPagamentoService.create()', data);
-      const newId = Math.max(...mockCondicoesPagamento.map(c => c.id)) + 1;
-      const newCondicao: CondicaoPagamento = {
-        ...data,
-        id: newId,
-        dataCadastro: new Date().toISOString(),
-        ultimaModificacao: new Date().toISOString()
+    try {
+      // Verifica se temos os campos obrigatórios
+      if (!data.condicaoPagamento) {
+        throw new Error("Condição de pagamento é obrigatória");
+      }
+      
+      if (data.numeroParcelas <= 0) {
+        throw new Error("Número de parcelas deve ser maior que zero");
+      }
+      
+      if (!data.parcelas || data.parcelas.length === 0) {
+        throw new Error("É necessário pelo menos uma parcela");
+      }
+      
+      // Verifica se o percentual das parcelas soma 100%
+      const somaPercentuais = data.parcelas.reduce((soma, parcela) => soma + parcela.percentual, 0);
+      if (Math.abs(somaPercentuais - 100) > 0.01) {
+        throw new Error("A soma dos percentuais das parcelas deve ser 100%");
+      }
+      
+      // Log das parcelas para debug
+      console.log('Parcelas a serem enviadas:', JSON.stringify(data.parcelas, null, 2));
+      
+      // Mapear os dados para o formato esperado pelo backend
+      const dataToSend = {
+        condicaoPagamento: data.condicaoPagamento.trim(),
+        numeroParcelas: data.numeroParcelas || 1,
+        parcelas: data.numeroParcelas || 1, // Aqui enviamos o número inteiro de parcelas
+        ativo: Boolean(data.ativo !== false),
+        parcelasCondicaoPagamento: data.parcelas.map(parcela => ({
+          numero: parcela.numero || 1,
+          dias: parcela.dias || 0,
+          percentual: parcela.percentual || 100,
+          formaPagamentoId: parcela.formaPagamentoId ? Number(parcela.formaPagamentoId) : null
+        }))
       };
-      mockCondicoesPagamento.push(newCondicao);
-      return newCondicao;
+      
+      // Log detalhado para debug
+      console.log('Dados enviados para criação:', JSON.stringify(dataToSend, null, 2));
+      
+      try {
+        // Adicionar um timeout maior para dar tempo ao backend processar
+        const response = await api.post<CondicaoPagamento>('/condicoes-pagamento', dataToSend, {
+          timeout: 10000 // 10 segundos
+        });
+        
+        return response.data;
+      } catch (innerError) {
+        console.error('Erro na requisição:', innerError);
+        if (axios.isAxiosError(innerError) && innerError.response) {
+          console.error('Dados da resposta de erro:', innerError.response.data);
+        }
+        throw innerError;
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.error('Erro detalhado:', error.response.data);
+        console.error('Status:', error.response.status);
+        console.error('Headers:', error.response.headers);
+      }
+      throw error;
     }
-
-    // Mapear os dados para o formato esperado pelo backend
-    const dataToSend = {
-      ...data,
-      parcelasCondPagto: data.parcelas // Renomear parcelas para parcelasCondPagto para o backend
-    };
-    
-    console.log('Dados enviados para o backend:', dataToSend);
-    const response = await api.post<CondicaoPagamento>('/condicoes-pagamento', dataToSend);
-    return response.data;
   },
 
   async update(id: number, data: CondicaoPagamentoInput): Promise<CondicaoPagamento> {
-    if (isDevelopmentMode) {
-      console.log(`Usando dados mock para CondicaoPagamentoService.update(${id})`, data);
-      const index = mockCondicoesPagamento.findIndex(c => c.id === id);
-      if (index === -1) {
-        throw new Error('Condição de pagamento não encontrada');
+    try {
+      // Verifica se temos os campos obrigatórios
+      if (!data.condicaoPagamento) {
+        throw new Error("Condição de pagamento é obrigatória");
       }
-      const updatedCondicao = {
-        ...mockCondicoesPagamento[index],
-        ...data,
-        ultimaModificacao: new Date().toISOString()
+      
+      if (data.numeroParcelas <= 0) {
+        throw new Error("Número de parcelas deve ser maior que zero");
+      }
+      
+      if (!data.parcelas || data.parcelas.length === 0) {
+        throw new Error("É necessário pelo menos uma parcela");
+      }
+      
+      // Verifica se o percentual das parcelas soma 100%
+      const somaPercentuais = data.parcelas.reduce((soma, parcela) => soma + parcela.percentual, 0);
+      if (Math.abs(somaPercentuais - 100) > 0.01) {
+        throw new Error("A soma dos percentuais das parcelas deve ser 100%");
+      }
+      
+      // Log das parcelas para debug
+      console.log('Parcelas a serem enviadas:', JSON.stringify(data.parcelas, null, 2));
+      
+      // Mapear os dados para o formato esperado pelo backend
+      const dataToSend = {
+        id,
+        condicaoPagamento: data.condicaoPagamento.trim(),
+        numeroParcelas: data.numeroParcelas || 1,
+        parcelas: data.numeroParcelas || 1,
+        ativo: Boolean(data.ativo !== false),
+        formaPagamentoPadraoId: data.formaPagamentoPadraoId, // Garantir o envio deste campo
+        parcelasCondicaoPagamento: data.parcelas.map(parcela => ({
+          numero: parcela.numero || 1,
+          dias: parcela.dias || 0,
+          percentual: parcela.percentual || 100,
+          formaPagamentoId: parcela.formaPagamentoId ? Number(parcela.formaPagamentoId) : null
+        }))
       };
-      mockCondicoesPagamento[index] = updatedCondicao;
-      return updatedCondicao;
+      
+      // Log detalhado para debug
+      console.log('Dados enviados para atualização:', JSON.stringify(dataToSend, null, 2));
+      
+      const response = await api.put<CondicaoPagamento>(`/condicoes-pagamento/${id}`, dataToSend, {
+        timeout: 10000 // 10 segundos
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao atualizar condição de pagamento:', error);
+      if (axios.isAxiosError(error) && error.response) {
+        console.error('Dados da resposta de erro:', error.response.data);
+      }
+      throw error;
     }
-
-    // Mapear os dados para o formato esperado pelo backend
-    const dataToSend = {
-      ...data,
-      parcelasCondPagto: data.parcelas // Renomear parcelas para parcelasCondPagto para o backend
-    };
-    
-    console.log('Dados enviados para atualização:', dataToSend);
-    const response = await api.put<CondicaoPagamento>(`/condicoes-pagamento/${id}`, dataToSend);
-    return response.data;
   },
 
   async delete(id: number): Promise<void> {
-    if (isDevelopmentMode) {
-      console.log(`Usando dados mock para CondicaoPagamentoService.delete(${id})`);
-      const index = mockCondicoesPagamento.findIndex(c => c.id === id);
-      if (index === -1) {
-        throw new Error('Condição de pagamento não encontrada');
-      }
-      mockCondicoesPagamento.splice(index, 1);
-      return;
+    try {
+      await api.delete(`/condicoes-pagamento/${id}`);
+    } catch (error) {
+      console.error('Erro ao excluir condição de pagamento:', error);
+      throw error;
     }
-
-    await api.delete(`/condicoes-pagamento/${id}`);
   },
 
-  /**
-   * Gera parcelas para uma condição de pagamento com base no número de parcelas,
-   * dias da primeira parcela e dias entre parcelas
-   */
-  generateParcelas: (condicaoPagamento: CondicaoPagamento): ParcelaCondicaoPagamento[] => {
-    const { numeroParcelas, diasPrimeiraParcela, diasEntreParcelas, formaPagamentoPadraoId } = condicaoPagamento;
-    const novasParcelas: ParcelaCondicaoPagamento[] = [];
-    const percentualPorParcela = 100 / numeroParcelas;
+  // Método para gerar parcelas com base na condição de pagamento
+  generateParcelas(condicao: CondicaoPagamento): ParcelaCondicaoPagamento[] {
+    const parcelas: ParcelaCondicaoPagamento[] = [];
+    const numParcelas = condicao.numeroParcelas || 1;
     
-    // Tentar obter descrição da forma de pagamento padrão
-    let formaPagamentoPadraoDescricao = '';
+    // Para cada parcela, calcular os dias e percentual
+    const percentualPorParcela = 100 / numParcelas;
     
-    // No ambiente de desenvolvimento, buscar a descrição nos dados mockados
-    if (isDevelopmentMode && formaPagamentoPadraoId) {
-      try {
-        if (mockCondicoesPagamento.length > 0) {
-          // Buscar nas condições mockadas que têm a mesma forma de pagamento
-          const condicaoExistente = mockCondicoesPagamento.find(cp => cp.formaPagamentoPadraoId === formaPagamentoPadraoId);
-          if (condicaoExistente && condicaoExistente.parcelas && condicaoExistente.parcelas.length > 0) {
-            const parcela = condicaoExistente.parcelas.find(p => p.formaPagamentoId === formaPagamentoPadraoId);
-            if (parcela && parcela.formaPagamento) {
-              formaPagamentoPadraoDescricao = parcela.formaPagamento.descricao || '';
-            } else if (parcela && parcela.formaPagamentoDescricao) {
-              formaPagamentoPadraoDescricao = parcela.formaPagamentoDescricao;
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao buscar forma de pagamento padrão:', error);
-      }
-    }
-    
-    // Se temos formaPagamentoPadraoDescricao na própria condição, usar ela
-    if (condicaoPagamento.formaPagamentoPadrao && condicaoPagamento.formaPagamentoPadrao.descricao) {
-      formaPagamentoPadraoDescricao = condicaoPagamento.formaPagamentoPadrao.descricao;
-    }
-    
-    for (let i = 0; i < numeroParcelas; i++) {
-      novasParcelas.push({
+    for (let i = 0; i < numParcelas; i++) {
+      const diasParcela = i === 0 
+        ? (condicao.diasPrimeiraParcela || 0) 
+        : (condicao.diasPrimeiraParcela || 0) + (i * (condicao.diasEntreParcelas || 30));
+      
+      parcelas.push({
         numero: i + 1,
-        dias: diasPrimeiraParcela + (i * diasEntreParcelas),
-        percentual: i === numeroParcelas - 1 
-          ? 100 - Math.floor(percentualPorParcela) * (numeroParcelas - 1)  // ajuste para a última parcela
-          : Math.floor(percentualPorParcela),
-        formaPagamentoId: formaPagamentoPadraoId || null,
-        formaPagamentoDescricao: formaPagamentoPadraoId ? formaPagamentoPadraoDescricao : ''
+        dias: diasParcela,
+        percentual: percentualPorParcela,
+        formaPagamentoId: condicao.formaPagamentoPadraoId || null,
+        formaPagamentoDescricao: condicao.formaPagamentoPadrao?.descricao || ''
       });
     }
     
-    return novasParcelas;
+    return parcelas;
   }
-};
+}
 
 export default CondicaoPagamentoService; 

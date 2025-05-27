@@ -1,104 +1,93 @@
 import api from './api';
-import { formatToBackend, formatFromBackend } from '../utils/dateUtils';
+import { ModalidadeNfe } from '../types';
 
-export interface ModalidadeNfe {
-  id: string;
-  codigo: string;
-  descricao: string;
-  ativo: boolean;
-  dataCadastro?: string;
-  ultimaModificacao?: string;
-}
-
-export interface ModalidadeNfeInput {
-  codigo: string;
-  descricao: string;
-  ativo: boolean;
-}
-
-const adaptModalidadeNfeFromApi = (data: any): ModalidadeNfe => {
-  return {
-    id: data.id.toString(),
-    codigo: data.codigo,
-    descricao: data.descricao,
-    ativo: data.ativo,
-    dataCadastro: data.dataCadastro ? formatFromBackend(data.dataCadastro) : undefined,
-    ultimaModificacao: data.ultimaModificacao ? formatFromBackend(data.ultimaModificacao) : undefined,
-  };
-};
-
-const adaptModalidadeNfeToApi = (modalidadeNfe: ModalidadeNfeInput): any => {
-  return {
-    codigo: modalidadeNfe.codigo,
-    descricao: modalidadeNfe.descricao,
-    ativo: modalidadeNfe.ativo
-  };
-};
-
+// Exportar funções individuais para compatibilidade com código existente
 export const getModalidadesNfe = async (): Promise<ModalidadeNfe[]> => {
-  try {
-    const response = await api.get('/api/modalidades-nfe');
-    return response.data.map(adaptModalidadeNfeFromApi);
-  } catch (error) {
-    console.error('Erro ao buscar modalidades de NFe:', error);
-    throw error;
-  }
+  return ModalidadeNfeService.list();
 };
 
-export const getModalidadesNfeAtivas = async (): Promise<ModalidadeNfe[]> => {
-  try {
-    const response = await api.get('/api/modalidades-nfe/ativos');
-    return response.data.map(adaptModalidadeNfeFromApi);
-  } catch (error) {
-    console.error('Erro ao buscar modalidades de NFe ativas:', error);
-    throw error;
-  }
+export const getModalidadeNfe = async (id: number): Promise<ModalidadeNfe | null> => {
+  return ModalidadeNfeService.getById(id);
 };
 
-export const getModalidadeNfe = async (id: string): Promise<ModalidadeNfe> => {
-  try {
-    const response = await api.get(`/api/modalidades-nfe/${id}`);
-    return adaptModalidadeNfeFromApi(response.data);
-  } catch (error) {
-    console.error(`Erro ao buscar modalidade de NFe com ID ${id}:`, error);
-    throw error;
-  }
+export const createModalidadeNfe = async (data: Omit<ModalidadeNfe, 'id'>): Promise<ModalidadeNfe> => {
+  return ModalidadeNfeService.create(data);
 };
 
-export const createModalidadeNfe = async (modalidadeNfe: ModalidadeNfeInput): Promise<ModalidadeNfe> => {
-  try {
-    const response = await api.post('/api/modalidades-nfe', adaptModalidadeNfeToApi(modalidadeNfe));
-    return adaptModalidadeNfeFromApi(response.data);
-  } catch (error) {
-    console.error('Erro ao criar modalidade de NFe:', error);
-    throw error;
-  }
+export const updateModalidadeNfe = async (id: number, data: Omit<ModalidadeNfe, 'id'>): Promise<ModalidadeNfe> => {
+  return ModalidadeNfeService.update(id, data);
 };
 
-export const updateModalidadeNfe = async (id: string, modalidadeNfe: ModalidadeNfeInput): Promise<ModalidadeNfe> => {
-  try {
-    const response = await api.put(`/api/modalidades-nfe/${id}`, adaptModalidadeNfeToApi(modalidadeNfe));
-    return adaptModalidadeNfeFromApi(response.data);
-  } catch (error) {
-    console.error(`Erro ao atualizar modalidade de NFe com ID ${id}:`, error);
-    throw error;
-  }
+export const deleteModalidadeNfe = async (id: number): Promise<void> => {
+  return ModalidadeNfeService.delete(id);
 };
 
-export const deleteModalidadeNfe = async (id: string): Promise<void> => {
-  try {
-    await api.delete(`/api/modalidades-nfe/${id}`);
-  } catch (error) {
-    console.error(`Erro ao excluir modalidade de NFe com ID ${id}:`, error);
-    throw error;
-  }
-};
-
-// Mock para desenvolvimento
+// Mock para compatibilidade
 export const mockModalidadesNfe: ModalidadeNfe[] = [
-  { id: '1', codigo: '00', descricao: 'Entrada', ativo: true },
-  { id: '2', codigo: '01', descricao: 'Saída', ativo: true },
-  { id: '3', codigo: '02', descricao: 'Complementar', ativo: true },
-  { id: '4', codigo: '03', descricao: 'Ajuste', ativo: true },
-  { id: '5', codigo: '04', descricao: 'Devolução/Retorno', ativo: true }
-]; 
+  { id: 1, descricao: 'Venda' },
+  { id: 2, descricao: 'Devolução' },
+  { id: 3, descricao: 'Transferência' }
+];
+
+const ModalidadeNfeService = {
+  async list(): Promise<ModalidadeNfe[]> {
+    try {
+      const response = await api.get('/modalidades-nfe');
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar modalidades de NFe:', error);
+      throw error;
+    }
+  },
+
+  async listAtivos(): Promise<ModalidadeNfe[]> {
+    try {
+      const response = await api.get('/modalidades-nfe/ativos');
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar modalidades de NFe ativas:', error);
+      throw error;
+    }
+  },
+
+  async getById(id: number): Promise<ModalidadeNfe | null> {
+    try {
+      const response = await api.get(`/modalidades-nfe/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Erro ao buscar modalidade de NFe com ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  async create(data: Omit<ModalidadeNfe, 'id'>): Promise<ModalidadeNfe> {
+    try {
+      const response = await api.post('/modalidades-nfe', data);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao criar modalidade de NFe:', error);
+      throw error;
+    }
+  },
+
+  async update(id: number, data: Omit<ModalidadeNfe, 'id'>): Promise<ModalidadeNfe> {
+    try {
+      const response = await api.put(`/modalidades-nfe/${id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error(`Erro ao atualizar modalidade de NFe com ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  async delete(id: number): Promise<void> {
+    try {
+      await api.delete(`/modalidades-nfe/${id}`);
+    } catch (error) {
+      console.error(`Erro ao excluir modalidade de NFe com ID ${id}:`, error);
+      throw error;
+    }
+  }
+};
+
+export default ModalidadeNfeService; 

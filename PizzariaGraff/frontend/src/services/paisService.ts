@@ -1,25 +1,58 @@
 import api from './api';
 import { Pais } from '../types';
-import { 
-  getMockPaises, 
-  getMockPais, 
-  createMockPais, 
-  updateMockPais, 
-  deleteMockPais 
-} from './mock/paisMock';
-
-// Flag para forçar o uso de dados mock (utilizar para testes sem backend)
-const FORCE_MOCK = false;
 
 // Adaptador para converter dados da API para o frontend
 export const adaptPaisFromApi = (apiPais: any): Pais => {
+  // Log para debugging
+  console.log('Dados brutos do país recebidos do backend:', apiPais);
+
+  // Verificar especificamente os campos de data
+  console.log('data_cadastro do backend:', apiPais.dataCadastro);
+  console.log('ultima_modificacao do backend:', apiPais.ultimaModificacao || apiPais.dataModificacao);
+
+  // Ajustar datas para corresponder ao formato esperado pelo frontend
+  let dataCadastro = 'Não disponível';
+  let ultimaModificacao = 'Não disponível';
+  
+  // Tratar data de cadastro
+  if (apiPais.dataCadastro) {
+    // Verificar se é um objeto Date ou uma string de data válida
+    try {
+      const date = new Date(apiPais.dataCadastro);
+      if (!isNaN(date.getTime())) {
+        dataCadastro = apiPais.dataCadastro;
+      }
+    } catch (e) {
+      console.error('Erro ao processar data de cadastro:', e);
+    }
+  }
+  
+  // Tratar data de modificação
+  if (apiPais.ultimaModificacao || apiPais.dataModificacao) {
+    try {
+      const dateStr = apiPais.ultimaModificacao || apiPais.dataModificacao;
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        ultimaModificacao = dateStr;
+      }
+    } catch (e) {
+      console.error('Erro ao processar data de modificação:', e);
+    }
+  }
+
+  console.log('Datas após processamento:', {
+    dataCadastro,
+    ultimaModificacao
+  });
+
   return {
     id: apiPais.id,
     nome: apiPais.nome,
     sigla: apiPais.sigla || '',
     codigo: apiPais.codigo || '',
-    dataCadastro: apiPais.dataCadastro || null,
-    ultimaModificacao: apiPais.ultimaModificacao || apiPais.dataModificacao || null
+    dataCadastro,
+    ultimaModificacao,
+    ativo: apiPais.ativo !== undefined ? apiPais.ativo : true
   };
 };
 
@@ -28,16 +61,13 @@ export const adaptPaisToApi = (pais: Omit<Pais, 'id'>): any => {
   return {
     nome: pais.nome,
     sigla: pais.sigla,
-    codigo: pais.codigo
+    codigo: pais.codigo,
+    ativo: pais.ativo !== undefined ? pais.ativo : true
   };
 };
 
 // Busca todos os países
 export const getPaises = async (): Promise<Pais[]> => {
-  if (FORCE_MOCK) {
-    return getMockPaises();
-  }
-
   try {
     console.log('Buscando países da API...');
     const response = await api.get('/paises');
@@ -52,18 +82,7 @@ export const getPaises = async (): Promise<Pais[]> => {
     return paises;
   } catch (error) {
     console.error('Erro ao buscar países:', error);
-    
-    // Dados mockados para casos de falha
-    return [
-      {
-        id: 'BRA',
-        nome: 'Brasil',
-        sigla: 'BR',
-        codigo: '55',
-        dataCadastro: '2023-01-01T10:00:00',
-        ultimaModificacao: '2023-01-01T10:00:00'
-      }
-    ];
+    throw error;
   }
 };
 
@@ -75,10 +94,6 @@ export const getPais = async (id: string): Promise<Pais | null> => {
     throw new Error(`ID de país inválido: ${id}`);
   }
   
-  if (FORCE_MOCK) {
-    return getMockPais(id);
-  }
-  
   try {
     console.log(`Buscando país com ID ${id}...`);
     const response = await api.get(`/paises/${id}`);
@@ -87,29 +102,12 @@ export const getPais = async (id: string): Promise<Pais | null> => {
     return adaptPaisFromApi(response.data);
   } catch (error) {
     console.error(`Erro ao buscar país com ID ${id}:`, error);
-    
-    // País mockado para testes
-    if (id === 'BRA') {
-      return {
-        id: 'BRA',
-        nome: 'Brasil',
-        sigla: 'BR',
-        codigo: '55',
-        dataCadastro: '2023-01-01T10:00:00',
-        ultimaModificacao: '2023-01-01T10:00:00'
-      };
-    }
-    
-    return null;
+    throw error;
   }
 };
 
 // Cria novo país
 export const createPais = async (pais: Omit<Pais, 'id'>): Promise<Pais> => {
-  if (FORCE_MOCK) {
-    return createMockPais(pais);
-  }
-
   try {
     console.log('Criando novo país:', pais);
     
@@ -135,10 +133,6 @@ export const updatePais = async (id: string, pais: Omit<Pais, 'id'>): Promise<Pa
     throw new Error(`ID de país inválido para atualização: ${id}`);
   }
   
-  if (FORCE_MOCK) {
-    return updateMockPais(id, pais);
-  }
-  
   try {
     console.log(`Atualizando país ${id}:`, pais);
     
@@ -162,10 +156,6 @@ export const deletePais = async (id: string): Promise<void> => {
   if (!id || typeof id !== 'string' || id.trim() === '') {
     console.error(`ID de país inválido para exclusão: ${id}`);
     throw new Error(`ID de país inválido para exclusão: ${id}`);
-  }
-  
-  if (FORCE_MOCK) {
-    return deleteMockPais(id);
   }
   
   try {

@@ -185,9 +185,9 @@ const App: React.FC = () => {
             <Route path="formas-pagamento" element={<FormaPagamentoList />} />
             
             {/* Rotas para Condições de Pagamento */}
-            <Route path="condicoes-pagamento" element={<CondicaoPagamentoList />} />
-            <Route path="condicoes-pagamento/novo" element={<CondicaoPagamentoForm />} />
-            <Route path="condicoes-pagamento/:id" element={<CondicaoPagamentoForm />} />
+            <Route path="/condicoes-pagamento" element={<CondicaoPagamentoList />} />
+            <Route path="/condicoes-pagamento/novo" element={<CondicaoPagamentoForm />} />
+            <Route path="/condicoes-pagamento/:id" element={<CondicaoPagamentoForm />} />
             
             {/* Rotas para Modalidades de NFe */}
             <Route path="modalidades-nfe/novo" element={<ModalidadeNfeForm />} />

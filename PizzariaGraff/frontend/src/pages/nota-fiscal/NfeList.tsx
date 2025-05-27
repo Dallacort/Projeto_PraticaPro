@@ -31,7 +31,7 @@ const NfeList: React.FC = () => {
   const handleDelete = async (id: string | number) => {
     if (window.confirm('Tem certeza que deseja excluir esta nota fiscal?')) {
       try {
-        await deleteNfe(String(id));
+        await deleteNfe(Number(id));
         toast.success('Nota fiscal excluída com sucesso!');
         fetchNfes();
       } catch (error) {
