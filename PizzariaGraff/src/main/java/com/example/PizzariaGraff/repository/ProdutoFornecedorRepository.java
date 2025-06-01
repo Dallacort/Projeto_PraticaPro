@@ -267,30 +267,22 @@ public class ProdutoFornecedorRepository {
             System.err.println("Erro ao carregar campos de data: " + e.getMessage());
         }
         
-        Long produtoId = rs.getObject("produto_id", Long.class);
-        if (produtoId != null) {
-            // Optionally preload the produto if needed
-            // Produto produto = produtoRepository.findById(produtoId).orElse(null);
-            // produtoFornecedor.setProduto(produto);
-            
-            // Or just set the ID and name for lighter loading
+        // Carregar informações básicas do produto
+        Long produtoId = rs.getLong("produto_id");
+        if (produtoId > 0) {
             Produto produto = new Produto();
             produto.setId(produtoId);
-            produto.setNome(rs.getString("produto_nome"));
-            produto.setCodigo(rs.getString("produto_codigo"));
+            produto.setProduto(rs.getString("produto_nome"));
+            produto.setCodigoBarras(rs.getString("produto_codigo"));
             produtoFornecedor.setProduto(produto);
         }
         
-        Long fornecedorId = rs.getObject("fornecedor_id", Long.class);
-        if (fornecedorId != null) {
-            // Optionally preload the fornecedor if needed
-            // Fornecedor fornecedor = fornecedorRepository.findById(fornecedorId).orElse(null);
-            // produtoFornecedor.setFornecedor(fornecedor);
-            
-            // Or just set the ID and name for lighter loading
+        // Carregar informações básicas do fornecedor
+        Long fornecedorId = rs.getLong("fornecedor_id");
+        if (fornecedorId > 0) {
             Fornecedor fornecedor = new Fornecedor();
             fornecedor.setId(fornecedorId);
-            fornecedor.setRazaoSocial(rs.getString("fornecedor_nome"));
+            fornecedor.setFornecedor(rs.getString("fornecedor_nome"));
             produtoFornecedor.setFornecedor(fornecedor);
         }
         

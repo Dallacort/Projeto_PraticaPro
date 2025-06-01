@@ -91,7 +91,7 @@ public class ItemNfeRepository {
             
             stmt.setString(1, item.getId());
             stmt.setString(2, item.getNfe().getChaveAcesso());
-            stmt.setString(3, item.getProduto().getCodigo());
+            stmt.setString(3, item.getProduto().getCodigoBarras());
             stmt.setBigDecimal(4, item.getQuantidade());
             stmt.setBigDecimal(5, item.getValorUnitario());
             stmt.setBigDecimal(6, item.getValorTotal());
@@ -111,7 +111,7 @@ public class ItemNfeRepository {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setString(1, item.getNfe().getChaveAcesso());
-            stmt.setString(2, item.getProduto().getCodigo());
+            stmt.setString(2, item.getProduto().getCodigoBarras());
             stmt.setBigDecimal(3, item.getQuantidade());
             stmt.setBigDecimal(4, item.getValorUnitario());
             stmt.setBigDecimal(5, item.getValorTotal());

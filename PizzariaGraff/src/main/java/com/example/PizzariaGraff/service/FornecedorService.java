@@ -1,8 +1,6 @@
 package com.example.PizzariaGraff.service;
 
-import com.example.PizzariaGraff.model.Cidade;
 import com.example.PizzariaGraff.model.Fornecedor;
-import com.example.PizzariaGraff.repository.CidadeRepository;
 import com.example.PizzariaGraff.repository.FornecedorRepository;
 import org.springframework.stereotype.Service;
 
@@ -12,19 +10,13 @@ import java.util.List;
 public class FornecedorService {
 
     private final FornecedorRepository fornecedorRepository;
-    private final CidadeRepository cidadeRepository;
 
-    public FornecedorService(FornecedorRepository fornecedorRepository, CidadeRepository cidadeRepository) {
+    public FornecedorService(FornecedorRepository fornecedorRepository) {
         this.fornecedorRepository = fornecedorRepository;
-        this.cidadeRepository = cidadeRepository;
     }
 
     public List<Fornecedor> findAll() {
         return fornecedorRepository.findAll();
-    }
-    
-    public List<Fornecedor> findByAtivoTrue() {
-        return fornecedorRepository.findByAtivoTrue();
     }
     
     public Fornecedor findById(Long id) {
@@ -32,21 +24,15 @@ public class FornecedorService {
                 .orElseThrow(() -> new RuntimeException("Fornecedor não encontrado com o ID: " + id));
     }
     
-    public Fornecedor findByCnpj(String cnpj) {
-        String cnpjLimpo = cnpj != null ? cnpj.replaceAll("[^0-9]", "") : "";
-        return fornecedorRepository.findByCnpj(cnpjLimpo)
-                .orElseThrow(() -> new RuntimeException("Fornecedor não encontrado com o CNPJ: " + cnpj));
-    }
-    
-    public List<Fornecedor> findByNomeContainingIgnoreCase(String nome) {
-        return fornecedorRepository.findByNomeContainingIgnoreCase(nome);
+    public List<Fornecedor> findByFornecedor(String nome) {
+        return fornecedorRepository.findByFornecedor(nome);
     }
     
     public Fornecedor save(Fornecedor fornecedor) {
         // Normalização de dados
-        if (fornecedor.getCnpj() != null) {
-            String cnpjLimpo = fornecedor.getCnpj().replaceAll("[^0-9]", "");
-            fornecedor.setCnpj(cnpjLimpo);
+        if (fornecedor.getCpfCnpj() != null) {
+            String cpfCnpjLimpo = fornecedor.getCpfCnpj().replaceAll("[^0-9]", "");
+            fornecedor.setCpfCnpj(cpfCnpjLimpo);
         }
         
         if (fornecedor.getEmail() != null) {
@@ -55,12 +41,12 @@ public class FornecedorService {
         }
         
         // Validação básica
-        if (fornecedor.getRazaoSocial() == null || fornecedor.getRazaoSocial().trim().isEmpty()) {
-            throw new RuntimeException("A razão social é obrigatória");
+        if (fornecedor.getFornecedor() == null || fornecedor.getFornecedor().trim().isEmpty()) {
+            throw new RuntimeException("O nome do fornecedor é obrigatório");
         }
         
-        if (fornecedor.getCnpj() == null || fornecedor.getCnpj().trim().isEmpty()) {
-            throw new RuntimeException("O CNPJ é obrigatório");
+        if (fornecedor.getCpfCnpj() == null || fornecedor.getCpfCnpj().trim().isEmpty()) {
+            throw new RuntimeException("O CPF/CNPJ é obrigatório");
         }
         
         return fornecedorRepository.save(fornecedor);

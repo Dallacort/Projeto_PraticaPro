@@ -58,13 +58,13 @@ public class ProdutoFornecedorDTO {
         
         if (produtoFornecedor.getProduto() != null) {
             dto.setProdutoId(produtoFornecedor.getProduto().getId());
-            dto.setProdutoNome(produtoFornecedor.getProduto().getNome());
-            dto.setProdutoCodigo(produtoFornecedor.getProduto().getCodigo());
+            dto.setProdutoNome(produtoFornecedor.getProduto().getProduto());
+            dto.setProdutoCodigo(produtoFornecedor.getProduto().getCodigoBarras());
         }
         
         if (produtoFornecedor.getFornecedor() != null) {
             dto.setFornecedorId(produtoFornecedor.getFornecedor().getId());
-            dto.setFornecedorNome(produtoFornecedor.getFornecedor().getRazaoSocial());
+            dto.setFornecedorNome(produtoFornecedor.getFornecedor().getFornecedor());
         }
         
         return dto;

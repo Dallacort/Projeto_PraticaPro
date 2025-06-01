@@ -72,7 +72,7 @@ public class NfeDTO {
             nfe.getChaveAcesso(),
             nfe.getDataEmissao(),
             nfe.getCliente() != null ? nfe.getCliente().getId() : null,
-            nfe.getCliente() != null ? nfe.getCliente().getNome() : null,
+            nfe.getCliente() != null ? nfe.getCliente().getCliente() : null,
             nfe.getValorTotal(),
             nfe.getFormaPagamento() != null ? nfe.getFormaPagamento().getId() : null,
             nfe.getFormaPagamento() != null ? nfe.getFormaPagamento().getDescricao() : null,

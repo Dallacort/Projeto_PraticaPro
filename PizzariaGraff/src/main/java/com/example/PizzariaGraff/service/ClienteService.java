@@ -24,14 +24,9 @@ public class ClienteService {
                 .orElseThrow(() -> new RuntimeException("Cliente não encontrado com o ID: " + id));
     }
     
-    public Cliente findByCpf(String cpf) {
-        return clienteRepository.findByCpf(cpf)
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado com o CPF: " + cpf));
-    }
-    
-    public Cliente findByCnpj(String cnpj) {
-        return clienteRepository.findByCnpj(cnpj)
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado com o CNPJ: " + cnpj));
+    public Cliente findByCpfCpnj(String cpfCpnj) {
+        return clienteRepository.findByCpfCpnj(cpfCpnj)
+                .orElseThrow(() -> new RuntimeException("Cliente não encontrado com o CPF/CNPJ: " + cpfCpnj));
     }
     
     public List<Cliente> findByCidadeId(Long cidadeId) {
@@ -39,6 +34,11 @@ public class ClienteService {
     }
     
     public Cliente save(Cliente cliente) {
+        // Validações básicas antes de salvar
+        if (cliente.getCliente() == null || cliente.getCliente().trim().isEmpty()) {
+            throw new RuntimeException("Nome do cliente é obrigatório");
+        }
+        
         return clienteRepository.save(cliente);
     }
     

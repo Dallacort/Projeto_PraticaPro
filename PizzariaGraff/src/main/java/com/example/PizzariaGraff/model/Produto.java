@@ -1,17 +1,42 @@
 package com.example.PizzariaGraff.model;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class Produto {
     private Long id;
-    private String codigo;
-    private String nome;
-    private String descricao;
-    private BigDecimal preco;
-    private Boolean ativo;
-    private LocalDateTime dataCadastro;
-    private LocalDateTime ultimaModificacao;
+    private String produto;              // varchar(255)
+    private Long unidadeMedidaId;        // bigint(20) - FK para UnidadeMedida
+    private String codigoBarras;         // varchar(255) NOT NULL
+    private String referencia;           // varchar(10) NOT NULL
+    private Long marcaId;                // bigint(20) - FK para Marca
+    private Integer quantidadeMinima;    // int(11)
+    private BigDecimal valorCompra;      // decimal(10,2)
+    private BigDecimal valorVenda;       // decimal(10,2)
+    private Integer quantidade;          // int(11)
+    private BigDecimal percentualLucro;  // decimal(10,2)
+    private String descricao;            // varchar(255) NOT NULL
+    private String observacoes;          // varchar(255) NOT NULL
+    private LocalDate situacao;          // date NOT NULL
+    private LocalDateTime dataCriacao;   // timestamp NOT NULL
+    private LocalDateTime dataAlteracao; // timestamp NOT NULL
+    
+    // Relacionamentos
+    private UnidadeMedida unidadeMedida;
+    private Marca marca;
+
+    // Constructors
+    public Produto() {}
+
+    public Produto(String produto, String codigoBarras, String referencia, String descricao, String observacoes, LocalDate situacao) {
+        this.produto = produto;
+        this.codigoBarras = codigoBarras;
+        this.referencia = referencia;
+        this.descricao = descricao;
+        this.observacoes = observacoes;
+        this.situacao = situacao;
+    }
 
     // Getters e Setters
     public Long getId() {
@@ -22,20 +47,84 @@ public class Produto {
         this.id = id;
     }
 
-    public String getCodigo() {
-        return codigo;
+    public String getProduto() {
+        return produto;
     }
 
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
+    public void setProduto(String produto) {
+        this.produto = produto;
     }
 
-    public String getNome() {
-        return nome;
+    public Long getUnidadeMedidaId() {
+        return unidadeMedidaId;
     }
 
-    public void setNome(String nome) {
-        this.nome = nome;
+    public void setUnidadeMedidaId(Long unidadeMedidaId) {
+        this.unidadeMedidaId = unidadeMedidaId;
+    }
+
+    public String getCodigoBarras() {
+        return codigoBarras;
+    }
+
+    public void setCodigoBarras(String codigoBarras) {
+        this.codigoBarras = codigoBarras;
+    }
+
+    public String getReferencia() {
+        return referencia;
+    }
+
+    public void setReferencia(String referencia) {
+        this.referencia = referencia;
+    }
+
+    public Long getMarcaId() {
+        return marcaId;
+    }
+
+    public void setMarcaId(Long marcaId) {
+        this.marcaId = marcaId;
+    }
+
+    public Integer getQuantidadeMinima() {
+        return quantidadeMinima;
+    }
+
+    public void setQuantidadeMinima(Integer quantidadeMinima) {
+        this.quantidadeMinima = quantidadeMinima;
+    }
+
+    public BigDecimal getValorCompra() {
+        return valorCompra;
+    }
+
+    public void setValorCompra(BigDecimal valorCompra) {
+        this.valorCompra = valorCompra;
+    }
+
+    public BigDecimal getValorVenda() {
+        return valorVenda;
+    }
+
+    public void setValorVenda(BigDecimal valorVenda) {
+        this.valorVenda = valorVenda;
+    }
+
+    public Integer getQuantidade() {
+        return quantidade;
+    }
+
+    public void setQuantidade(Integer quantidade) {
+        this.quantidade = quantidade;
+    }
+
+    public BigDecimal getPercentualLucro() {
+        return percentualLucro;
+    }
+
+    public void setPercentualLucro(BigDecimal percentualLucro) {
+        this.percentualLucro = percentualLucro;
     }
 
     public String getDescricao() {
@@ -46,35 +135,65 @@ public class Produto {
         this.descricao = descricao;
     }
 
-    public BigDecimal getPreco() {
-        return preco;
+    public String getObservacoes() {
+        return observacoes;
     }
 
-    public void setPreco(BigDecimal preco) {
-        this.preco = preco;
+    public void setObservacoes(String observacoes) {
+        this.observacoes = observacoes;
     }
 
-    public Boolean getAtivo() {
-        return ativo;
+    public LocalDate getSituacao() {
+        return situacao;
     }
 
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
-    }
-    
-    public LocalDateTime getDataCadastro() {
-        return dataCadastro;
+    public void setSituacao(LocalDate situacao) {
+        this.situacao = situacao;
     }
 
-    public void setDataCadastro(LocalDateTime dataCadastro) {
-        this.dataCadastro = dataCadastro;
+    public LocalDateTime getDataCriacao() {
+        return dataCriacao;
     }
 
-    public LocalDateTime getUltimaModificacao() {
-        return ultimaModificacao;
+    public void setDataCriacao(LocalDateTime dataCriacao) {
+        this.dataCriacao = dataCriacao;
     }
 
-    public void setUltimaModificacao(LocalDateTime ultimaModificacao) {
-        this.ultimaModificacao = ultimaModificacao;
+    public LocalDateTime getDataAlteracao() {
+        return dataAlteracao;
+    }
+
+    public void setDataAlteracao(LocalDateTime dataAlteracao) {
+        this.dataAlteracao = dataAlteracao;
+    }
+
+    public UnidadeMedida getUnidadeMedida() {
+        return unidadeMedida;
+    }
+
+    public void setUnidadeMedida(UnidadeMedida unidadeMedida) {
+        this.unidadeMedida = unidadeMedida;
+    }
+
+    public Marca getMarca() {
+        return marca;
+    }
+
+    public void setMarca(Marca marca) {
+        this.marca = marca;
+    }
+
+    @Override
+    public String toString() {
+        return "Produto{" +
+                "id=" + id +
+                ", produto='" + produto + '\'' +
+                ", codigoBarras='" + codigoBarras + '\'' +
+                ", referencia='" + referencia + '\'' +
+                ", valorCompra=" + valorCompra +
+                ", valorVenda=" + valorVenda +
+                ", quantidade=" + quantidade +
+                ", situacao=" + situacao +
+                '}';
     }
 } 

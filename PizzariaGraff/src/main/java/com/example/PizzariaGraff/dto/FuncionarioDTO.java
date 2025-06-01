@@ -1,105 +1,153 @@
 package com.example.PizzariaGraff.dto;
 
 import com.example.PizzariaGraff.model.Funcionario;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@Schema(description = "DTO para representar um Funcionário")
 public class FuncionarioDTO {
+    
+    @Schema(description = "ID único do funcionário", example = "1")
     private Long id;
-    private String nome;
-    private String cpf;
-    private String rg;
-    private LocalDate dataNascimento;
+    
+    @Schema(description = "Nome do funcionário", example = "Maria Santos", required = true)
+    private String funcionario;
+    
+    @Schema(description = "Apelido do funcionário", example = "Maria")
+    private String apelido;
+    
+    @Schema(description = "Telefone", example = "11888888888")
     private String telefone;
+    
+    @Schema(description = "Email", example = "maria@email.com")
     private String email;
+    
+    @Schema(description = "Endereço do funcionário", example = "Rua das Palmeiras")
     private String endereco;
+    
+    @Schema(description = "Número do endereço", example = "456")
     private String numero;
+    
+    @Schema(description = "Complemento do endereço", example = "Sala 201")
     private String complemento;
+    
+    @Schema(description = "Bairro do funcionário", example = "Centro")
     private String bairro;
+    
+    @Schema(description = "CEP do funcionário", example = "01310100")
     private String cep;
+    
+    @Schema(description = "ID da cidade", example = "1")
     private Long cidadeId;
+    
+    @Schema(description = "Nome da cidade")
     private String cidadeNome;
-    private String cargo;
+    
+    @Schema(description = "Data de admissão", example = "2024-01-15")
     private LocalDate dataAdmissao;
+    
+    @Schema(description = "Data de demissão", example = "2024-12-31")
     private LocalDate dataDemissao;
-    private Boolean ativo;
-    private LocalDateTime dataCadastro;
-    private LocalDateTime ultimaModificacao;
+    
+    @Schema(description = "Data de criação do registro")
+    private LocalDateTime dataCriacao;
+    
+    @Schema(description = "Data da última alteração")
+    private LocalDateTime dataAlteracao;
+    
+    @Schema(description = "RG ou Inscrição Estadual", example = "123456789")
+    private String rgInscricaoEstadual;
+    
+    @Schema(description = "CNH", example = "12345678901")
+    private String cnh;
+    
+    @Schema(description = "Data de validade da CNH", example = "2025-12-31")
+    private LocalDate dataValidadeCnh;
+    
+    @Schema(description = "Sexo (1-Masculino, 2-Feminino)", example = "2")
+    private Integer sexo;
+    
+    @Schema(description = "Observação", example = "Funcionário exemplar")
+    private String observacao;
+    
+    @Schema(description = "Estado civil (código)", example = "1")
+    private Integer estadoCivil;
+    
+    @Schema(description = "ID Brasileiro", example = "1")
+    private Integer idBrasileiro;
+    
+    @Schema(description = "Salário", example = "5000")
+    private Integer salario;
+    
+    @Schema(description = "Situação", example = "2024-01-01")
+    private LocalDate situacao;
+    
+    @Schema(description = "Nacionalidade (código)", example = "1")
+    private Integer nacionalidade;
+    
+    @Schema(description = "Ano de nascimento", example = "1990")
+    private Integer dataNascimento;
+    
+    @Schema(description = "ID da função do funcionário", example = "1")
+    private Long funcaoFuncionarioId;
+    
+    @Schema(description = "Nome da função do funcionário")
+    private String funcaoFuncionarioNome;
+    
+    @Schema(description = "CPF ou CNPJ", example = "98765432101")
+    private String cpfCpnj;
 
-    public FuncionarioDTO() {
+    // Constructors
+    public FuncionarioDTO() {}
+
+    public FuncionarioDTO(Funcionario funcionario) {
+        this.id = funcionario.getId();
+        this.funcionario = funcionario.getFuncionario();
+        this.apelido = funcionario.getApelido();
+        this.telefone = funcionario.getTelefone();
+        this.email = funcionario.getEmail();
+        this.endereco = funcionario.getEndereco();
+        this.numero = funcionario.getNumero();
+        this.complemento = funcionario.getComplemento();
+        this.bairro = funcionario.getBairro();
+        this.cep = funcionario.getCep();
+        this.cidadeId = funcionario.getCidadeId();
+        this.dataAdmissao = funcionario.getDataAdmissao();
+        this.dataDemissao = funcionario.getDataDemissao();
+        this.dataCriacao = funcionario.getDataCriacao();
+        this.dataAlteracao = funcionario.getDataAlteracao();
+        this.rgInscricaoEstadual = funcionario.getRgInscricaoEstadual();
+        this.cnh = funcionario.getCnh();
+        this.dataValidadeCnh = funcionario.getDataValidadeCnh();
+        this.sexo = funcionario.getSexo();
+        this.observacao = funcionario.getObservacao();
+        this.estadoCivil = funcionario.getEstadoCivil();
+        this.idBrasileiro = funcionario.getIdBrasileiro();
+        this.salario = funcionario.getSalario();
+        this.situacao = funcionario.getSituacao();
+        this.nacionalidade = funcionario.getNacionalidade();
+        this.dataNascimento = funcionario.getDataNascimento();
+        this.funcaoFuncionarioId = funcionario.getFuncaoFuncionarioId();
+        this.cpfCpnj = funcionario.getCpfCpnj();
+        
+        // Relacionamentos
+        if (funcionario.getCidade() != null) {
+            this.cidadeNome = funcionario.getCidade().getNome();
+        }
+        
+        if (funcionario.getFuncaoFuncionario() != null) {
+            this.funcaoFuncionarioNome = funcionario.getFuncaoFuncionario().getDescricao();
+        }
     }
 
-    public FuncionarioDTO(Long id, String nome, String cpf, String rg, LocalDate dataNascimento, 
-                         String telefone, String email, String endereco, String numero, 
-                         String complemento, String bairro, String cep, Long cidadeId, 
-                         String cidadeNome, String cargo, LocalDate dataAdmissao, 
-                         LocalDate dataDemissao, Boolean ativo, LocalDateTime dataCadastro,
-                         LocalDateTime ultimaModificacao) {
-        this.id = id;
-        this.nome = nome;
-        this.cpf = cpf;
-        this.rg = rg;
-        this.dataNascimento = dataNascimento;
-        this.telefone = telefone;
-        this.email = email;
-        this.endereco = endereco;
-        this.numero = numero;
-        this.complemento = complemento;
-        this.bairro = bairro;
-        this.cep = cep;
-        this.cidadeId = cidadeId;
-        this.cidadeNome = cidadeNome;
-        this.cargo = cargo;
-        this.dataAdmissao = dataAdmissao;
-        this.dataDemissao = dataDemissao;
-        this.ativo = ativo;
-        this.dataCadastro = dataCadastro;
-        this.ultimaModificacao = ultimaModificacao;
-    }
-
-    public static FuncionarioDTO fromEntity(Funcionario funcionario) {
-        FuncionarioDTO dto = new FuncionarioDTO(
-            funcionario.getId(),
-            funcionario.getNome(),
-            funcionario.getCpf(),
-            funcionario.getRg(),
-            funcionario.getDataNascimento(),
-            funcionario.getTelefone(),
-            funcionario.getEmail(),
-            funcionario.getEndereco(),
-            funcionario.getNumero(),
-            funcionario.getComplemento(),
-            funcionario.getBairro(),
-            funcionario.getCep(),
-            funcionario.getCidade() != null ? funcionario.getCidade().getId() : null,
-            funcionario.getCidade() != null ? funcionario.getCidade().getNome() : null,
-            funcionario.getCargo(),
-            funcionario.getDataAdmissao(),
-            funcionario.getDataDemissao(),
-            funcionario.getAtivo(),
-            null,
-            null
-        );
-        
-        // Garantir que as datas nunca sejam nulas
-        dto.setDataCadastro(funcionario.getDataCadastro() != null ? 
-                           funcionario.getDataCadastro() : 
-                           LocalDateTime.now());
-        
-        dto.setUltimaModificacao(funcionario.getUltimaModificacao() != null ? 
-                                funcionario.getUltimaModificacao() : 
-                                LocalDateTime.now());
-        
-        return dto;
-    }
-
+    // Método para converter DTO para Entity
     public Funcionario toEntity() {
         Funcionario funcionario = new Funcionario();
         funcionario.setId(this.id);
-        funcionario.setNome(this.nome);
-        funcionario.setCpf(this.cpf);
-        funcionario.setRg(this.rg);
-        funcionario.setDataNascimento(this.dataNascimento);
+        funcionario.setFuncionario(this.funcionario);
+        funcionario.setApelido(this.apelido);
         funcionario.setTelefone(this.telefone);
         funcionario.setEmail(this.email);
         funcionario.setEndereco(this.endereco);
@@ -107,12 +155,24 @@ public class FuncionarioDTO {
         funcionario.setComplemento(this.complemento);
         funcionario.setBairro(this.bairro);
         funcionario.setCep(this.cep);
-        funcionario.setCargo(this.cargo);
+        funcionario.setCidadeId(this.cidadeId);
         funcionario.setDataAdmissao(this.dataAdmissao);
         funcionario.setDataDemissao(this.dataDemissao);
-        funcionario.setAtivo(this.ativo);
-        funcionario.setDataCadastro(this.dataCadastro);
-        funcionario.setUltimaModificacao(this.ultimaModificacao);
+        funcionario.setDataCriacao(this.dataCriacao);
+        funcionario.setDataAlteracao(this.dataAlteracao);
+        funcionario.setRgInscricaoEstadual(this.rgInscricaoEstadual);
+        funcionario.setCnh(this.cnh);
+        funcionario.setDataValidadeCnh(this.dataValidadeCnh);
+        funcionario.setSexo(this.sexo);
+        funcionario.setObservacao(this.observacao);
+        funcionario.setEstadoCivil(this.estadoCivil);
+        funcionario.setIdBrasileiro(this.idBrasileiro);
+        funcionario.setSalario(this.salario);
+        funcionario.setSituacao(this.situacao);
+        funcionario.setNacionalidade(this.nacionalidade);
+        funcionario.setDataNascimento(this.dataNascimento);
+        funcionario.setFuncaoFuncionarioId(this.funcaoFuncionarioId);
+        funcionario.setCpfCpnj(this.cpfCpnj);
         return funcionario;
     }
 
@@ -125,36 +185,20 @@ public class FuncionarioDTO {
         this.id = id;
     }
 
-    public String getNome() {
-        return nome;
+    public String getFuncionario() {
+        return funcionario;
     }
 
-    public void setNome(String nome) {
-        this.nome = nome;
+    public void setFuncionario(String funcionario) {
+        this.funcionario = funcionario;
     }
 
-    public String getCpf() {
-        return cpf;
+    public String getApelido() {
+        return apelido;
     }
 
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
-    }
-
-    public String getRg() {
-        return rg;
-    }
-
-    public void setRg(String rg) {
-        this.rg = rg;
-    }
-
-    public LocalDate getDataNascimento() {
-        return dataNascimento;
-    }
-
-    public void setDataNascimento(LocalDate dataNascimento) {
-        this.dataNascimento = dataNascimento;
+    public void setApelido(String apelido) {
+        this.apelido = apelido;
     }
 
     public String getTelefone() {
@@ -229,14 +273,6 @@ public class FuncionarioDTO {
         this.cidadeNome = cidadeNome;
     }
 
-    public String getCargo() {
-        return cargo;
-    }
-
-    public void setCargo(String cargo) {
-        this.cargo = cargo;
-    }
-
     public LocalDate getDataAdmissao() {
         return dataAdmissao;
     }
@@ -253,27 +289,131 @@ public class FuncionarioDTO {
         this.dataDemissao = dataDemissao;
     }
 
-    public Boolean getAtivo() {
-        return ativo;
+    public LocalDateTime getDataCriacao() {
+        return dataCriacao;
     }
 
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
+    public void setDataCriacao(LocalDateTime dataCriacao) {
+        this.dataCriacao = dataCriacao;
     }
 
-    public LocalDateTime getDataCadastro() {
-        return dataCadastro;
+    public LocalDateTime getDataAlteracao() {
+        return dataAlteracao;
     }
 
-    public void setDataCadastro(LocalDateTime dataCadastro) {
-        this.dataCadastro = dataCadastro;
+    public void setDataAlteracao(LocalDateTime dataAlteracao) {
+        this.dataAlteracao = dataAlteracao;
     }
 
-    public LocalDateTime getUltimaModificacao() {
-        return ultimaModificacao;
+    public String getRgInscricaoEstadual() {
+        return rgInscricaoEstadual;
     }
 
-    public void setUltimaModificacao(LocalDateTime ultimaModificacao) {
-        this.ultimaModificacao = ultimaModificacao;
+    public void setRgInscricaoEstadual(String rgInscricaoEstadual) {
+        this.rgInscricaoEstadual = rgInscricaoEstadual;
+    }
+
+    public String getCnh() {
+        return cnh;
+    }
+
+    public void setCnh(String cnh) {
+        this.cnh = cnh;
+    }
+
+    public LocalDate getDataValidadeCnh() {
+        return dataValidadeCnh;
+    }
+
+    public void setDataValidadeCnh(LocalDate dataValidadeCnh) {
+        this.dataValidadeCnh = dataValidadeCnh;
+    }
+
+    public Integer getSexo() {
+        return sexo;
+    }
+
+    public void setSexo(Integer sexo) {
+        this.sexo = sexo;
+    }
+
+    public String getObservacao() {
+        return observacao;
+    }
+
+    public void setObservacao(String observacao) {
+        this.observacao = observacao;
+    }
+
+    public Integer getEstadoCivil() {
+        return estadoCivil;
+    }
+
+    public void setEstadoCivil(Integer estadoCivil) {
+        this.estadoCivil = estadoCivil;
+    }
+
+    public Integer getIdBrasileiro() {
+        return idBrasileiro;
+    }
+
+    public void setIdBrasileiro(Integer idBrasileiro) {
+        this.idBrasileiro = idBrasileiro;
+    }
+
+    public Integer getSalario() {
+        return salario;
+    }
+
+    public void setSalario(Integer salario) {
+        this.salario = salario;
+    }
+
+    public LocalDate getSituacao() {
+        return situacao;
+    }
+
+    public void setSituacao(LocalDate situacao) {
+        this.situacao = situacao;
+    }
+
+    public Integer getNacionalidade() {
+        return nacionalidade;
+    }
+
+    public void setNacionalidade(Integer nacionalidade) {
+        this.nacionalidade = nacionalidade;
+    }
+
+    public Integer getDataNascimento() {
+        return dataNascimento;
+    }
+
+    public void setDataNascimento(Integer dataNascimento) {
+        this.dataNascimento = dataNascimento;
+    }
+
+    public Long getFuncaoFuncionarioId() {
+        return funcaoFuncionarioId;
+    }
+
+    public void setFuncaoFuncionarioId(Long funcaoFuncionarioId) {
+        this.funcaoFuncionarioId = funcaoFuncionarioId;
+    }
+
+    public String getFuncaoFuncionarioNome() {
+        return funcaoFuncionarioNome;
+    }
+
+    public void setFuncaoFuncionarioNome(String funcaoFuncionarioNome) {
+        this.funcaoFuncionarioNome = funcaoFuncionarioNome;
+    }
+
+    public String getCpfCpnj() {
+        return cpfCpnj;
+    }
+
+    public void setCpfCpnj(String cpfCpnj) {
+        this.cpfCpnj = cpfCpnj;
     }
 } 

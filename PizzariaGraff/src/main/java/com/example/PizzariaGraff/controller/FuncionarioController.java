@@ -3,133 +3,130 @@ package com.example.PizzariaGraff.controller;
 import com.example.PizzariaGraff.dto.FuncionarioDTO;
 import com.example.PizzariaGraff.model.Cidade;
 import com.example.PizzariaGraff.model.Funcionario;
-import com.example.PizzariaGraff.repository.CidadeRepository;
-import com.example.PizzariaGraff.repository.FuncionarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.PizzariaGraff.service.FuncionarioService;
+import com.example.PizzariaGraff.service.CidadeService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/funcionario")
+@RequestMapping("/funcionarios")
 @CrossOrigin(origins = "*")
+@Tag(name = "Funcionários", description = "API para gerenciamento de funcionários")
 public class FuncionarioController {
 
-    @Autowired
-    private FuncionarioRepository funcionarioRepository;
+    private final FuncionarioService funcionarioService;
+    private final CidadeService cidadeService;
 
-    @Autowired
-    private CidadeRepository cidadeRepository;
-
-    @GetMapping
-    public ResponseEntity<List<FuncionarioDTO>> listarTodos() {
-        List<Funcionario> funcionarios = funcionarioRepository.findAll();
-        List<FuncionarioDTO> funcionariosDTO = funcionarios.stream()
-                .map(FuncionarioDTO::fromEntity)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(funcionariosDTO);
+    public FuncionarioController(FuncionarioService funcionarioService, CidadeService cidadeService) {
+        this.funcionarioService = funcionarioService;
+        this.cidadeService = cidadeService;
     }
 
-    @GetMapping("/ativos")
-    public ResponseEntity<List<FuncionarioDTO>> listarAtivos() {
-        List<Funcionario> funcionarios = funcionarioRepository.findAllAtivos();
+    @GetMapping
+    @Operation(summary = "Lista todos os funcionários")
+    public ResponseEntity<List<FuncionarioDTO>> listar() {
+        List<Funcionario> funcionarios = funcionarioService.findAll();
         List<FuncionarioDTO> funcionariosDTO = funcionarios.stream()
-                .map(FuncionarioDTO::fromEntity)
+                .map(FuncionarioDTO::new)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(funcionariosDTO);
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Busca um funcionário por ID")
     public ResponseEntity<FuncionarioDTO> buscarPorId(@PathVariable Long id) {
-        Optional<Funcionario> funcionario = funcionarioRepository.findById(id);
-        return funcionario.map(value -> ResponseEntity.ok(FuncionarioDTO.fromEntity(value)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        try {
+            Funcionario funcionario = funcionarioService.findById(id);
+            return ResponseEntity.ok(new FuncionarioDTO(funcionario));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    @GetMapping("/nome/{nome}")
-    public ResponseEntity<List<FuncionarioDTO>> buscarPorNome(@PathVariable String nome) {
-        List<Funcionario> funcionarios = funcionarioRepository.findByNome(nome);
+    @GetMapping("/nome/{funcionario}")
+    @Operation(summary = "Busca funcionários por nome")
+    public ResponseEntity<List<FuncionarioDTO>> buscarPorNome(@PathVariable String funcionario) {
+        List<Funcionario> funcionarios = funcionarioService.findByFuncionario(funcionario);
         List<FuncionarioDTO> funcionariosDTO = funcionarios.stream()
-                .map(FuncionarioDTO::fromEntity)
+                .map(FuncionarioDTO::new)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(funcionariosDTO);
     }
 
-    @GetMapping("/cpf/{cpf}")
-    public ResponseEntity<List<FuncionarioDTO>> buscarPorCpf(@PathVariable String cpf) {
-        List<Funcionario> funcionarios = funcionarioRepository.findByCpf(cpf);
+    @GetMapping("/cpfcpnj/{cpfCpnj}")
+    @Operation(summary = "Busca funcionários por CPF/CNPJ")
+    public ResponseEntity<List<FuncionarioDTO>> buscarPorCpfCpnj(@PathVariable String cpfCpnj) {
+        List<Funcionario> funcionarios = funcionarioService.findByCpfCpnj(cpfCpnj);
         List<FuncionarioDTO> funcionariosDTO = funcionarios.stream()
-                .map(FuncionarioDTO::fromEntity)
+                .map(FuncionarioDTO::new)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(funcionariosDTO);
     }
 
     @GetMapping("/email/{email}")
+    @Operation(summary = "Busca um funcionário por email")
     public ResponseEntity<FuncionarioDTO> buscarPorEmail(@PathVariable String email) {
-        Optional<Funcionario> funcionario = funcionarioRepository.findByEmail(email);
-        return funcionario.map(value -> ResponseEntity.ok(FuncionarioDTO.fromEntity(value)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        try {
+            Funcionario funcionario = funcionarioService.findByEmail(email);
+            return ResponseEntity.ok(new FuncionarioDTO(funcionario));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/funcao/{funcaoId}")
+    @Operation(summary = "Busca funcionários por função")
+    public ResponseEntity<List<FuncionarioDTO>> buscarPorFuncao(@PathVariable Long funcaoId) {
+        List<Funcionario> funcionarios = funcionarioService.findByFuncaoFuncionarioId(funcaoId);
+        List<FuncionarioDTO> funcionariosDTO = funcionarios.stream()
+                .map(FuncionarioDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(funcionariosDTO);
     }
 
     @PostMapping
-    public ResponseEntity<FuncionarioDTO> salvar(@RequestBody FuncionarioDTO funcionarioDTO) {
-        Funcionario funcionario = funcionarioDTO.toEntity();
-        
-        // Buscar e settar a cidade se o id estiver presente
-        if (funcionarioDTO.getCidadeId() != null) {
-            Optional<Cidade> cidade = cidadeRepository.findById(funcionarioDTO.getCidadeId());
-            cidade.ifPresent(funcionario::setCidade);
+    @Operation(summary = "Cadastra um novo funcionário")
+    public ResponseEntity<FuncionarioDTO> criar(@RequestBody FuncionarioDTO funcionarioDTO) {
+        try {
+            Funcionario funcionario = funcionarioDTO.toEntity();
+            
+            Funcionario funcionarioSalvo = funcionarioService.save(funcionario);
+            return new ResponseEntity<>(new FuncionarioDTO(funcionarioSalvo), HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
         }
-        
-        Funcionario funcionarioSalvo = funcionarioRepository.save(funcionario);
-        return new ResponseEntity<>(FuncionarioDTO.fromEntity(funcionarioSalvo), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Atualiza um funcionário")
     public ResponseEntity<FuncionarioDTO> atualizar(@PathVariable Long id, @RequestBody FuncionarioDTO funcionarioDTO) {
-        Optional<Funcionario> funcionarioExistente = funcionarioRepository.findById(id);
-        
-        if (funcionarioExistente.isPresent()) {
+        try {
+            // Verificar se o funcionário existe
+            funcionarioService.findById(id);
+            
             Funcionario funcionario = funcionarioDTO.toEntity();
             funcionario.setId(id);
             
-            // Buscar e settar a cidade se o id estiver presente
-            if (funcionarioDTO.getCidadeId() != null) {
-                Optional<Cidade> cidade = cidadeRepository.findById(funcionarioDTO.getCidadeId());
-                cidade.ifPresent(funcionario::setCidade);
-            }
-            
-            Funcionario funcionarioAtualizado = funcionarioRepository.save(funcionario);
-            return ResponseEntity.ok(FuncionarioDTO.fromEntity(funcionarioAtualizado));
-        } else {
+            Funcionario funcionarioAtualizado = funcionarioService.save(funcionario);
+            return ResponseEntity.ok(new FuncionarioDTO(funcionarioAtualizado));
+        } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> excluir(@PathVariable Long id) {
-        Optional<Funcionario> funcionario = funcionarioRepository.findById(id);
-        
-        if (funcionario.isPresent()) {
-            funcionarioRepository.deleteById(id);
+    @Operation(summary = "Remove um funcionário")
+    public ResponseEntity<Void> remover(@PathVariable Long id) {
+        try {
+            funcionarioService.deleteById(id);
             return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @PutMapping("/desativar/{id}")
-    public ResponseEntity<Void> desativar(@PathVariable Long id) {
-        Optional<Funcionario> funcionario = funcionarioRepository.findById(id);
-        
-        if (funcionario.isPresent()) {
-            funcionarioRepository.softDeleteById(id);
-            return ResponseEntity.noContent().build();
-        } else {
+        } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }

@@ -2,114 +2,173 @@ package com.example.PizzariaGraff.dto;
 
 import com.example.PizzariaGraff.model.Cliente;
 import com.example.PizzariaGraff.model.Cidade;
+import com.example.PizzariaGraff.model.CondicaoPagamento;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@Schema(description = "DTO para representar um Cliente")
 public class ClienteDTO {
+    
+    @Schema(description = "ID único do cliente", example = "1")
     private Long id;
-    private String nome;
-    private String cpf;
-    private String cnpj;
-    private String email;
-    private String telefone;
-    private String endereco;
-    private String numero;
-    private String complemento;
+    
+    @Schema(description = "Nome do cliente", example = "João Silva", required = true)
+    private String cliente;
+    
+    @Schema(description = "Apelido do cliente", example = "João")
+    private String apelido;
+    
+    @Schema(description = "Bairro do cliente", example = "Centro")
     private String bairro;
+    
+    @Schema(description = "CEP do cliente", example = "01310100")
     private String cep;
+    
+    @Schema(description = "Número do endereço", example = "123")
+    private String numero;
+    
+    @Schema(description = "Endereço do cliente", example = "Rua das Flores")
+    private String endereco;
+    
+    @Schema(description = "ID da cidade", example = "1")
     private Long cidadeId;
+    
+    @Schema(description = "Nome da cidade")
     private String cidadeNome;
-    private Long estadoId;
-    private String estadoNome;
-    private String estadoUf;
-    private String paisId;
-    private String paisNome;
-    private Boolean ativo;
-    private LocalDateTime dataCadastro;
-    private LocalDateTime ultimaModificacao;
     
-    public ClienteDTO() {
-    }
+    @Schema(description = "Complemento do endereço", example = "Apto 101")
+    private String complemento;
     
-    public ClienteDTO(Long id, String nome, String cpf, String cnpj, String email, 
-                     String telefone, String endereco, String numero, String complemento,
-                     String bairro, String cep, Long cidadeId, String cidadeNome, Boolean ativo,
-                     LocalDateTime dataCadastro, LocalDateTime ultimaModificacao) {
-        this.id = id;
-        this.nome = nome;
-        this.cpf = cpf;
-        this.cnpj = cnpj;
-        this.email = email;
-        this.telefone = telefone;
-        this.endereco = endereco;
-        this.numero = numero;
-        this.complemento = complemento;
-        this.bairro = bairro;
-        this.cep = cep;
-        this.cidadeId = cidadeId;
-        this.cidadeNome = cidadeNome;
-        this.ativo = ativo;
-        this.dataCadastro = dataCadastro;
-        this.ultimaModificacao = ultimaModificacao;
-    }
+    @Schema(description = "ID brasileiro", example = "1")
+    private Integer idBrasileiro;
     
+    @Schema(description = "Limite de crédito", example = "1000.00")
+    private BigDecimal limiteCredito;
+    
+    @Schema(description = "Nacionalidade", example = "Brasileira")
+    private String nacionalidade;
+    
+    @Schema(description = "RG ou Inscrição Estadual", example = "12345678901")
+    private String rgInscricaoEstadual;
+    
+    @Schema(description = "CPF ou CNPJ", example = "12345678901")
+    private String cpfCpnj;
+    
+    @Schema(description = "Data de nascimento", example = "1990-01-15")
+    private LocalDate dataNascimento;
+    
+    @Schema(description = "Email", example = "joao@email.com")
+    private String email;
+    
+    @Schema(description = "Telefone", example = "11999999999")
+    private String telefone;
+    
+    @Schema(description = "Estado civil", example = "Solteiro")
+    private String estadoCivil;
+    
+    @Schema(description = "Tipo (1-Pessoa Física, 2-Pessoa Jurídica)", example = "1")
+    private Integer tipo;
+    
+    @Schema(description = "Sexo (M/F)", example = "M")
+    private String sexo;
+    
+    @Schema(description = "ID da condição de pagamento", example = "1")
+    private Long condicaoPagamentoId;
+    
+    @Schema(description = "Nome da condição de pagamento")
+    private String condicaoPagamentoNome;
+    
+    @Schema(description = "Limite de crédito 2", example = "500.00")
+    private BigDecimal limiteCredito2;
+    
+    @Schema(description = "Observação", example = "Cliente VIP")
+    private String observacao;
+    
+    @Schema(description = "Data da situação", example = "2024-01-15")
+    private LocalDate situacao;
+    
+    @Schema(description = "Data de criação do registro")
+    private LocalDateTime dataCriacao;
+    
+    @Schema(description = "Data da última alteração")
+    private LocalDateTime dataAlteracao;
+
+    // Constructors
+    public ClienteDTO() {}
+
     public ClienteDTO(Cliente cliente) {
         this.id = cliente.getId();
-        this.nome = cliente.getNome();
-        this.cpf = cliente.getCpf();
-        this.cnpj = cliente.getCnpj();
-        this.email = cliente.getEmail();
-        this.telefone = cliente.getTelefone();
-        this.endereco = cliente.getEndereco();
-        this.numero = cliente.getNumero();
-        this.complemento = cliente.getComplemento();
+        this.cliente = cliente.getCliente();
+        this.apelido = cliente.getApelido();
         this.bairro = cliente.getBairro();
         this.cep = cliente.getCep();
-        this.ativo = cliente.getAtivo();
-        this.dataCadastro = cliente.getDataCadastro();
-        this.ultimaModificacao = cliente.getUltimaModificacao();
+        this.numero = cliente.getNumero();
+        this.endereco = cliente.getEndereco();
+        this.cidadeId = cliente.getCidadeId();
+        this.complemento = cliente.getComplemento();
+        this.idBrasileiro = cliente.getIdBrasileiro();
+        this.limiteCredito = cliente.getLimiteCredito();
+        this.nacionalidade = cliente.getNacionalidade();
+        this.rgInscricaoEstadual = cliente.getRgInscricaoEstadual();
+        this.cpfCpnj = cliente.getCpfCpnj();
+        this.dataNascimento = cliente.getDataNascimento();
+        this.email = cliente.getEmail();
+        this.telefone = cliente.getTelefone();
+        this.estadoCivil = cliente.getEstadoCivil();
+        this.tipo = cliente.getTipo();
+        this.sexo = cliente.getSexo();
+        this.condicaoPagamentoId = cliente.getCondicaoPagamentoId();
+        this.limiteCredito2 = cliente.getLimiteCredito2();
+        this.observacao = cliente.getObservacao();
+        this.situacao = cliente.getSituacao();
+        this.dataCriacao = cliente.getDataCriacao();
+        this.dataAlteracao = cliente.getDataAlteracao();
         
+        // Relacionamentos
         if (cliente.getCidade() != null) {
-            this.cidadeId = cliente.getCidade().getId();
             this.cidadeNome = cliente.getCidade().getNome();
-            
-            if (cliente.getCidade().getEstado() != null) {
-                this.estadoId = cliente.getCidade().getEstado().getId();
-                this.estadoNome = cliente.getCidade().getEstado().getNome();
-                this.estadoUf = cliente.getCidade().getEstado().getUf();
-                
-                if (cliente.getCidade().getEstado().getPais() != null) {
-                    this.paisId = cliente.getCidade().getEstado().getPais().getId();
-                    this.paisNome = cliente.getCidade().getEstado().getPais().getNome();
-                }
-            }
+        }
+        
+        if (cliente.getCondicaoPagamento() != null) {
+            this.condicaoPagamentoNome = cliente.getCondicaoPagamento().getCondicaoPagamento();
         }
     }
-    
-    public static ClienteDTO fromEntity(Cliente cliente) {
-        if (cliente == null) {
-            return null;
-        }
-        return new ClienteDTO(cliente);
-    }
-    
-    public Cliente toEntity(Cidade cidade) {
+
+    // Método para converter DTO para Entity
+    public Cliente toEntity() {
         Cliente cliente = new Cliente();
         cliente.setId(this.id);
-        cliente.setNome(this.nome);
-        cliente.setCpf(this.cpf);
-        cliente.setCnpj(this.cnpj);
-        cliente.setEmail(this.email);
-        cliente.setTelefone(this.telefone);
-        cliente.setEndereco(this.endereco);
-        cliente.setNumero(this.numero);
-        cliente.setComplemento(this.complemento);
+        cliente.setCliente(this.cliente);
+        cliente.setApelido(this.apelido);
         cliente.setBairro(this.bairro);
         cliente.setCep(this.cep);
-        cliente.setCidade(cidade);
-        cliente.setAtivo(this.ativo != null ? this.ativo : true);
+        cliente.setNumero(this.numero);
+        cliente.setEndereco(this.endereco);
+        cliente.setCidadeId(this.cidadeId);
+        cliente.setComplemento(this.complemento);
+        cliente.setIdBrasileiro(this.idBrasileiro);
+        cliente.setLimiteCredito(this.limiteCredito);
+        cliente.setNacionalidade(this.nacionalidade);
+        cliente.setRgInscricaoEstadual(this.rgInscricaoEstadual);
+        cliente.setCpfCpnj(this.cpfCpnj);
+        cliente.setDataNascimento(this.dataNascimento);
+        cliente.setEmail(this.email);
+        cliente.setTelefone(this.telefone);
+        cliente.setEstadoCivil(this.estadoCivil);
+        cliente.setTipo(this.tipo);
+        cliente.setSexo(this.sexo);
+        cliente.setCondicaoPagamentoId(this.condicaoPagamentoId);
+        cliente.setLimiteCredito2(this.limiteCredito2);
+        cliente.setObservacao(this.observacao);
+        cliente.setSituacao(this.situacao);
+        cliente.setDataCriacao(this.dataCriacao);
+        cliente.setDataAlteracao(this.dataAlteracao);
         return cliente;
     }
-    
+
     // Getters e Setters
     public Long getId() {
         return id;
@@ -119,68 +178,20 @@ public class ClienteDTO {
         this.id = id;
     }
 
-    public String getNome() {
-        return nome;
+    public String getCliente() {
+        return cliente;
     }
 
-    public void setNome(String nome) {
-        this.nome = nome;
+    public void setCliente(String cliente) {
+        this.cliente = cliente;
     }
 
-    public String getCpf() {
-        return cpf;
+    public String getApelido() {
+        return apelido;
     }
 
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
-    }
-
-    public String getCnpj() {
-        return cnpj;
-    }
-
-    public void setCnpj(String cnpj) {
-        this.cnpj = cnpj;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getTelefone() {
-        return telefone;
-    }
-
-    public void setTelefone(String telefone) {
-        this.telefone = telefone;
-    }
-
-    public String getEndereco() {
-        return endereco;
-    }
-
-    public void setEndereco(String endereco) {
-        this.endereco = endereco;
-    }
-
-    public String getNumero() {
-        return numero;
-    }
-
-    public void setNumero(String numero) {
-        this.numero = numero;
-    }
-
-    public String getComplemento() {
-        return complemento;
-    }
-
-    public void setComplemento(String complemento) {
-        this.complemento = complemento;
+    public void setApelido(String apelido) {
+        this.apelido = apelido;
     }
 
     public String getBairro() {
@@ -199,6 +210,22 @@ public class ClienteDTO {
         this.cep = cep;
     }
 
+    public String getNumero() {
+        return numero;
+    }
+
+    public void setNumero(String numero) {
+        this.numero = numero;
+    }
+
+    public String getEndereco() {
+        return endereco;
+    }
+
+    public void setEndereco(String endereco) {
+        this.endereco = endereco;
+    }
+
     public Long getCidadeId() {
         return cidadeId;
     }
@@ -215,67 +242,155 @@ public class ClienteDTO {
         this.cidadeNome = cidadeNome;
     }
 
-    public Boolean getAtivo() {
-        return ativo;
+    public String getComplemento() {
+        return complemento;
     }
 
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
+    public void setComplemento(String complemento) {
+        this.complemento = complemento;
     }
 
-    public Long getEstadoId() {
-        return estadoId;
+    public Integer getIdBrasileiro() {
+        return idBrasileiro;
     }
 
-    public void setEstadoId(Long estadoId) {
-        this.estadoId = estadoId;
+    public void setIdBrasileiro(Integer idBrasileiro) {
+        this.idBrasileiro = idBrasileiro;
     }
 
-    public String getEstadoNome() {
-        return estadoNome;
+    public BigDecimal getLimiteCredito() {
+        return limiteCredito;
     }
 
-    public void setEstadoNome(String estadoNome) {
-        this.estadoNome = estadoNome;
+    public void setLimiteCredito(BigDecimal limiteCredito) {
+        this.limiteCredito = limiteCredito;
     }
 
-    public String getEstadoUf() {
-        return estadoUf;
+    public String getNacionalidade() {
+        return nacionalidade;
     }
 
-    public void setEstadoUf(String estadoUf) {
-        this.estadoUf = estadoUf;
+    public void setNacionalidade(String nacionalidade) {
+        this.nacionalidade = nacionalidade;
     }
 
-    public String getPaisId() {
-        return paisId;
+    public String getRgInscricaoEstadual() {
+        return rgInscricaoEstadual;
     }
 
-    public void setPaisId(String paisId) {
-        this.paisId = paisId;
+    public void setRgInscricaoEstadual(String rgInscricaoEstadual) {
+        this.rgInscricaoEstadual = rgInscricaoEstadual;
     }
 
-    public String getPaisNome() {
-        return paisNome;
+    public String getCpfCpnj() {
+        return cpfCpnj;
     }
 
-    public void setPaisNome(String paisNome) {
-        this.paisNome = paisNome;
+    public void setCpfCpnj(String cpfCpnj) {
+        this.cpfCpnj = cpfCpnj;
     }
 
-    public LocalDateTime getDataCadastro() {
-        return dataCadastro;
+    public LocalDate getDataNascimento() {
+        return dataNascimento;
     }
-    
-    public void setDataCadastro(LocalDateTime dataCadastro) {
-        this.dataCadastro = dataCadastro;
+
+    public void setDataNascimento(LocalDate dataNascimento) {
+        this.dataNascimento = dataNascimento;
     }
-    
-    public LocalDateTime getUltimaModificacao() {
-        return ultimaModificacao;
+
+    public String getEmail() {
+        return email;
     }
-    
-    public void setUltimaModificacao(LocalDateTime ultimaModificacao) {
-        this.ultimaModificacao = ultimaModificacao;
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getTelefone() {
+        return telefone;
+    }
+
+    public void setTelefone(String telefone) {
+        this.telefone = telefone;
+    }
+
+    public String getEstadoCivil() {
+        return estadoCivil;
+    }
+
+    public void setEstadoCivil(String estadoCivil) {
+        this.estadoCivil = estadoCivil;
+    }
+
+    public Integer getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(Integer tipo) {
+        this.tipo = tipo;
+    }
+
+    public String getSexo() {
+        return sexo;
+    }
+
+    public void setSexo(String sexo) {
+        this.sexo = sexo;
+    }
+
+    public Long getCondicaoPagamentoId() {
+        return condicaoPagamentoId;
+    }
+
+    public void setCondicaoPagamentoId(Long condicaoPagamentoId) {
+        this.condicaoPagamentoId = condicaoPagamentoId;
+    }
+
+    public String getCondicaoPagamentoNome() {
+        return condicaoPagamentoNome;
+    }
+
+    public void setCondicaoPagamentoNome(String condicaoPagamentoNome) {
+        this.condicaoPagamentoNome = condicaoPagamentoNome;
+    }
+
+    public BigDecimal getLimiteCredito2() {
+        return limiteCredito2;
+    }
+
+    public void setLimiteCredito2(BigDecimal limiteCredito2) {
+        this.limiteCredito2 = limiteCredito2;
+    }
+
+    public String getObservacao() {
+        return observacao;
+    }
+
+    public void setObservacao(String observacao) {
+        this.observacao = observacao;
+    }
+
+    public LocalDate getSituacao() {
+        return situacao;
+    }
+
+    public void setSituacao(LocalDate situacao) {
+        this.situacao = situacao;
+    }
+
+    public LocalDateTime getDataCriacao() {
+        return dataCriacao;
+    }
+
+    public void setDataCriacao(LocalDateTime dataCriacao) {
+        this.dataCriacao = dataCriacao;
+    }
+
+    public LocalDateTime getDataAlteracao() {
+        return dataAlteracao;
+    }
+
+    public void setDataAlteracao(LocalDateTime dataAlteracao) {
+        this.dataAlteracao = dataAlteracao;
     }
 } 

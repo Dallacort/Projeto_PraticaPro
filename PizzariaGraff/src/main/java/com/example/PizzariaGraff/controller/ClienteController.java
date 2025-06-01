@@ -32,7 +32,7 @@ public class ClienteController {
     public ResponseEntity<List<ClienteDTO>> listar() {
         List<Cliente> clientes = clienteService.findAll();
         List<ClienteDTO> clientesDTO = clientes.stream()
-                .map(ClienteDTO::fromEntity)
+                .map(ClienteDTO::new)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(clientesDTO);
     }
@@ -42,42 +42,40 @@ public class ClienteController {
     public ResponseEntity<ClienteDTO> buscarPorId(@PathVariable Long id) {
         try {
             Cliente cliente = clienteService.findById(id);
-            return ResponseEntity.ok(ClienteDTO.fromEntity(cliente));
+            return ResponseEntity.ok(new ClienteDTO(cliente));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    @GetMapping("/cpf/{cpf}")
-    @Operation(summary = "Busca um cliente por CPF")
-    public ResponseEntity<ClienteDTO> buscarPorCpf(@PathVariable String cpf) {
+    @GetMapping("/cpfcpnj/{cpfCpnj}")
+    @Operation(summary = "Busca um cliente por CPF/CNPJ")
+    public ResponseEntity<ClienteDTO> buscarPorCpfCpnj(@PathVariable String cpfCpnj) {
         try {
-            Cliente cliente = clienteService.findByCpf(cpf);
-            return ResponseEntity.ok(ClienteDTO.fromEntity(cliente));
+            Cliente cliente = clienteService.findByCpfCpnj(cpfCpnj);
+            return ResponseEntity.ok(new ClienteDTO(cliente));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    @GetMapping("/cnpj/{cnpj}")
-    @Operation(summary = "Busca um cliente por CNPJ")
-    public ResponseEntity<ClienteDTO> buscarPorCnpj(@PathVariable String cnpj) {
-        try {
-            Cliente cliente = clienteService.findByCnpj(cnpj);
-            return ResponseEntity.ok(ClienteDTO.fromEntity(cliente));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+    @GetMapping("/cidade/{cidadeId}")
+    @Operation(summary = "Busca clientes por cidade")
+    public ResponseEntity<List<ClienteDTO>> buscarPorCidade(@PathVariable Long cidadeId) {
+        List<Cliente> clientes = clienteService.findByCidadeId(cidadeId);
+        List<ClienteDTO> clientesDTO = clientes.stream()
+                .map(ClienteDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(clientesDTO);
     }
 
     @PostMapping
     @Operation(summary = "Cadastra um novo cliente")
     public ResponseEntity<ClienteDTO> criar(@RequestBody ClienteDTO clienteDTO) {
         try {
-            Cidade cidade = cidadeService.findById(clienteDTO.getCidadeId());
-            Cliente cliente = clienteDTO.toEntity(cidade);
+            Cliente cliente = clienteDTO.toEntity();
             cliente = clienteService.save(cliente);
-            return ResponseEntity.status(HttpStatus.CREATED).body(ClienteDTO.fromEntity(cliente));
+            return ResponseEntity.status(HttpStatus.CREATED).body(new ClienteDTO(cliente));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -87,11 +85,10 @@ public class ClienteController {
     @Operation(summary = "Atualiza um cliente")
     public ResponseEntity<ClienteDTO> atualizar(@PathVariable Long id, @RequestBody ClienteDTO clienteDTO) {
         try {
-            Cidade cidade = cidadeService.findById(clienteDTO.getCidadeId());
-            Cliente cliente = clienteDTO.toEntity(cidade);
+            Cliente cliente = clienteDTO.toEntity();
             cliente.setId(id);
             cliente = clienteService.save(cliente);
-            return ResponseEntity.ok(ClienteDTO.fromEntity(cliente));
+            return ResponseEntity.ok(new ClienteDTO(cliente));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -100,7 +97,11 @@ public class ClienteController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Remove um cliente")
     public ResponseEntity<Void> remover(@PathVariable Long id) {
-        clienteService.deleteById(id);
-        return ResponseEntity.noContent().build();
+        try {
+            clienteService.deleteById(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 } 

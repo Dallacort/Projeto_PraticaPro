@@ -1,9 +1,7 @@
 package com.example.PizzariaGraff.controller;
 
 import com.example.PizzariaGraff.dto.FornecedorDTO;
-import com.example.PizzariaGraff.model.Cidade;
 import com.example.PizzariaGraff.model.Fornecedor;
-import com.example.PizzariaGraff.service.CidadeService;
 import com.example.PizzariaGraff.service.FornecedorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,41 +20,22 @@ import java.util.stream.Collectors;
 public class FornecedorController {
 
     private final FornecedorService fornecedorService;
-    private final CidadeService cidadeService;
 
-    public FornecedorController(FornecedorService fornecedorService, CidadeService cidadeService) {
+    public FornecedorController(FornecedorService fornecedorService) {
         this.fornecedorService = fornecedorService;
-        this.cidadeService = cidadeService;
     }
 
     @GetMapping
     @Operation(summary = "Lista todos os fornecedores")
     public ResponseEntity<?> listar() {
         try {
-            System.out.println("Iniciando busca de todos os fornecedores");
-            
             List<Fornecedor> fornecedores = fornecedorService.findAll();
-            System.out.println("Fornecedores encontrados: " + fornecedores.size());
-            
             List<FornecedorDTO> fornecedoresDTO = fornecedores.stream()
-                    .map(fornecedor -> {
-                        try {
-                            return FornecedorDTO.fromEntity(fornecedor);
-                        } catch (Exception e) {
-                            System.err.println("Erro ao converter fornecedor para DTO: " + e.getMessage());
-                            e.printStackTrace();
-                            return null;
-                        }
-                    })
-                    .filter(dto -> dto != null)
+                    .map(FornecedorDTO::new)
                     .collect(Collectors.toList());
             
-            System.out.println("DTOs criados com sucesso: " + fornecedoresDTO.size());
             return ResponseEntity.ok(fornecedoresDTO);
         } catch (Exception e) {
-            System.err.println("Erro ao listar fornecedores: " + e.getMessage());
-            e.printStackTrace();
-            
             return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(criarErroResponse("Erro ao listar fornecedores", e));
@@ -68,20 +47,23 @@ public class FornecedorController {
     public ResponseEntity<FornecedorDTO> buscarPorId(@PathVariable Long id) {
         try {
             Fornecedor fornecedor = fornecedorService.findById(id);
-            return ResponseEntity.ok(FornecedorDTO.fromEntity(fornecedor));
+            return ResponseEntity.ok(new FornecedorDTO(fornecedor));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    @GetMapping("/cnpj/{cnpj}")
-    @Operation(summary = "Busca um fornecedor por CNPJ")
-    public ResponseEntity<FornecedorDTO> buscarPorCnpj(@PathVariable String cnpj) {
+    @GetMapping("/buscar")
+    @Operation(summary = "Busca fornecedores por nome")
+    public ResponseEntity<List<FornecedorDTO>> buscarPorNome(@RequestParam String nome) {
         try {
-            Fornecedor fornecedor = fornecedorService.findByCnpj(cnpj);
-            return ResponseEntity.ok(FornecedorDTO.fromEntity(fornecedor));
+            List<Fornecedor> fornecedores = fornecedorService.findByFornecedor(nome);
+            List<FornecedorDTO> fornecedoresDTO = fornecedores.stream()
+                    .map(FornecedorDTO::new)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(fornecedoresDTO);
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.badRequest().build();
         }
     }
 
@@ -89,77 +71,27 @@ public class FornecedorController {
     @Operation(summary = "Cadastra um novo fornecedor")
     public ResponseEntity<?> criar(@RequestBody FornecedorDTO fornecedorDTO) {
         try {
-            System.out.println("Recebendo requisição para salvar fornecedor: " + fornecedorDTO);
-            System.out.println("Dados recebidos - razão social: " + fornecedorDTO.getRazaoSocial() + 
-                               ", nome fantasia: " + fornecedorDTO.getNomeFantasia() +
-                               ", CNPJ: " + fornecedorDTO.getCnpj() +
-                               ", cidade ID: " + fornecedorDTO.getCidadeId());
-            
             Map<String, Object> erro = new HashMap<>();
             
-            if (fornecedorDTO.getRazaoSocial() == null || fornecedorDTO.getRazaoSocial().trim().isEmpty()) {
-                erro.put("campo", "razaoSocial");
-                erro.put("mensagem", "A razão social é obrigatória");
-                System.out.println("Erro: Razão social não informada");
+            if (fornecedorDTO.getFornecedor() == null || fornecedorDTO.getFornecedor().trim().isEmpty()) {
+                erro.put("campo", "fornecedor");
+                erro.put("mensagem", "O nome do fornecedor é obrigatório");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
             }
             
-            if (fornecedorDTO.getCnpj() == null || fornecedorDTO.getCnpj().trim().isEmpty()) {
-                erro.put("campo", "cnpj");
-                erro.put("mensagem", "O CNPJ é obrigatório");
-                System.out.println("Erro: CNPJ não informado");
+            if (fornecedorDTO.getCpfCnpj() == null || fornecedorDTO.getCpfCnpj().trim().isEmpty()) {
+                erro.put("campo", "cpfCnpj");
+                erro.put("mensagem", "O CPF/CNPJ é obrigatório");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
             }
             
-            if (fornecedorDTO.getCidadeId() == null) {
-                erro.put("campo", "cidadeId");
-                erro.put("mensagem", "A cidade é obrigatória");
-                System.out.println("Erro: Cidade não informada");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
-            }
+            Fornecedor fornecedor = fornecedorDTO.toEntity();
+            fornecedor = fornecedorService.save(fornecedor);
             
-            try {
-                System.out.println("Tentando encontrar a cidade com ID: " + fornecedorDTO.getCidadeId());
-                Cidade cidade = cidadeService.findById(fornecedorDTO.getCidadeId());
-                System.out.println("Cidade encontrada: ID=" + cidade.getId() + ", Nome=" + cidade.getNome());
-                
-                System.out.println("Convertendo DTO para entidade...");
-                Fornecedor fornecedor = fornecedorDTO.toEntity(cidade);
-                
-                System.out.println("Salvando fornecedor...");
-                fornecedor = fornecedorService.save(fornecedor);
-                System.out.println("Fornecedor salvo com sucesso: ID=" + fornecedor.getId());
-                
-                FornecedorDTO novoDto = FornecedorDTO.fromEntity(fornecedor);
-                System.out.println("DTO criado com sucesso. Retornando resposta 201 Created");
-                return ResponseEntity.status(HttpStatus.CREATED).body(novoDto);
-            } catch (Exception e) {
-                System.err.println("Erro ao processar cidade ou salvar fornecedor: " + e.getMessage());
-                e.printStackTrace();
-                
-                erro = new HashMap<>();
-                
-                if (e.getMessage() != null && e.getMessage().contains("cidade")) {
-                    erro.put("tipo", "cidade_nao_encontrada");
-                    erro.put("mensagem", "Não foi possível encontrar a cidade com ID " + fornecedorDTO.getCidadeId());
-                    System.out.println("Erro: Cidade não encontrada");
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
-                } else if (e.getMessage() != null && e.getMessage().contains("cnpj")) {
-                    erro.put("tipo", "cnpj_duplicado");
-                    erro.put("mensagem", "O CNPJ informado já está cadastrado no sistema");
-                    System.out.println("Erro: CNPJ duplicado");
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
-                } else {
-                    erro.put("tipo", "erro_processamento");
-                    erro.put("mensagem", "Erro ao processar requisição: " + e.getMessage());
-                    System.out.println("Erro desconhecido: " + e.getMessage());
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
-                }
-            }
+            FornecedorDTO novoDto = new FornecedorDTO(fornecedor);
+            return ResponseEntity.status(HttpStatus.CREATED).body(novoDto);
+            
         } catch (Exception e) {
-            System.err.println("Erro geral não tratado ao processar requisição: " + e.getMessage());
-            e.printStackTrace();
-            
             Map<String, Object> erro = new HashMap<>();
             erro.put("erro", "Erro interno ao processar requisição");
             erro.put("mensagem", e.getMessage());
@@ -173,11 +105,10 @@ public class FornecedorController {
     @Operation(summary = "Atualiza um fornecedor")
     public ResponseEntity<FornecedorDTO> atualizar(@PathVariable Long id, @RequestBody FornecedorDTO fornecedorDTO) {
         try {
-            Cidade cidade = cidadeService.findById(fornecedorDTO.getCidadeId());
-            Fornecedor fornecedor = fornecedorDTO.toEntity(cidade);
+            Fornecedor fornecedor = fornecedorDTO.toEntity();
             fornecedor.setId(id);
             fornecedor = fornecedorService.save(fornecedor);
-            return ResponseEntity.ok(FornecedorDTO.fromEntity(fornecedor));
+            return ResponseEntity.ok(new FornecedorDTO(fornecedor));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -186,8 +117,12 @@ public class FornecedorController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Remove um fornecedor")
     public ResponseEntity<Void> remover(@PathVariable Long id) {
-        fornecedorService.deleteById(id);
-        return ResponseEntity.noContent().build();
+        try {
+            fornecedorService.deleteById(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     private Map<String, Object> criarErroResponse(String mensagem, Exception e) {
