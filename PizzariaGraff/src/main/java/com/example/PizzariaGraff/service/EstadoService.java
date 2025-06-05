@@ -31,7 +31,7 @@ public class EstadoService {
                 .orElseThrow(() -> new RuntimeException("Estado não encontrado com o ID: " + id));
     }
     
-    public List<Estado> findByPaisId(String paisId) {
+    public List<Estado> findByPaisId(Long paisId) {
         return estadoRepository.findByPaisId(paisId);
     }
     

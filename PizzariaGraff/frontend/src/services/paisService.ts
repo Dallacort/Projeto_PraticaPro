@@ -3,56 +3,16 @@ import { Pais } from '../types';
 
 // Adaptador para converter dados da API para o frontend
 export const adaptPaisFromApi = (apiPais: any): Pais => {
-  // Log para debugging
-  console.log('Dados brutos do país recebidos do backend:', apiPais);
-
-  // Verificar especificamente os campos de data
-  console.log('data_cadastro do backend:', apiPais.dataCadastro);
-  console.log('ultima_modificacao do backend:', apiPais.ultimaModificacao || apiPais.dataModificacao);
-
-  // Ajustar datas para corresponder ao formato esperado pelo frontend
-  let dataCadastro = 'Não disponível';
-  let ultimaModificacao = 'Não disponível';
+  console.log('Dados recebidos da API (pais):', apiPais);
   
-  // Tratar data de cadastro
-  if (apiPais.dataCadastro) {
-    // Verificar se é um objeto Date ou uma string de data válida
-    try {
-      const date = new Date(apiPais.dataCadastro);
-      if (!isNaN(date.getTime())) {
-        dataCadastro = apiPais.dataCadastro;
-      }
-    } catch (e) {
-      console.error('Erro ao processar data de cadastro:', e);
-    }
-  }
-  
-  // Tratar data de modificação
-  if (apiPais.ultimaModificacao || apiPais.dataModificacao) {
-    try {
-      const dateStr = apiPais.ultimaModificacao || apiPais.dataModificacao;
-      const date = new Date(dateStr);
-      if (!isNaN(date.getTime())) {
-        ultimaModificacao = dateStr;
-      }
-    } catch (e) {
-      console.error('Erro ao processar data de modificação:', e);
-    }
-  }
-
-  console.log('Datas após processamento:', {
-    dataCadastro,
-    ultimaModificacao
-  });
-
   return {
-    id: apiPais.id,
-    nome: apiPais.nome,
-    sigla: apiPais.sigla || '',
+    id: Number(apiPais.id),
+    nome: apiPais.nome || '',
     codigo: apiPais.codigo || '',
-    dataCadastro,
-    ultimaModificacao,
-    ativo: apiPais.ativo !== undefined ? apiPais.ativo : true
+    sigla: apiPais.sigla || '',
+    ativo: apiPais.ativo !== undefined ? apiPais.ativo : true,
+    dataCadastro: apiPais.dataCadastro || null,
+    ultimaModificacao: apiPais.ultimaModificacao || null
   };
 };
 
@@ -87,9 +47,9 @@ export const getPaises = async (): Promise<Pais[]> => {
 };
 
 // Busca país por ID
-export const getPais = async (id: string): Promise<Pais | null> => {
-  // Validar se o ID é uma string não vazia
-  if (!id || typeof id !== 'string' || id.trim() === '') {
+export const getPais = async (id: number): Promise<Pais | null> => {
+  // Validar se o ID é um número válido
+  if (!id || !Number.isInteger(id) || id <= 0) {
     console.error(`ID de país inválido: ${id}`);
     throw new Error(`ID de país inválido: ${id}`);
   }
@@ -126,9 +86,9 @@ export const createPais = async (pais: Omit<Pais, 'id'>): Promise<Pais> => {
 };
 
 // Atualiza país existente
-export const updatePais = async (id: string, pais: Omit<Pais, 'id'>): Promise<Pais> => {
-  // Validar se o ID é uma string não vazia
-  if (!id || typeof id !== 'string' || id.trim() === '') {
+export const updatePais = async (id: number, pais: Omit<Pais, 'id'>): Promise<Pais> => {
+  // Validar se o ID é um número válido
+  if (!id || !Number.isInteger(id) || id <= 0) {
     console.error(`ID de país inválido para atualização: ${id}`);
     throw new Error(`ID de país inválido para atualização: ${id}`);
   }
@@ -151,9 +111,9 @@ export const updatePais = async (id: string, pais: Omit<Pais, 'id'>): Promise<Pa
 };
 
 // Remove país
-export const deletePais = async (id: string): Promise<void> => {
-  // Validar se o ID é uma string não vazia
-  if (!id || typeof id !== 'string' || id.trim() === '') {
+export const deletePais = async (id: number): Promise<void> => {
+  // Validar se o ID é um número válido
+  if (!id || !Number.isInteger(id) || id <= 0) {
     console.error(`ID de país inválido para exclusão: ${id}`);
     throw new Error(`ID de país inválido para exclusão: ${id}`);
   }

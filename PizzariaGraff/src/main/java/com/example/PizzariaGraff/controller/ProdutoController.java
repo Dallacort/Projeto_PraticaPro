@@ -9,7 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -26,22 +28,36 @@ public class ProdutoController {
 
     @GetMapping
     @Operation(summary = "Lista todos os produtos")
-    public ResponseEntity<List<ProdutoDTO>> listar() {
-        List<Produto> produtos = produtoService.findAll();
-        List<ProdutoDTO> produtosDTO = produtos.stream()
-                .map(ProdutoDTO::new)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(produtosDTO);
+    public ResponseEntity<?> listar() {
+        try {
+            List<Produto> produtos = produtoService.findAll();
+            List<ProdutoDTO> produtosDTO = produtos.stream()
+                    .map(ProdutoDTO::new)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(produtosDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, String> erro = new HashMap<>();
+            erro.put("erro", "Erro ao listar produtos");
+            erro.put("mensagem", e.getMessage());
+            erro.put("causa", e.getCause() != null ? e.getCause().getMessage() : "Desconhecida");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(erro);
+        }
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Busca um produto por ID")
-    public ResponseEntity<ProdutoDTO> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
         try {
             Produto produto = produtoService.findById(id);
             return ResponseEntity.ok(new ProdutoDTO(produto));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, String> erro = new HashMap<>();
+            erro.put("erro", "Erro ao buscar produto");
+            erro.put("mensagem", e.getMessage());
+            erro.put("causa", e.getCause() != null ? e.getCause().getMessage() : "Desconhecida");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(erro);
         }
     }
 
@@ -91,37 +107,52 @@ public class ProdutoController {
 
     @PostMapping
     @Operation(summary = "Cadastra um novo produto")
-    public ResponseEntity<ProdutoDTO> criar(@RequestBody ProdutoDTO produtoDTO) {
+    public ResponseEntity<?> criar(@RequestBody ProdutoDTO produtoDTO) {
         try {
             Produto produto = produtoDTO.toEntity();
             produto = produtoService.save(produto);
             return ResponseEntity.status(HttpStatus.CREATED).body(new ProdutoDTO(produto));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, String> erro = new HashMap<>();
+            erro.put("erro", "Erro ao criar produto");
+            erro.put("mensagem", e.getMessage());
+            erro.put("causa", e.getCause() != null ? e.getCause().getMessage() : "Desconhecida");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(erro);
         }
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Atualiza um produto")
-    public ResponseEntity<ProdutoDTO> atualizar(@PathVariable Long id, @RequestBody ProdutoDTO produtoDTO) {
+    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody ProdutoDTO produtoDTO) {
         try {
             Produto produto = produtoDTO.toEntity();
             produto.setId(id);
             produto = produtoService.save(produto);
             return ResponseEntity.ok(new ProdutoDTO(produto));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, String> erro = new HashMap<>();
+            erro.put("erro", "Erro ao atualizar produto");
+            erro.put("mensagem", e.getMessage());
+            erro.put("causa", e.getCause() != null ? e.getCause().getMessage() : "Desconhecida");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(erro);
         }
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Remove um produto")
-    public ResponseEntity<Void> remover(@PathVariable Long id) {
+    public ResponseEntity<?> remover(@PathVariable Long id) {
         try {
             produtoService.deleteById(id);
             return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, String> erro = new HashMap<>();
+            erro.put("erro", "Erro ao remover produto");
+            erro.put("mensagem", e.getMessage());
+            erro.put("causa", e.getCause() != null ? e.getCause().getMessage() : "Desconhecida");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(erro);
         }
     }
 } 

@@ -1,7 +1,7 @@
 // Interfaces para todas as entidades do sistema
 
 export interface Pais {
-  id: string;
+  id: number;
   nome: string;
   codigo: string;
   sigla: string;
@@ -14,7 +14,7 @@ export interface Estado {
   id: number;
   nome: string;
   uf: string;
-  paisId?: string;
+  paisId?: number;
   paisNome?: string;
   pais?: Pais;
   dataCadastro?: string;
@@ -31,10 +31,23 @@ export interface Cidade {
   ativo?: boolean;
 }
 
+export interface FuncaoFuncionario {
+  id: number;
+  descricao: string;
+  salarioBase?: number;
+  ativo?: boolean;
+  dataCadastro?: string;
+  ultimaModificacao?: string;
+}
+
 export interface Cliente {
   id: number;
-  nome: string;
-  cpfCnpj: string;
+  cliente: string;
+  nome?: string;
+  apelido?: string;
+  cpfCpnj?: string;
+  cpfCnpj?: string;
+  rgInscricaoEstadual?: string;
   inscricaoEstadual?: string;
   email?: string;
   telefone?: string;
@@ -44,9 +57,23 @@ export interface Cliente {
   bairro?: string;
   cep?: string;
   cidade: Cidade;
-  ativo: boolean;
+  cidadeId?: number;
+  nacionalidade?: string;
+  dataNascimento?: string;
+  estadoCivil?: string;
+  tipo?: number;
+  sexo?: string;
+  limiteCredito?: number;
+  limiteCredito2?: number;
+  observacao?: string;
+  situacao?: string;
+  condicaoPagamentoId?: number;
+  idBrasileiro?: number;
+  dataCriacao?: string;
+  dataAlteracao?: string;
   dataCadastro?: string;
   ultimaModificacao?: string;
+  ativo?: boolean;
 }
 
 export interface FormaPagamento {
@@ -91,37 +118,89 @@ export interface CondicaoPagamento {
 
 export interface Fornecedor {
   id: number;
-  razaoSocial: string;
-  nomeFantasia: string;
-  cnpj: string;
+  fornecedor: string;
+  razaoSocial?: string;
+  apelido: string;
+  nomeFantasia?: string;
+  cpfCnpj: string;
+  cnpj?: string;
+  rgInscricaoEstadual?: string;
   inscricaoEstadual?: string;
   email?: string;
+  contato?: string;
   telefone?: string;
   endereco?: string;
   numero?: string;
   complemento?: string;
   bairro?: string;
   cep?: string;
-  cidade: Cidade;
+  cidade: Cidade | null;
+  cidadeId?: number;
+  tipo?: number;
+  observacoes?: string;
+  condicaoPagamentoId?: number;
+  limiteCredito?: number;
+  situacao?: string;
   ativo: boolean;
+  dataCriacao?: string;
+  dataAlteracao?: string;
   dataCadastro?: string;
   ultimaModificacao?: string;
 }
 
 export interface Produto {
   id: number;
-  codigo?: string;
-  nome: string;
+  produto?: string;
+  nome?: string;
+  codigoBarras?: string;
+  referencia?: string;
   descricao?: string;
+  observacoes?: string;
+  valorCompra?: number;
+  valorVenda?: number;
+  percentualLucro?: number;
+  quantidade?: number;
+  quantidadeMinima?: number;
+  marcaId?: number;
+  marcaNome?: string;
+  marca?: Marca;
+  unidadeMedidaId?: number;
+  unidadeMedidaNome?: string;
+  unidadeMedida?: UnidadeMedida;
+  situacao?: string;
+  codigo?: string;
   precoVenda?: number;
   precoCusto?: number;
   unidade?: string;
   estoque?: number;
   estoqueMinimo?: number;
   estoqueMaximo?: number;
-  quantidade?: number;
   valor?: number;
   ativo?: boolean;
+  dataCriacao?: string;
+  dataAlteracao?: string;
+  dataCadastro?: string;
+  ultimaModificacao?: string;
+}
+
+export interface Marca {
+  id: number;
+  marca: string;
+  situacao?: string;
+  ativo?: boolean;
+  dataCriacao?: string;
+  dataAlteracao?: string;
+  dataCadastro?: string;
+  ultimaModificacao?: string;
+}
+
+export interface UnidadeMedida {
+  id: number;
+  unidadeMedida: string;
+  situacao?: string;
+  ativo?: boolean;
+  dataCriacao?: string;
+  dataAlteracao?: string;
   dataCadastro?: string;
   ultimaModificacao?: string;
 }
@@ -232,10 +311,11 @@ export interface MovimentacaoNfe {
 
 export interface Funcionario {
   id: number;
-  nome: string;
-  cpf: string;
-  rg?: string;
-  dataNascimento?: string;
+  funcionario?: string;
+  nome?: string;
+  apelido?: string;
+  cpfCpnj?: string;
+  rgInscricaoEstadual?: string;
   email?: string;
   telefone?: string;
   endereco?: string;
@@ -243,13 +323,26 @@ export interface Funcionario {
   complemento?: string;
   bairro?: string;
   cep?: string;
-  cidade: Cidade;
-  cargo: string;
-  salario: number;
-  dataContratacao?: string;
+  cnh?: string;
+  dataValidadeCnh?: string;
+  sexo?: number;
+  observacao?: string;
+  estadoCivil?: number;
+  idBrasileiro?: number;
+  salario?: number;
+  situacao?: string;
+  nacionalidade?: number;
+  dataNascimento?: number;
   dataAdmissao?: string;
   dataDemissao?: string;
-  ativo: boolean;
+  cidade?: Cidade;
+  cidadeId?: number;
+  funcaoFuncionario?: FuncaoFuncionario;
+  funcaoFuncionarioId?: number;
+  cargo?: string;
+  ativo?: boolean;
+  dataCriacao?: string;
+  dataAlteracao?: string;
   dataCadastro?: string;
   ultimaModificacao?: string;
 } 

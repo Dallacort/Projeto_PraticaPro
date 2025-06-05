@@ -13,6 +13,7 @@ export interface FormFieldProps {
   displayKey?: 'nome' | 'descricao';
   disabled?: boolean;
   step?: string;
+  maxLength?: number;
 }
 
 const FormField: React.FC<FormFieldProps> = ({
@@ -27,7 +28,8 @@ const FormField: React.FC<FormFieldProps> = ({
   options = [],
   displayKey = 'nome',
   disabled = false,
-  step
+  step,
+  maxLength
 }) => {
   return (
     <div className="mb-4">
@@ -62,6 +64,7 @@ const FormField: React.FC<FormFieldProps> = ({
           onChange={onChange}
           disabled={disabled}
           placeholder={placeholder}
+          maxLength={maxLength}
           className={`w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm ${
             error ? 'border-red-500' : 'border-gray-300'
           }`}
@@ -76,6 +79,7 @@ const FormField: React.FC<FormFieldProps> = ({
           onChange={onChange}
           disabled={disabled}
           placeholder={placeholder}
+          maxLength={maxLength}
           className={`w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm ${
             error ? 'border-red-500' : 'border-gray-300'
           }`}

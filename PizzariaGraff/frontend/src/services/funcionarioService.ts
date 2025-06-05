@@ -3,7 +3,7 @@ import { Funcionario } from '../types';
 
 // Adaptador para converter dados da API para o frontend
 const adaptFuncionarioFromApi = (funcionario: any): Funcionario => {
-  // Criar uma estrutura aninhada de cidade, estado e país se necessário
+  // Criar uma estrutura aninhada de cidade se necessário
   let cidade = null;
   if (funcionario.cidade) {
     cidade = funcionario.cidade;
@@ -34,50 +34,100 @@ const adaptFuncionarioFromApi = (funcionario: any): Funcionario => {
       }
     }
   }
+  
+  // Criar estrutura de função de funcionário se necessário
+  let funcaoFuncionario = null;
+  if (funcionario.funcaoFuncionario) {
+    funcaoFuncionario = funcionario.funcaoFuncionario;
+  } else if (funcionario.funcaoFuncionarioId && funcionario.funcaoFuncionarioNome) {
+    funcaoFuncionario = {
+      id: funcionario.funcaoFuncionarioId,
+      descricao: funcionario.funcaoFuncionarioNome,
+      ativo: true
+    };
+  }
 
   return {
     id: funcionario.id,
-    nome: funcionario.nome || '',
-    cpf: funcionario.cpf || '',
+    funcionario: funcionario.funcionario || '',
+    apelido: funcionario.apelido || '',
+    cpfCpnj: funcionario.cpfCpnj || '',
+    rgInscricaoEstadual: funcionario.rgInscricaoEstadual || '',
     email: funcionario.email || '',
     telefone: funcionario.telefone || '',
     endereco: funcionario.endereco || '',
-    cargo: funcionario.cargo || '',
-    salario: funcionario.salario || 0,
-    dataContratacao: funcionario.dataContratacao || null,
+    numero: funcionario.numero || '',
+    complemento: funcionario.complemento || '',
+    bairro: funcionario.bairro || '',
+    cep: funcionario.cep || '',
+    cidadeId: funcionario.cidadeId,
+    dataAdmissao: funcionario.dataAdmissao || '',
+    dataDemissao: funcionario.dataDemissao || '',
+    dataCriacao: funcionario.dataCriacao,
+    dataAlteracao: funcionario.dataAlteracao,
+    cnh: funcionario.cnh || '',
+    dataValidadeCnh: funcionario.dataValidadeCnh || '',
+    sexo: funcionario.sexo,
+    observacao: funcionario.observacao || '',
+    estadoCivil: funcionario.estadoCivil,
+    idBrasileiro: funcionario.idBrasileiro,
+    salario: funcionario.salario,
+    situacao: funcionario.situacao || '',
+    nacionalidade: funcionario.nacionalidade,
+    dataNascimento: funcionario.dataNascimento,
+    funcaoFuncionarioId: funcionario.funcaoFuncionarioId,
     cidade: cidade,
-    ativo: funcionario.ativo === undefined ? true : funcionario.ativo,
-    dataCadastro: funcionario.dataCadastro || null,
-    ultimaModificacao: funcionario.ultimaModificacao || null
+    funcaoFuncionario: funcaoFuncionario,
+    // Campo 'ativo' é apenas para o frontend (backend não tem este campo)
+    ativo: true,
+    dataCadastro: funcionario.dataCadastro || funcionario.dataCriacao,
+    ultimaModificacao: funcionario.ultimaModificacao || funcionario.dataAlteracao,
+    
+    // Campos para compatibilidade com versão anterior
+    nome: funcionario.funcionario || funcionario.nome || '',
+    cargo: funcionario.funcaoFuncionario?.descricao || funcionario.cargo || ''
   };
 };
 
 // Adaptador para converter dados do frontend para a API
-const adaptFuncionarioToApi = (funcionario: Omit<Funcionario, 'id' | 'dataCadastro' | 'ultimaModificacao'>): any => {
+const adaptFuncionarioToApi = (funcionario: any): any => {
+  // Remove campos que não existem no backend (ativo, dataCadastro, ultimaModificacao)
+  // e ajusta os tipos conforme o modelo Java
   return {
-    nome: funcionario.nome,
-    cpf: funcionario.cpf || '',
+    funcionario: funcionario.funcionario,
+    apelido: funcionario.apelido || '',
+    cpfCpnj: funcionario.cpfCpnj || '',
+    rgInscricaoEstadual: funcionario.rgInscricaoEstadual || '',
     email: funcionario.email || '',
     telefone: funcionario.telefone || '',
     endereco: funcionario.endereco || '',
-    cargo: funcionario.cargo || '',
-    salario: funcionario.salario || 0,
-    dataContratacao: funcionario.dataContratacao || null,
-    cidadeId: funcionario.cidade?.id || null,
-    ativo: funcionario.ativo
+    numero: funcionario.numero || '',
+    complemento: funcionario.complemento || '',
+    bairro: funcionario.bairro || '',
+    cep: funcionario.cep || '',
+    cidadeId: funcionario.cidadeId || null,
+    dataAdmissao: funcionario.dataAdmissao || null,
+    dataDemissao: funcionario.dataDemissao || null,
+    cnh: funcionario.cnh || '',
+    dataValidadeCnh: funcionario.dataValidadeCnh || null,
+    sexo: funcionario.sexo || null,
+    observacao: funcionario.observacao || '',
+    estadoCivil: funcionario.estadoCivil || null,
+    idBrasileiro: funcionario.idBrasileiro || null,
+    salario: funcionario.salario || null,
+    situacao: funcionario.situacao || null, // LocalDate no backend
+    nacionalidade: funcionario.nacionalidade || null,
+    dataNascimento: funcionario.dataNascimento || null, // Integer no backend (ano)
+    funcaoFuncionarioId: funcionario.funcaoFuncionarioId || null
+    // Campo 'ativo' NÃO enviado para o backend pois não existe no modelo
   };
 };
 
-// Busca todos os funcionários
+// Lista todos os funcionários
 export const getFuncionarios = async (): Promise<Funcionario[]> => {
   try {
-    const response = await api.get('/funcionario');
-    
-    if (Array.isArray(response.data)) {
-      return response.data.map(adaptFuncionarioFromApi);
-    }
-    
-    throw new Error('Resposta inválida da API para funcionários');
+    const response = await api.get('/funcionarios');
+    return response.data.map(adaptFuncionarioFromApi);
   } catch (error) {
     console.error('Erro ao buscar funcionários:', error);
     throw error;
@@ -85,15 +135,10 @@ export const getFuncionarios = async (): Promise<Funcionario[]> => {
 };
 
 // Busca um funcionário pelo ID
-export const getFuncionario = async (id: number): Promise<Funcionario | null> => {
+export const getFuncionario = async (id: number): Promise<Funcionario> => {
   try {
-    const response = await api.get(`/funcionario/${id}`);
-    
-    if (response.data) {
-      return adaptFuncionarioFromApi(response.data);
-    }
-    
-    throw new Error(`Resposta inválida da API para funcionário ${id}`);
+    const response = await api.get(`/funcionarios/${id}`);
+    return adaptFuncionarioFromApi(response.data);
   } catch (error) {
     console.error(`Erro ao buscar funcionário ${id}:`, error);
     throw error;
@@ -101,16 +146,11 @@ export const getFuncionario = async (id: number): Promise<Funcionario | null> =>
 };
 
 // Cria um novo funcionário
-export const createFuncionario = async (funcionario: Omit<Funcionario, 'id' | 'dataCadastro' | 'ultimaModificacao'>): Promise<Funcionario> => {
+export const createFuncionario = async (funcionario: any): Promise<Funcionario> => {
   try {
-    const dataToSend = adaptFuncionarioToApi(funcionario);
-    const response = await api.post('/funcionario', dataToSend);
-    
-    if (response.data) {
-      return adaptFuncionarioFromApi(response.data);
-    }
-    
-    throw new Error('Resposta inválida da API ao criar funcionário');
+    const payload = adaptFuncionarioToApi(funcionario);
+    const response = await api.post('/funcionarios', payload);
+    return adaptFuncionarioFromApi(response.data);
   } catch (error) {
     console.error('Erro ao criar funcionário:', error);
     throw error;
@@ -118,28 +158,23 @@ export const createFuncionario = async (funcionario: Omit<Funcionario, 'id' | 'd
 };
 
 // Atualiza um funcionário existente
-export const updateFuncionario = async (id: number, funcionario: Omit<Funcionario, 'id' | 'dataCadastro' | 'ultimaModificacao'>): Promise<Funcionario> => {
+export const updateFuncionario = async (id: number, funcionario: any): Promise<Funcionario> => {
   try {
-    const dataToSend = adaptFuncionarioToApi(funcionario);
-    const response = await api.put(`/funcionario/${id}`, dataToSend);
-    
-    if (response.data) {
-      return adaptFuncionarioFromApi(response.data);
-    }
-    
-    throw new Error(`Resposta inválida da API ao atualizar funcionário ${id}`);
+    const payload = adaptFuncionarioToApi(funcionario);
+    const response = await api.put(`/funcionarios/${id}`, payload);
+    return adaptFuncionarioFromApi(response.data);
   } catch (error) {
     console.error(`Erro ao atualizar funcionário ${id}:`, error);
     throw error;
   }
 };
 
-// Exclui um funcionário
+// Remove um funcionário
 export const deleteFuncionario = async (id: number): Promise<void> => {
   try {
-    await api.delete(`/funcionario/${id}`);
+    await api.delete(`/funcionarios/${id}`);
   } catch (error) {
-    console.error(`Erro ao excluir funcionário ${id}:`, error);
+    console.error(`Erro ao deletar funcionário ${id}:`, error);
     throw error;
   }
 }; 

@@ -92,7 +92,7 @@ public class EstadoController {
 
     @GetMapping("/pais/{paisId}")
     @Operation(summary = "Lista estados por país")
-    public ResponseEntity<?> listarPorPais(@PathVariable String paisId) {
+    public ResponseEntity<?> listarPorPais(@PathVariable Long paisId) {
         try {
             System.out.println("Buscando estados para o país com ID: " + paisId);
             
@@ -135,7 +135,7 @@ public class EstadoController {
             System.out.println("Iniciando cadastro de novo estado: " + estadoDTO.getNome() + " (" + estadoDTO.getUf() + ")");
             System.out.println("Dados recebidos: País ID=" + estadoDTO.getPaisId());
             
-            if (estadoDTO.getPaisId() == null || estadoDTO.getPaisId().trim().isEmpty()) {
+            if (estadoDTO.getPaisId() == null) {
                 Map<String, String> erro = new HashMap<>();
                 erro.put("erro", "ID do país não informado");
                 erro.put("mensagem", "É necessário informar o ID do país");
@@ -183,9 +183,14 @@ public class EstadoController {
         resultado.put("dados_recebidos", dados);
         
         try {
-            String paisId = null;
+            Long paisId = null;
             if (dados.containsKey("paisId")) {
-                paisId = String.valueOf(dados.get("paisId"));
+                Object paisIdObj = dados.get("paisId");
+                if (paisIdObj instanceof Number) {
+                    paisId = ((Number) paisIdObj).longValue();
+                } else {
+                    paisId = Long.valueOf(String.valueOf(paisIdObj));
+                }
                 resultado.put("pais_id_extraido", paisId);
                 
                 try {

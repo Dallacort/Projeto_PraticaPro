@@ -9,28 +9,29 @@ export const adaptEstadoFromApi = (apiEstado: any): Estado => {
     uf: apiEstado.uf || '',
     ativo: apiEstado.ativo !== undefined ? apiEstado.ativo : true,
     pais: apiEstado.pais ? {
-      id: apiEstado.pais.id,
+      id: Number(apiEstado.pais.id),
       nome: apiEstado.pais.nome,
       codigo: apiEstado.pais.codigo || '',
       sigla: apiEstado.pais.sigla || ''
     } : (apiEstado.paisId ? {
-      id: apiEstado.paisId,
+      id: Number(apiEstado.paisId),
       nome: apiEstado.paisNome || '',
       codigo: apiEstado.paisCodigo || '',
       sigla: apiEstado.paisSigla || ''
     } : null),
+    paisId: apiEstado.paisId ? Number(apiEstado.paisId) : undefined,
     dataCadastro: apiEstado.dataCadastro || null,
     ultimaModificacao: apiEstado.ultimaModificacao || apiEstado.dataModificacao || null
   };
 };
 
 // Adaptador para converter dados do frontend para a API
-export const adaptEstadoToApi = (estado: Omit<Estado, 'id'>): any => {
+export const adaptEstadoToApi = (estado: Omit<Estado, 'id' | 'pais'> & { paisId: number }): any => {
   return {
     nome: estado.nome,
     uf: estado.uf,
-    paisId: estado.pais?.id,
-    ativo: estado.ativo
+    paisId: estado.paisId,
+    ativo: estado.ativo !== undefined ? estado.ativo : true
   };
 };
 
@@ -46,22 +47,6 @@ export const getEstados = async (): Promise<Estado[]> => {
     throw new Error('Resposta inválida da API para estados');
   } catch (error) {
     console.error('Erro ao buscar estados:', error);
-    throw error;
-  }
-};
-
-// Busca estados por país
-export const getEstadosByPais = async (paisId: string): Promise<Estado[]> => {
-  try {
-    const response = await api.get(`/estados/pais/${paisId}`);
-    
-    if (Array.isArray(response.data)) {
-      return response.data.map(adaptEstadoFromApi);
-    }
-    
-    throw new Error(`Resposta inválida da API para estados do país ${paisId}`);
-  } catch (error) {
-    console.error(`Erro ao buscar estados do país ${paisId}:`, error);
     throw error;
   }
 };
@@ -82,8 +67,24 @@ export const getEstado = async (id: number): Promise<Estado | null> => {
   }
 };
 
+// Busca estados por país
+export const getEstadosByPais = async (paisId: number): Promise<Estado[]> => {
+  try {
+    const response = await api.get(`/estados/pais/${paisId}`);
+    
+    if (Array.isArray(response.data)) {
+      return response.data.map(adaptEstadoFromApi);
+    }
+    
+    throw new Error(`Resposta inválida da API para estados do país ${paisId}`);
+  } catch (error) {
+    console.error(`Erro ao buscar estados do país ${paisId}:`, error);
+    throw error;
+  }
+};
+
 // Cria novo estado
-export const createEstado = async (estado: Omit<Estado, 'id'>): Promise<Estado> => {
+export const createEstado = async (estado: Omit<Estado, 'id' | 'pais'> & { paisId: number }): Promise<Estado> => {
   try {
     const dataToSend = adaptEstadoToApi(estado);
     const response = await api.post('/estados', dataToSend);
@@ -100,7 +101,7 @@ export const createEstado = async (estado: Omit<Estado, 'id'>): Promise<Estado> 
 };
 
 // Atualiza estado existente
-export const updateEstado = async (id: number, estado: Omit<Estado, 'id'>): Promise<Estado> => {
+export const updateEstado = async (id: number, estado: Omit<Estado, 'id' | 'pais'> & { paisId: number }): Promise<Estado> => {
   try {
     const dataToSend = adaptEstadoToApi(estado);
     const response = await api.put(`/estados/${id}`, dataToSend);
@@ -116,7 +117,7 @@ export const updateEstado = async (id: number, estado: Omit<Estado, 'id'>): Prom
   }
 };
 
-// Remove estado
+// Exclui estado
 export const deleteEstado = async (id: number): Promise<void> => {
   try {
     await api.delete(`/estados/${id}`);

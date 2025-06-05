@@ -136,16 +136,7 @@ const EstadoList: React.FC = () => {
         </span>
       )
     },
-    { 
-      header: 'Data de Cadastro', 
-      accessor: 'dataCadastro',
-      cell: (item: Estado) => formatDate(item.dataCadastro)
-    },
-    { 
-      header: 'Última Modificação', 
-      accessor: 'ultimaModificacao',
-      cell: (item: Estado) => formatDate(item.ultimaModificacao)
-    }
+  
   ];
 
   return (

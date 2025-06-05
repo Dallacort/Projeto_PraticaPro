@@ -8,7 +8,7 @@ public class EstadoDTO {
     private Long id;
     private String nome;
     private String uf;
-    private String paisId;
+    private Long paisId;
     private String paisNome;
     private LocalDateTime dataCadastro;
     private LocalDateTime ultimaModificacao;
@@ -17,7 +17,7 @@ public class EstadoDTO {
     public EstadoDTO() {
     }
 
-    public EstadoDTO(Long id, String nome, String uf, String paisId, String paisNome) {
+    public EstadoDTO(Long id, String nome, String uf, Long paisId, String paisNome) {
         this.id = id;
         this.nome = nome;
         this.uf = uf;
@@ -26,7 +26,7 @@ public class EstadoDTO {
     }
 
     public static EstadoDTO fromEntity(Estado estado) {
-        String paisId = null;
+        Long paisId = null;
         String paisNome = null;
         
         if (estado.getPais() != null) {
@@ -85,11 +85,11 @@ public class EstadoDTO {
         this.uf = uf;
     }
 
-    public String getPaisId() {
+    public Long getPaisId() {
         return paisId;
     }
 
-    public void setPaisId(String paisId) {
+    public void setPaisId(Long paisId) {
         this.paisId = paisId;
     }
 

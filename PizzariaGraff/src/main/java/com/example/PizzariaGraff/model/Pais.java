@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class Pais {
-    private String id;
+    private Long id;
     private String nome;
     private String codigo;
     private String sigla;
@@ -14,11 +14,11 @@ public class Pais {
     private Boolean ativo;
 
     // Getters e Setters
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

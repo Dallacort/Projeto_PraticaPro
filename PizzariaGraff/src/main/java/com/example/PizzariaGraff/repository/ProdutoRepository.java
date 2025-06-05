@@ -60,12 +60,11 @@ public class ProdutoRepository {
     public List<Produto> findByProduto(String nome) {
         List<Produto> produtos = new ArrayList<>();
         String sql = "SELECT * FROM produto WHERE produto LIKE ? ORDER BY produto";
-        String searchTerm = "%" + nome + "%";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setString(1, searchTerm);
+            stmt.setString(1, "%" + nome + "%");
             ResultSet rs = stmt.executeQuery();
             
             while (rs.next()) {
@@ -127,7 +126,7 @@ public class ProdutoRepository {
     private Produto insert(Produto produto) {
         String sql = "INSERT INTO produto (produto, unidade_medida_id, codigo_barras, referencia, marca_id, " +
                      "quantidade_minima, valor_compra, valor_venda, quantidade, percentual_lucro, descricao, " +
-                     "observacoes, situacao, data_criacao, data_alteracao) " +
+                     "observacoes, situacao, data_criacao, ultima_modificacao) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = databaseConnection.getConnection();
@@ -176,7 +175,7 @@ public class ProdutoRepository {
     private Produto update(Produto produto) {
         String sql = "UPDATE produto SET produto = ?, unidade_medida_id = ?, codigo_barras = ?, referencia = ?, " +
                      "marca_id = ?, quantidade_minima = ?, valor_compra = ?, valor_venda = ?, quantidade = ?, " +
-                     "percentual_lucro = ?, descricao = ?, observacoes = ?, situacao = ?, data_alteracao = ? " +
+                     "percentual_lucro = ?, descricao = ?, observacoes = ?, situacao = ?, ultima_modificacao = ? " +
                      "WHERE id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
@@ -260,9 +259,9 @@ public class ProdutoRepository {
             produto.setDataCriacao(dataCriacao.toLocalDateTime());
         }
         
-        Timestamp dataAlteracao = rs.getTimestamp("data_alteracao");
-        if (dataAlteracao != null) {
-            produto.setDataAlteracao(dataAlteracao.toLocalDateTime());
+        Timestamp ultimaModificacao = rs.getTimestamp("ultima_modificacao");
+        if (ultimaModificacao != null) {
+            produto.setDataAlteracao(ultimaModificacao.toLocalDateTime());
         }
         
         return produto;

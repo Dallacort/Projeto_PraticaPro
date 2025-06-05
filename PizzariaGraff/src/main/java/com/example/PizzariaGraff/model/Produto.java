@@ -25,6 +25,10 @@ public class Produto {
     // Relacionamentos
     private UnidadeMedida unidadeMedida;
     private Marca marca;
+    
+    // Nomes dos relacionamentos para DTO
+    private String marcaNome;
+    private String unidadeMedidaNome;
 
     // Constructors
     public Produto() {}
@@ -181,6 +185,22 @@ public class Produto {
 
     public void setMarca(Marca marca) {
         this.marca = marca;
+    }
+
+    public String getMarcaNome() {
+        return marcaNome;
+    }
+
+    public void setMarcaNome(String marcaNome) {
+        this.marcaNome = marcaNome;
+    }
+
+    public String getUnidadeMedidaNome() {
+        return unidadeMedidaNome;
+    }
+
+    public void setUnidadeMedidaNome(String unidadeMedidaNome) {
+        this.unidadeMedidaNome = unidadeMedidaNome;
     }
 
     @Override

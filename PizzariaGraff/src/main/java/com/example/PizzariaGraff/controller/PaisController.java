@@ -88,7 +88,7 @@ public class PaisController {
             List<Map<String, String>> resultado = new ArrayList<>();
             for (Pais pais : paises) {
                 Map<String, String> item = new HashMap<>();
-                item.put("id", pais.getId());
+                item.put("id", String.valueOf(pais.getId()));
                 item.put("nome", pais.getNome());
                 item.put("sigla", pais.getSigla());
                 resultado.add(item);
@@ -147,17 +147,23 @@ public class PaisController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Busca um país por ID")
-    public ResponseEntity<?> buscarPorId(@PathVariable String id) {
+    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
         try {
+            System.out.println("Buscando país com ID: " + id);
+            
             Pais pais = paisService.findById(id);
-            return ResponseEntity.ok(PaisDTO.fromEntity(pais));
+            PaisDTO paisDTO = PaisDTO.fromEntity(pais);
+            
+            System.out.println("País encontrado: " + pais.getNome());
+            return ResponseEntity.ok(paisDTO);
         } catch (Exception e) {
             e.printStackTrace();
+            System.err.println("Erro ao buscar país: " + e.getMessage());
+            
             Map<String, String> erro = new HashMap<>();
-            erro.put("erro", "Erro ao buscar país");
-            erro.put("mensagem", e.getMessage());
-            erro.put("causa", e.getCause() != null ? e.getCause().getMessage() : "Desconhecida");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(erro);
+            erro.put("erro", "País não encontrado");
+            erro.put("mensagem", "Não foi possível encontrar o país com ID: " + id.toString());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(erro);
         }
     }
 
@@ -179,35 +185,57 @@ public class PaisController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Atualiza um país")
-    public ResponseEntity<?> atualizar(@PathVariable String id, @RequestBody PaisDTO paisDTO) {
+    @Operation(summary = "Atualiza um país existente")
+    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody PaisDTO paisDTO) {
         try {
+            System.out.println("Atualizando país com ID: " + id);
+            
+            // Verificar se o país existe
+            Pais paisExistente = paisService.findById(id);
+            
+            // Converter DTO para entidade mantendo o ID
             Pais pais = paisDTO.toEntity();
             pais.setId(id);
-            pais = paisService.save(pais);
-            return ResponseEntity.ok(PaisDTO.fromEntity(pais));
+            
+            // Preservar datas existentes
+            pais.setDataCadastro(paisExistente.getDataCadastro());
+            
+            Pais paisAtualizado = paisService.save(pais);
+            PaisDTO result = PaisDTO.fromEntity(paisAtualizado);
+            
+            System.out.println("País atualizado com sucesso");
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             e.printStackTrace();
+            System.err.println("Erro ao atualizar país: " + e.getMessage());
+            
             Map<String, String> erro = new HashMap<>();
             erro.put("erro", "Erro ao atualizar país");
             erro.put("mensagem", e.getMessage());
-            erro.put("causa", e.getCause() != null ? e.getCause().getMessage() : "Desconhecida");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(erro);
         }
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Remove um país")
-    public ResponseEntity<?> remover(@PathVariable String id) {
+    public ResponseEntity<?> deletar(@PathVariable Long id) {
         try {
+            System.out.println("Deletando país com ID: " + id);
+            
+            // Verificar se o país existe antes de tentar deletar
+            paisService.findById(id);
+            
             paisService.deleteById(id);
+            
+            System.out.println("País deletado com sucesso");
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             e.printStackTrace();
+            System.err.println("Erro ao deletar país: " + e.getMessage());
+            
             Map<String, String> erro = new HashMap<>();
-            erro.put("erro", "Erro ao remover país");
+            erro.put("erro", "Erro ao deletar país");
             erro.put("mensagem", e.getMessage());
-            erro.put("causa", e.getCause() != null ? e.getCause().getMessage() : "Desconhecida");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(erro);
         }
     }

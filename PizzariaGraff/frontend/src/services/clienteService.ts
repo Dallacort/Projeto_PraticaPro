@@ -37,12 +37,28 @@ const adaptClienteFromApi = (cliente: any): Cliente => {
   
   return {
     id: cliente.id,
-    nome: cliente.nome || '',
-    cpfCnpj: cliente.cpfCnpj || '',
-    inscricaoEstadual: cliente.inscricaoEstadual || '',
-    endereco: cliente.endereco || '',
-    telefone: cliente.telefone || '',
+    cliente: cliente.cliente || cliente.nome || '',
+    nome: cliente.nome || cliente.cliente || '',
+    apelido: cliente.apelido || '',
+    cpfCpnj: cliente.cpfCpnj || cliente.cpfCnpj || '',
+    cpfCnpj: cliente.cpfCnpj || cliente.cpfCpnj || '',
+    rgInscricaoEstadual: cliente.rgInscricaoEstadual || cliente.inscricaoEstadual || '',
+    inscricaoEstadual: cliente.inscricaoEstadual || cliente.rgInscricaoEstadual || '',
     email: cliente.email || '',
+    telefone: cliente.telefone || '',
+    endereco: cliente.endereco || '',
+    numero: cliente.numero || '',
+    complemento: cliente.complemento || '',
+    bairro: cliente.bairro || '',
+    cep: cliente.cep || '',
+    nacionalidade: cliente.nacionalidade || '',
+    dataNascimento: cliente.dataNascimento || '',
+    estadoCivil: cliente.estadoCivil || '',
+    sexo: cliente.sexo || '',
+    tipo: cliente.tipo || 1,
+    limiteCredito: cliente.limiteCredito || 0,
+    observacao: cliente.observacao || '',
+    condicaoPagamentoId: cliente.condicaoPagamentoId || null,
     cidade: cidade,
     ativo: cliente.ativo === undefined ? true : cliente.ativo,
     dataCadastro: cliente.dataCadastro || null,
@@ -53,14 +69,31 @@ const adaptClienteFromApi = (cliente: any): Cliente => {
 // Adaptador para converter dados do frontend para a API
 const adaptClienteToApi = (cliente: Omit<Cliente, 'id' | 'dataCadastro' | 'ultimaModificacao'>): any => {
   return {
-    nome: cliente.nome,
-    cpfCnpj: cliente.cpfCnpj || '',
-    inscricaoEstadual: cliente.inscricaoEstadual || '',
-    endereco: cliente.endereco || '',
-    telefone: cliente.telefone || '',
-    email: cliente.email || '',
-    cidadeId: cliente.cidade?.id || null,
-    ativo: cliente.ativo
+    cliente: cliente.cliente || cliente.nome || '',
+    apelido: cliente.apelido || null,
+    bairro: cliente.bairro || null,
+    cep: cliente.cep || null,
+    numero: cliente.numero || null,
+    endereco: cliente.endereco || null,
+    cidadeId: cliente.cidade?.id ? Number(cliente.cidade.id) : null,
+    complemento: cliente.complemento || null,
+    idBrasileiro: null,
+    limiteCredito: cliente.limiteCredito ? Number(cliente.limiteCredito) : 0,
+    nacionalidade: cliente.nacionalidade || null,
+    rgInscricaoEstadual: cliente.rgInscricaoEstadual || cliente.inscricaoEstadual || null,
+    cpfCpnj: cliente.cpfCpnj || cliente.cpfCnpj || null,
+    dataNascimento: cliente.dataNascimento || null,
+    email: cliente.email || null,
+    telefone: cliente.telefone || null,
+    estadoCivil: cliente.estadoCivil || null,
+    tipo: cliente.tipo ? Number(cliente.tipo) : 1,
+    sexo: cliente.sexo || null,
+    condicaoPagamentoId: cliente.condicaoPagamentoId ? Number(cliente.condicaoPagamentoId) : null,
+    limiteCredito2: null,
+    observacao: cliente.observacao || null,
+    situacao: null,
+    dataCriacao: null,
+    dataAlteracao: null
   };
 };
 
@@ -100,6 +133,14 @@ export const getCliente = async (id: number): Promise<Cliente | null> => {
 export const createCliente = async (cliente: Omit<Cliente, 'id' | 'dataCadastro' | 'ultimaModificacao'>): Promise<Cliente> => {
   try {
     const dataToSend = adaptClienteToApi(cliente);
+    
+    // DEBUG: Log do payload enviado
+    console.log('=== PAYLOAD ENVIADO PARA BACKEND ===');
+    console.log('Cliente original:', cliente);
+    console.log('Data to send:', dataToSend);
+    console.log('JSON enviado:', JSON.stringify(dataToSend, null, 2));
+    console.log('=====================================');
+    
     const response = await api.post('/clientes', dataToSend);
     
     if (response.data) {
@@ -107,8 +148,11 @@ export const createCliente = async (cliente: Omit<Cliente, 'id' | 'dataCadastro'
     }
     
     throw new Error('Resposta inválida da API ao criar cliente');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao criar cliente:', error);
+    if (error.response?.data) {
+      console.error('Resposta do servidor:', error.response.data);
+    }
     throw error;
   }
 };

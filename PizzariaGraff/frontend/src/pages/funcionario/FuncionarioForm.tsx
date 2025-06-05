@@ -1,26 +1,53 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
-import FormField from '../../components/FormField';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { getFuncionario, createFuncionario, updateFuncionario } from '../../services/funcionarioService';
-import { getCidades } from '../../services/cidadeService';
-import { Funcionario, Cidade } from '../../types';
-import { toast } from 'react-hot-toast';
+import { Funcionario, Cidade, FuncaoFuncionario } from '../../types';
+import { FaSpinner, FaSearch } from 'react-icons/fa';
+import CidadeModal from '../../components/modals/CidadeModal';
+import FuncaoFuncionarioModal from '../../components/modals/FuncaoFuncionarioModal';
+import { formatDate } from '../../utils/formatters';
+
+interface FuncionarioFormData {
+  funcionario: string;
+  apelido: string;
+  cpfCpnj: string;
+  rgInscricaoEstadual: string;
+  email: string;
+  telefone: string;
+  endereco: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cep: string;
+  cnh: string;
+  dataValidadeCnh: string;
+  sexo: string;
+  observacao: string;
+  estadoCivil: string;
+  idBrasileiro: string;
+  salario: string;
+  situacao: string;
+  nacionalidade: string;
+  dataNascimento: string;
+  dataAdmissao: string;
+  dataDemissao: string;
+  cidadeId: string;
+  funcaoFuncionarioId: string;
+  ativo: boolean;
+}
 
 const FuncionarioForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Considerar novo se o ID for 'novo' OU se estiver na rota '/funcionarios/novo'
   const isNew = id === 'novo' || location.pathname === '/funcionarios/novo' || !id;
   
-  console.log('FuncionarioForm - ID:', id, 'isNew:', isNew, 'pathname:', location.pathname);
-
-  const [formData, setFormData] = useState<Omit<Funcionario, 'id' | 'cidade'> & { cidadeId: string }>({
-    nome: '',
-    cpf: '',
-    rg: '',
-    dataNascimento: '',
+  const [formData, setFormData] = useState<FuncionarioFormData>({
+    funcionario: '',
+    apelido: '',
+    cpfCpnj: '',
+    rgInscricaoEstadual: '',
     email: '',
     telefone: '',
     endereco: '',
@@ -28,22 +55,32 @@ const FuncionarioForm: React.FC = () => {
     complemento: '',
     bairro: '',
     cep: '',
-    cidadeId: '',
-    cargo: '',
-    salario: 0,
+    cnh: '',
+    dataValidadeCnh: '',
+    sexo: '',
+    observacao: '',
+    estadoCivil: '',
+    idBrasileiro: '',
+    salario: '',
+    situacao: '',
+    nacionalidade: '',
+    dataNascimento: '',
     dataAdmissao: '',
     dataDemissao: '',
-    ativo: true
+    cidadeId: '',
+    funcaoFuncionarioId: '',
+    ativo: true,
   });
   
-  const [dataCadastro, setDataCadastro] = useState<string | null>(null);
-  const [ultimaModificacao, setUltimaModificacao] = useState<string | null>(null);
-  const [cidades, setCidades] = useState<Cidade[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ultimaModificacao, setUltimaModificacao] = useState<string | undefined>(undefined);
+  const [dataCadastro, setDataCadastro] = useState<string | undefined>(undefined);
   const [cidadeSelecionada, setCidadeSelecionada] = useState<Cidade | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [funcaoSelecionada, setFuncaoSelecionada] = useState<FuncaoFuncionario | null>(null);
+  const [isCidadeModalOpen, setIsCidadeModalOpen] = useState(false);
+  const [isFuncaoModalOpen, setIsFuncaoModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,47 +88,17 @@ const FuncionarioForm: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        // Buscar lista de cidades
-        const cidadesData = await getCidades();
-        console.log('Cidades recebidas:', cidadesData);
-        
-        if (cidadesData.length === 0) {
-          setError('Não foi possível carregar a lista de cidades. Por favor, cadastre uma cidade primeiro.');
-          setTimeout(() => {
-            navigate('/cidades');
-          }, 3000);
-          return;
-        }
-        
-        setCidades(cidadesData);
-        
-        // Se for edição, buscar dados do funcionário
         if (!isNew && id) {
           const funcionarioData = await getFuncionario(Number(id));
           if (!funcionarioData) {
             throw new Error('Funcionário não encontrado');
           }
           
-          // Em vez de lançar erro, vamos lidar melhor com funcionários sem cidade
-          let cidadeId = '';
-          
-          // Se o funcionário tem cidade definida, use-a
-          if (funcionarioData.cidade && funcionarioData.cidade.id) {
-            cidadeId = String(funcionarioData.cidade.id);
-            setCidadeSelecionada(funcionarioData.cidade);
-          } 
-          // Se não tem cidade definida, mas temos cidades disponíveis, use a primeira
-          else if (cidadesData.length > 0) {
-            cidadeId = String(cidadesData[0].id);
-            setCidadeSelecionada(cidadesData[0]);
-            console.log('Funcionário sem cidade definida, usando a primeira cidade disponível:', cidadesData[0].nome);
-          }
-          
           setFormData({
-            nome: funcionarioData.nome,
-            cpf: funcionarioData.cpf,
-            rg: funcionarioData.rg || '',
-            dataNascimento: funcionarioData.dataNascimento || '',
+            funcionario: funcionarioData.funcionario || '',
+            apelido: funcionarioData.apelido || '',
+            cpfCpnj: funcionarioData.cpfCpnj || '',
+            rgInscricaoEstadual: funcionarioData.rgInscricaoEstadual || '',
             email: funcionarioData.email || '',
             telefone: funcionarioData.telefone || '',
             endereco: funcionarioData.endereco || '',
@@ -99,36 +106,37 @@ const FuncionarioForm: React.FC = () => {
             complemento: funcionarioData.complemento || '',
             bairro: funcionarioData.bairro || '',
             cep: funcionarioData.cep || '',
-            cidadeId: cidadeId,
-            cargo: funcionarioData.cargo || '',
-            salario: funcionarioData.salario || 0,
+            cnh: funcionarioData.cnh || '',
+            dataValidadeCnh: funcionarioData.dataValidadeCnh || '',
+            sexo: funcionarioData.sexo ? String(funcionarioData.sexo) : '',
+            observacao: funcionarioData.observacao || '',
+            estadoCivil: funcionarioData.estadoCivil ? String(funcionarioData.estadoCivil) : '',
+            idBrasileiro: funcionarioData.idBrasileiro ? String(funcionarioData.idBrasileiro) : '',
+            salario: funcionarioData.salario ? String(funcionarioData.salario) : '',
+            situacao: funcionarioData.situacao || '',
+            nacionalidade: funcionarioData.nacionalidade ? String(funcionarioData.nacionalidade) : '',
+            dataNascimento: funcionarioData.dataNascimento ? String(funcionarioData.dataNascimento) : '',
             dataAdmissao: funcionarioData.dataAdmissao || '',
             dataDemissao: funcionarioData.dataDemissao || '',
-            ativo: funcionarioData.ativo !== false
+            cidadeId: funcionarioData.cidadeId ? String(funcionarioData.cidadeId) : '',
+            funcaoFuncionarioId: funcionarioData.funcaoFuncionarioId ? String(funcionarioData.funcaoFuncionarioId) : '',
+            ativo: funcionarioData.ativo !== undefined ? funcionarioData.ativo : true,
           });
           
-          // Guardar datas para exibição
-          setDataCadastro(funcionarioData.dataCadastro || null);
-          setUltimaModificacao(funcionarioData.ultimaModificacao || null);
-          
-          console.log('Datas recebidas:', {
-            dataCadastro: funcionarioData.dataCadastro,
-            ultimaModificacao: funcionarioData.ultimaModificacao
-          });
-        } else {
-          // Para novo funcionário, definir uma cidade padrão se houver cidades disponíveis
-          if (cidadesData.length > 0) {
-            setFormData(prev => ({
-              ...prev,
-              cidadeId: String(cidadesData[0].id)
-            }));
-            setCidadeSelecionada(cidadesData[0]);
+          if (funcionarioData.cidade) {
+            setCidadeSelecionada(funcionarioData.cidade);
           }
+          
+          if (funcionarioData.funcaoFuncionario) {
+            setFuncaoSelecionada(funcionarioData.funcaoFuncionario);
+          }
+          
+          setUltimaModificacao(funcionarioData.ultimaModificacao || funcionarioData.dataAlteracao);
+          setDataCadastro(funcionarioData.dataCadastro || funcionarioData.dataCriacao);
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('Erro ao carregar dados:', err);
-        const errorMessage = err.response?.data?.mensagem || err.message || 'Erro ao carregar os dados necessários.';
-        setError(errorMessage);
+        setError('Erro ao carregar os dados do funcionário.');
         setTimeout(() => {
           navigate('/funcionarios');
         }, 3000);
@@ -142,47 +150,22 @@ const FuncionarioForm: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     
-    if (name === 'cidadeId') {
-      const cidadeId = value;
-      setFormData((prev) => ({
-        ...prev,
-        cidadeId,
-      }));
-      
-      const cidade = cidades.find(c => String(c.id) === cidadeId) || null;
-      setCidadeSelecionada(cidade);
-    } else if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData((prev) => ({
-        ...prev,
-        [name]: checked,
-      }));
-    } else if (name === 'salario') {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value === '' ? 0 : parseFloat(value),
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
   };
 
   const validateForm = () => {
     const errors: string[] = [];
-    
-    if (!formData.nome) errors.push("Nome é obrigatório");
-    if (!formData.cpf) errors.push("CPF é obrigatório");
+    if (!formData.funcionario?.trim()) errors.push("Nome do funcionário é obrigatório");
+    if (!formData.email?.trim()) errors.push("Email é obrigatório");
     if (!formData.cidadeId) errors.push("Cidade é obrigatória");
-    if (!formData.cargo) errors.push("Cargo é obrigatório");
     
-    // Validação básica de CPF (apenas verifica o comprimento)
-    const cpfClean = formData.cpf.replace(/[^\d]/g, '');
-    if (cpfClean.length !== 11) {
-      errors.push("CPF deve ter 11 dígitos");
+    if (formData.email && !formData.email.includes('@')) {
+      errors.push("Email deve ter formato válido");
     }
     
     return errors;
@@ -190,403 +173,512 @@ const FuncionarioForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setFormError('');
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join(". "));
+      return;
+    }
 
     try {
-      // Verificações de campos obrigatórios
-      if (!formData.nome.trim()) {
-        throw new Error('Nome é obrigatório');
+      setSaving(true);
+      setError(null);
+      
+      if (!cidadeSelecionada || !formData.cidadeId) {
+        throw new Error('Cidade deve ser selecionada.');
       }
-
-      if (!formData.cpf.trim()) {
-        throw new Error('CPF é obrigatório');
-      }
-
-      if (!formData.cargo.trim()) {
-        throw new Error('Cargo é obrigatório');
-      }
-
-      if (!formData.cidadeId) {
-        throw new Error('Cidade é obrigatória');
-      }
-
-      // Validar formato da data de nascimento
-      if (formData.dataNascimento && !/^\d{4}-\d{2}-\d{2}$/.test(formData.dataNascimento)) {
-        throw new Error('Data de Nascimento deve estar no formato YYYY-MM-DD');
-      }
-
-      if (!cidadeSelecionada) {
-        throw new Error('Cidade é obrigatória');
-      }
-
-      const funcionarioToSave: Omit<Funcionario, 'id'> = {
-        ...formData,
-        // Garante que todos os campos estejam definidos corretamente
-        nome: formData.nome.trim(),
-        rg: formData.rg || '',
-        dataNascimento: formData.dataNascimento || '',
-        cpf: formData.cpf,
-        email: formData.email || '',
-        telefone: formData.telefone || '',
-        endereco: formData.endereco || '',
-        numero: formData.numero || '',
-        complemento: formData.complemento || '',
-        bairro: formData.bairro || '',
-        cep: formData.cep || '',
-        cidade: cidadeSelecionada,
-        cargo: formData.cargo,
-        salario: Number(formData.salario) || 0,
-        dataAdmissao: formData.dataAdmissao || '',
-        dataDemissao: formData.dataDemissao || '',
-        ativo: formData.ativo
+      
+      const funcionarioPayload: any = {
+        funcionario: formData.funcionario,
+        apelido: formData.apelido,
+        cpfCpnj: formData.cpfCpnj,
+        rgInscricaoEstadual: formData.rgInscricaoEstadual,
+        email: formData.email,
+        telefone: formData.telefone,
+        endereco: formData.endereco,
+        numero: formData.numero,
+        complemento: formData.complemento,
+        bairro: formData.bairro,
+        cep: formData.cep,
+        cnh: formData.cnh,
+        dataValidadeCnh: formData.dataValidadeCnh,
+        sexo: formData.sexo ? Number(formData.sexo) : null,
+        observacao: formData.observacao,
+        estadoCivil: formData.estadoCivil ? Number(formData.estadoCivil) : null,
+        idBrasileiro: formData.idBrasileiro ? Number(formData.idBrasileiro) : null,
+        salario: formData.salario ? Number(formData.salario) : null,
+        situacao: formData.situacao,
+        nacionalidade: formData.nacionalidade ? Number(formData.nacionalidade) : null,
+        dataNascimento: formData.dataNascimento ? Number(formData.dataNascimento) : null,
+        dataAdmissao: formData.dataAdmissao,
+        dataDemissao: formData.dataDemissao,
+        cidadeId: Number(formData.cidadeId),
+        funcaoFuncionarioId: formData.funcaoFuncionarioId ? Number(formData.funcaoFuncionarioId) : null,
       };
-
-      // Remover a propriedade cidadeId que não faz parte da interface Funcionario
-      delete (funcionarioToSave as any).cidadeId;
-
-      if (id) {
-        await updateFuncionario(Number(id), funcionarioToSave);
-        toast.success('Funcionário atualizado com sucesso!');
-      } else {
-        await createFuncionario(funcionarioToSave);
-        toast.success('Funcionário cadastrado com sucesso!');
+      
+      if (isNew) {
+        await createFuncionario(funcionarioPayload);
+        alert('Funcionário cadastrado com sucesso!');
+      } else if (id) {
+        await updateFuncionario(Number(id), funcionarioPayload);
+        alert('Funcionário atualizado com sucesso!');
       }
       navigate('/funcionarios');
-    } catch (error) {
-      console.error('Erro ao salvar funcionário:', error);
-      setFormError(error instanceof Error ? error.message : 'Erro ao salvar funcionário');
-      toast.error(error instanceof Error ? error.message : 'Erro ao salvar funcionário');
+    } catch (err: any) {
+      console.error('Erro ao salvar funcionário:', err);
+      const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao salvar funcionário. Verifique os dados e tente novamente.';
+      setError(errorMessage);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const formatDate = (dateString?: string | null) => {
-    if (!dateString) return '-';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      console.error('Erro ao formatar data:', error);
-      return '-';
-    }
+  const handleCancel = () => {
+    navigate('/funcionarios');
+  };
+
+  const handleOpenCidadeModal = () => setIsCidadeModalOpen(true);
+  const handleCloseCidadeModal = () => setIsCidadeModalOpen(false);
+
+  const handleSelectCidade = (cidade: Cidade) => {
+    setCidadeSelecionada(cidade);
+    setFormData(prev => ({
+      ...prev,
+      cidadeId: String(cidade.id),
+    }));
+  };
+
+  const handleOpenFuncaoModal = () => setIsFuncaoModalOpen(true);
+  const handleCloseFuncaoModal = () => setIsFuncaoModalOpen(false);
+
+  const handleSelectFuncao = (funcao: FuncaoFuncionario) => {
+    setFuncaoSelecionada(funcao);
+    setFormData(prev => ({
+      ...prev,
+      funcaoFuncionarioId: String(funcao.id),
+    }));
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-        <span className="ml-3">Carregando dados do funcionário...</span>
+      <div className="flex justify-center items-center h-full">
+        <div className="text-primary">
+          <FaSpinner className="animate-spin text-blue-500" size={24} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">
-          {isNew ? 'Novo Funcionário' : 'Editar Funcionário'}
-        </h1>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900">
+            {isNew ? 'Novo Funcionário' : 'Editar Funcionário'}
+          </h1>
         </div>
-      )}
 
-      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-6">
-        {!isNew && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-md">
-            <h2 className="text-lg font-medium text-gray-700 mb-2">Informações do Registro</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Data de Cadastro</p>
-                <p className="font-medium text-gray-800">{formatDate(dataCadastro)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Última Modificação</p>
-                <p className="font-medium text-gray-800">{formatDate(ultimaModificacao)}</p>
-              </div>
-            </div>
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <p>{error}</p>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h2 className="text-lg font-medium text-gray-700 mb-4">Dados Pessoais</h2>
+        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm">
+          {/* Dados Básicos */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-medium text-gray-900">Dados Básicos</h2>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-600">Habilitado</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="ativo"
+                    checked={formData.ativo}
+                    onChange={handleChange}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                </label>
+              </div>
+            </div>
             
-            <FormField
-              label="Nome"
-              name="nome"
-              value={formData.nome}
-              onChange={handleChange}
-              required
-            />
-            
-            <FormField
-              label="CPF"
-              name="cpf"
-              value={formData.cpf}
-              onChange={handleChange}
-              required
-            />
-            
-            <FormField
-              label="RG"
-              name="rg"
-              value={formData.rg}
-              onChange={handleChange}
-              placeholder="00.000.000-0"
-            />
-            
-            <FormField
-              label="Data de Nascimento"
-              name="dataNascimento"
-              type="date"
-              value={formData.dataNascimento}
-              onChange={handleChange}
-            />
-            
-            <FormField
-              label="E-mail"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-            />
-            
-            <FormField
-              label="Telefone"
-              name="telefone"
-              value={formData.telefone}
-              onChange={handleChange}
-            />
-
-            <div className="mb-4">
-              <label className="flex items-center">
+            {/* Linha 1: Código, Sexo, Nome, Apelido */}
+            <div className="grid grid-cols-12 gap-4 mb-4">
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Código</label>
                 <input
-                  type="checkbox"
-                  name="ativo"
-                  checked={formData.ativo}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm text-gray-700">Ativo</span>
-              </label>
-            </div>
-          </div>
-          
-          <div>
-            <h2 className="text-lg font-medium text-gray-700 mb-4">Dados Profissionais</h2>
-            
-            <FormField
-              label="Cargo"
-              name="cargo"
-              value={formData.cargo}
-              onChange={handleChange}
-              required
-            />
-            
-            <FormField
-              label="Salário"
-              name="salario"
-              type="number"
-              value={formData.salario.toString()}
-              onChange={handleChange}
-            />
-            
-            <FormField
-              label="Data de Admissão"
-              name="dataAdmissao"
-              type="date"
-              value={formData.dataAdmissao}
-              onChange={handleChange}
-            />
-            
-            <FormField
-              label="Data de Demissão"
-              name="dataDemissao"
-              type="date"
-              value={formData.dataDemissao}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <h2 className="text-lg font-medium text-gray-700 mb-4">Endereço</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <FormField
-                  label="CEP"
-                  name="cep"
-                  value={formData.cep}
-                  onChange={handleChange}
+                  type="text"
+                  value={isNew ? "Novo" : id || ""}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                 />
               </div>
-              
-              <div>
-                <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-gray-700">Cidade</label>
-                  <Link 
-                    to="/cidades" 
-                    className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-xs hover:bg-blue-200"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    Ver todas
-                  </Link>
-                </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
                 <select
-                  name="cidadeId"
-                  value={formData.cidadeId}
+                  name="sexo"
+                  value={formData.sexo}
                   onChange={handleChange}
-                  className="mt-0 block w-full px-3 py-2 sm:text-sm border border-gray-300 rounded-md"
-                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="">Selecione uma cidade</option>
-                  {cidades.map((cidade) => (
-                    <option key={cidade.id} value={cidade.id}>
-                      {cidade.nome}
-                    </option>
-                  ))}
+                  <option value="">Selecione...</option>
+                  <option value="1">Masculino</option>
+                  <option value="2">Feminino</option>
                 </select>
-                {!formData.cidadeId && error && (
-                  <p className="mt-1 text-sm text-red-600">Campo obrigatório</p>
-                )}
+              </div>
+              <div className="col-span-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Funcionário <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="funcionario"
+                  value={formData.funcionario}
+                  onChange={handleChange}
+                  placeholder="Ex: João Silva"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Apelido</label>
+                <input
+                  type="text"
+                  name="apelido"
+                  value={formData.apelido}
+                  onChange={handleChange}
+                  placeholder="Ex: João"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
               </div>
             </div>
-            
-            {/* Estado e País lado a lado */}
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div>
-                <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-gray-700">Estado</label>
-                  <Link 
-                    to="/estados" 
-                    className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-xs hover:bg-blue-200"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    Ver todos
-                  </Link>
-                </div>
-                {cidadeSelecionada?.estado && (
-                  <input 
-                    type="text" 
-                    className="mt-1.5 block w-full px-3 py-2 sm:text-sm border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 cursor-not-allowed" 
-                    value={cidadeSelecionada.estado.nome + (cidadeSelecionada.estado.uf ? ` (${cidadeSelecionada.estado.uf})` : '')}
-                    disabled
-                  />
-                )}
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-gray-700">País</label>
-                  <Link 
-                    to="/paises" 
-                    className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-xs hover:bg-blue-200"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    Ver todos
-                  </Link>
-                </div>
-                {cidadeSelecionada?.estado?.pais && (
-                  <input 
-                    type="text" 
-                    className="mt-1.5 block w-full px-3 py-2 sm:text-sm border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 cursor-not-allowed" 
-                    value={cidadeSelecionada.estado.pais.nome}
-                    disabled
-                  />
-                )}
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div className="md:col-span-2">
-                <FormField
-                  label="Endereço"
+
+            {/* Linha 2: Endereço, Número, Complemento, Bairro, CEP, Cidade */}
+            <div className="grid grid-cols-12 gap-4 mb-4">
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
+                <input
+                  type="text"
                   name="endereco"
                   value={formData.endereco}
                   onChange={handleChange}
+                  placeholder="Ex: Rua das Indústrias"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              
-              <FormField
-                label="Número"
-                name="numero"
-                value={formData.numero}
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Número</label>
+                <input
+                  type="text"
+                  name="numero"
+                  value={formData.numero}
+                  onChange={handleChange}
+                  placeholder="1500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Complemento</label>
+                <input
+                  type="text"
+                  name="complemento"
+                  value={formData.complemento}
+                  onChange={handleChange}
+                  placeholder="Ex: Apto 101"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bairro</label>
+                <input
+                  type="text"
+                  name="bairro"
+                  value={formData.bairro}
+                  onChange={handleChange}
+                  placeholder="Ex: Vila Industrial"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">CEP</label>
+                <input
+                  type="text"
+                  name="cep"
+                  value={formData.cep}
+                  onChange={handleChange}
+                  placeholder="00000-000"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                <div className="flex">
+                  <input
+                    type="text"
+                    value={cidadeSelecionada ? cidadeSelecionada.nome : ''}
+                    readOnly
+                    placeholder="Selecione..."
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleOpenCidadeModal}
+                    className="px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 hover:bg-gray-100"
+                  >
+                    <FaSearch className="text-gray-400" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Linha 3: Telefone, Email, CNH, Data Validade CNH */}
+            <div className="grid grid-cols-12 gap-4 mb-4">
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Telefone <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="telefone"
+                  value={formData.telefone}
+                  onChange={handleChange}
+                  placeholder="(41) 99999-9999"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="funcionario@empresa.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">CNH</label>
+                <input
+                  type="text"
+                  name="cnh"
+                  value={formData.cnh}
+                  onChange={handleChange}
+                  placeholder="00000000000"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data Validade CNH</label>
+                <input
+                  type="date"
+                  name="dataValidadeCnh"
+                  value={formData.dataValidadeCnh}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Linha 4: RG/I.E., CPF/CNPJ, Salário, Função */}
+            <div className="grid grid-cols-12 gap-4 mb-4">
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">RG/I.E.</label>
+                <input
+                  type="text"
+                  name="rgInscricaoEstadual"
+                  value={formData.rgInscricaoEstadual}
+                  onChange={handleChange}
+                  placeholder="Ex: 12345678901"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  CPF/CNPJ <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="cpfCpnj"
+                  value={formData.cpfCpnj}
+                  onChange={handleChange}
+                  placeholder="000.000.000/0000-00"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Salário</label>
+                <input
+                  type="number"
+                  name="salario"
+                  value={formData.salario}
+                  onChange={handleChange}
+                  step="0.01"
+                  placeholder="0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Função</label>
+                <div className="flex">
+                  <input
+                    type="text"
+                    value={funcaoSelecionada ? funcaoSelecionada.descricao : ''}
+                    readOnly
+                    placeholder="Selecione..."
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleOpenFuncaoModal}
+                    className="px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 hover:bg-gray-100"
+                  >
+                    <FaSearch className="text-gray-400" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Linha 5: Data Nascimento, Estado Civil, Data Admissão, Data Demissão */}
+            <div className="grid grid-cols-12 gap-4 mb-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ano Nascimento</label>
+                <input
+                  type="number"
+                  name="dataNascimento"
+                  value={formData.dataNascimento}
+                  onChange={handleChange}
+                  placeholder="1990"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Estado Civil</label>
+                <select
+                  name="estadoCivil"
+                  value={formData.estadoCivil}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Selecione...</option>
+                  <option value="1">Solteiro(a)</option>
+                  <option value="2">Casado(a)</option>
+                  <option value="3">Divorciado(a)</option>
+                  <option value="4">Viúvo(a)</option>
+                  <option value="5">União Estável</option>
+                </select>
+              </div>
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data Admissão</label>
+                <input
+                  type="date"
+                  name="dataAdmissao"
+                  value={formData.dataAdmissao}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data Demissão</label>
+                <input
+                  type="date"
+                  name="dataDemissao"
+                  value={formData.dataDemissao}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data Situação</label>
+                <input
+                  type="date"
+                  name="situacao"
+                  value={formData.situacao}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Observações */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+              <textarea
+                name="observacao"
+                value={formData.observacao}
                 onChange={handleChange}
+                rows={4}
+                placeholder="Observações gerais sobre o funcionário"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                label="Bairro"
-                name="bairro"
-                value={formData.bairro}
-                onChange={handleChange}
-              />
-              
-              <FormField
-                label="Complemento"
-                name="complemento"
-                value={formData.complemento}
-                onChange={handleChange}
-              />
+
+             {/* Rodapé do formulário com informações de registro e botões */}
+        <div className="flex justify-between items-end pt-6 border-t mt-6">
+          {/* Informações do Registro (sempre que existirem datas) */}
+          {(dataCadastro || ultimaModificacao) && (
+            <div className="text-sm text-gray-600">
+              <h3 className="font-semibold text-gray-700 mb-1">Informações do Registro:</h3>
+              {dataCadastro && (
+                <p>
+                  Cadastrado em: {formatDate(dataCadastro)}
+                </p>
+              )}
+              {ultimaModificacao && (
+                <p>
+                  Última modificação: {formatDate(ultimaModificacao)}
+                </p>
+              )}
+            </div>
+          )}
+
+              {/* Botões */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? (
+                    <>
+                      <FaSpinner className="animate-spin mr-2 inline" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </form>
+      </div>
 
-        <div className="flex justify-end mt-6 pt-6 border-t border-gray-200 space-x-3">
-          <button
-            type="button"
-            onClick={() => navigate('/funcionarios')}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-md"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md flex items-center"
-          >
-            {saving ? (
-              <>
-                <span className="mr-2">Salvando...</span>
-                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-              </>
-            ) : (
-              'Salvar'
-            )}
-          </button>
-        </div>
-      </form>
+      {/* Modais */}
+      <CidadeModal
+        isOpen={isCidadeModalOpen}
+        onClose={handleCloseCidadeModal}
+        onSelect={handleSelectCidade}
+      />
+
+      <FuncaoFuncionarioModal
+        isOpen={isFuncaoModalOpen}
+        onClose={handleCloseFuncaoModal}
+        onSelect={handleSelectFuncao}
+        selectedFuncaoId={funcaoSelecionada?.id}
+      />
     </div>
   );
 };

@@ -29,9 +29,14 @@ import ClienteForm from './pages/cliente/ClienteForm';
 import FuncionarioList from './pages/funcionario/FuncionarioList';
 import FuncionarioForm from './pages/funcionario/FuncionarioForm';
 
+// Páginas de função de funcionário
+import FuncaoFuncionarioList from './pages/funcao-funcionario/FuncaoFuncionarioList';
+import FuncaoFuncionarioForm from './pages/funcao-funcionario/FuncaoFuncionarioForm';
+
 // Páginas de fornecedor
 import FornecedorList from './pages/fornecedor/FornecedorList';
 import FornecedorForm from './pages/fornecedor/FornecedorForm';
+import FornecedorView from './pages/fornecedor/FornecedorView';
 
 // Páginas de transportadora
 import TransportadoraList from './pages/transportadora/TransportadoraList';
@@ -40,6 +45,14 @@ import TransportadoraForm from './pages/transportadora/TransportadoraForm';
 // Páginas de produto
 import ProdutoList from './pages/produto/ProdutoList';
 import ProdutoForm from './pages/produto/ProdutoForm';
+
+// Páginas de marca
+import MarcaList from './pages/marca/MarcaList';
+import MarcaForm from './pages/marca/MarcaForm';
+
+// Páginas de unidade de medida
+import UnidadeMedidaList from './pages/unidade-medida/UnidadeMedidaList';
+import UnidadeMedidaForm from './pages/unidade-medida/UnidadeMedidaForm';
 
 // Páginas de veículo
 import VeiculoList from './pages/veiculo/VeiculoList';
@@ -156,6 +169,7 @@ const App: React.FC = () => {
             
             {/* Rotas para Fornecedores */}
             <Route path="fornecedores/novo" element={<FornecedorForm />} />
+            <Route path="fornecedores/:id/visualizar" element={<FornecedorView />} />
             <Route path="fornecedores/:id" element={<FornecedorForm />} />
             <Route path="fornecedores" element={<FornecedorList />} />
             
@@ -164,6 +178,11 @@ const App: React.FC = () => {
             <Route path="funcionarios/:id" element={<FuncionarioForm />} />
             <Route path="funcionarios" element={<FuncionarioList />} />
             
+            {/* Rotas para Funções de Funcionário */}
+            <Route path="funcoes-funcionario/novo" element={<FuncaoFuncionarioForm />} />
+            <Route path="funcoes-funcionario/:id" element={<FuncaoFuncionarioForm />} />
+            <Route path="funcoes-funcionario" element={<FuncaoFuncionarioList />} />
+            
             {/* Rotas para Transportadoras */}
             <Route path="transportadoras/novo" element={<TransportadoraForm />} />
             <Route path="transportadoras/:id" element={<TransportadoraForm />} />
@@ -171,6 +190,7 @@ const App: React.FC = () => {
             
             {/* Rotas para Produtos */}
             <Route path="produtos/novo" element={<ProdutoForm />} />
+            <Route path="produtos/:id/visualizar" element={<ProdutoForm />} />
             <Route path="produtos/:id" element={<ProdutoForm />} />
             <Route path="produtos" element={<ProdutoList />} />
             
@@ -198,6 +218,18 @@ const App: React.FC = () => {
             <Route path="notas-fiscais/novo" element={<NfeForm />} />
             <Route path="notas-fiscais/:id" element={<NfeForm />} />
             <Route path="notas-fiscais" element={<NfeList />} />
+            
+            {/* Rotas para Marcas */}
+            <Route path="marcas/novo" element={<MarcaForm />} />
+            <Route path="marcas/:id/visualizar" element={<MarcaForm />} />
+            <Route path="marcas/:id" element={<MarcaForm />} />
+            <Route path="marcas" element={<MarcaList />} />
+            
+            {/* Rotas para Unidades de Medida */}
+            <Route path="unidades-medida/novo" element={<UnidadeMedidaForm />} />
+            <Route path="unidades-medida/:id/visualizar" element={<UnidadeMedidaForm />} />
+            <Route path="unidades-medida/:id" element={<UnidadeMedidaForm />} />
+            <Route path="unidades-medida" element={<UnidadeMedidaList />} />
             
             {/* Rota para página não encontrada (deve ficar por último) */}
             <Route path="*" element={<NotFoundPage />} />

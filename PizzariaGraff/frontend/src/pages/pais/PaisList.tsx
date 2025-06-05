@@ -41,15 +41,14 @@ const PaisList: React.FC = () => {
   }, [fetchPaises, location.key]);
 
   const handleView = async (id: string | number) => {
-    setModalLoading(true);
-    setModalOpen(true);
     try {
-      const pais = await getPais(id.toString());
-      setSelectedPais(pais);
+      setModalLoading(true);
+      const paisData = await getPais(Number(id));
+      setSelectedPais(paisData);
+      setModalOpen(true);
     } catch (error) {
       console.error('Erro ao carregar país:', error);
-      toast.error('Erro ao carregar detalhes do país');
-      setModalOpen(false);
+      toast.error('Erro ao carregar dados do país');
     } finally {
       setModalLoading(false);
     }
@@ -67,16 +66,16 @@ const PaisList: React.FC = () => {
   const handleDelete = async (id: string | number) => {
     if (window.confirm('Tem certeza que deseja excluir este país?')) {
       try {
-        const idString = String(id);
-        setDeleteLoading(prev => ({ ...prev, [idString]: true }));
-        await deletePais(idString);
-        setPaises(paises.filter(p => p.id !== idString));
+        const numericId = Number(id);
+        setDeleteLoading(prev => ({ ...prev, [numericId]: true }));
+        await deletePais(numericId);
+        setPaises(paises.filter(p => p.id !== numericId));
         toast.success('País excluído com sucesso!');
       } catch (err) {
         console.error('Erro ao excluir país:', err);
         toast.error('Erro ao excluir país. Verifique se não há registros dependentes.');
       } finally {
-        setDeleteLoading(prev => ({ ...prev, [id.toString()]: false }));
+        setDeleteLoading(prev => ({ ...prev, [Number(id)]: false }));
       }
     }
   };
@@ -100,16 +99,7 @@ const PaisList: React.FC = () => {
         </span>
       )
     },
-    { 
-      header: 'Data de Cadastro', 
-      accessor: 'dataCadastro',
-      cell: (item: Pais) => formatDate(item.dataCadastro)
-    },
-    { 
-      header: 'Última Modificação', 
-      accessor: 'ultimaModificacao',
-      cell: (item: Pais) => formatDate(item.ultimaModificacao)
-    },
+    
   ];
 
   return (

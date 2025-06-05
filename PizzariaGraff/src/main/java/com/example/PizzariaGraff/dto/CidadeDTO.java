@@ -11,7 +11,7 @@ public class CidadeDTO {
     private Long estadoId;
     private String estadoNome;
     private String estadoUf;
-    private String paisId;
+    private Long paisId;
     private String paisNome;
     private LocalDateTime dataCadastro;
     private LocalDateTime ultimaModificacao;
@@ -20,7 +20,7 @@ public class CidadeDTO {
     public CidadeDTO() {
     }
 
-    public CidadeDTO(Long id, String nome, Long estadoId, String estadoNome, String estadoUf, String paisId, String paisNome, LocalDateTime dataCadastro, LocalDateTime ultimaModificacao, Boolean ativo) {
+    public CidadeDTO(Long id, String nome, Long estadoId, String estadoNome, String estadoUf, Long paisId, String paisNome, LocalDateTime dataCadastro, LocalDateTime ultimaModificacao, Boolean ativo) {
         this.id = id;
         this.nome = nome;
         this.estadoId = estadoId;
@@ -38,7 +38,7 @@ public class CidadeDTO {
         Long estadoId = null;
         String estadoNome = null;
         String estadoUf = null;
-        String paisId = null;
+        Long paisId = null;
         String paisNome = null;
         
         if (cidade.getEstado() != null) {
@@ -117,11 +117,11 @@ public class CidadeDTO {
         this.estadoUf = estadoUf;
     }
 
-    public String getPaisId() {
+    public Long getPaisId() {
         return paisId;
     }
 
-    public void setPaisId(String paisId) {
+    public void setPaisId(Long paisId) {
         this.paisId = paisId;
     }
 

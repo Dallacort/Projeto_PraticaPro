@@ -20,10 +20,10 @@ const EstadoForm: React.FC = () => {
   
   console.log('EstadoForm - ID:', id, 'isNew:', isNew, 'pathname:', location.pathname);
 
-  const [formData, setFormData] = useState<Omit<Estado, 'id' | 'pais'> & { paisId: string }>({
+  const [formData, setFormData] = useState<Omit<Estado, 'id' | 'pais'> & { paisId: number | null }>({
     nome: '',
     uf: '',
-    paisId: '',
+    paisId: null,
     ativo: true
   });
   
@@ -78,7 +78,7 @@ const EstadoForm: React.FC = () => {
           setFormData({
             nome: estadoData.nome,
             uf: estadoData.uf,
-            paisId: estadoData.pais.id,
+            paisId: estadoData.paisId || estadoData.pais?.id || null,
             ativo: estadoData.ativo !== undefined ? estadoData.ativo : true
           });
           setPaisSelecionado(estadoData.pais);
@@ -146,11 +146,11 @@ const EstadoForm: React.FC = () => {
   };
 
   const handleSelectPais = (pais: Pais) => {
-    setPaisSelecionado(pais);
     setFormData(prev => ({
       ...prev,
       paisId: pais.id
     }));
+    setPaisSelecionado(pais);
     setIsPaisModalOpen(false);
   };
 
@@ -178,45 +178,38 @@ const EstadoForm: React.FC = () => {
       return;
     }
 
+    if (!formData.paisId) {
+      setError("País deve ser selecionado");
+      toast.error("País deve ser selecionado");
+      return;
+    }
+
     try {
       setSaving(true);
       setError(null);
       
-      if (!formData.paisId) {
-        throw new Error('País não selecionado');
-      }
-      
-      // Preparar os dados do estado com o ID do país
-      const estadoData: Omit<Estado, 'id'> = {
+      const estadoPayload = {
         nome: formData.nome,
-        uf: formData.uf.toUpperCase(),
-        ativo: formData.ativo,
-        pais: {
-          id: formData.paisId,
-          nome: paisSelecionado?.nome || '',
-          codigo: paisSelecionado?.codigo || '',
-          sigla: paisSelecionado?.sigla || ''
-        },
+        uf: formData.uf,
+        paisId: Number(formData.paisId),
+        ativo: formData.ativo
       };
       
-      console.log('Salvando dados:', estadoData, 'isNew:', isNew, 'ativo:', formData.ativo);
-      
       if (isNew) {
-        console.log('Criando novo estado:', estadoData);
-        const novoEstado = await createEstado(estadoData);
+        console.log('Criando novo estado:', estadoPayload);
+        const novoEstado = await createEstado(estadoPayload);
         console.log('Estado criado:', novoEstado);
         toast.success('Estado cadastrado com sucesso!');
         navigate('/estados');
       } else if (id) {
-        console.log('Atualizando estado:', id, estadoData);
-        const estadoAtualizado = await updateEstado(Number(id), estadoData);
+        console.log('Atualizando estado:', id, estadoPayload);
+        const estadoAtualizado = await updateEstado(Number(id), estadoPayload);
         console.log('Estado atualizado:', estadoAtualizado);
         toast.success('Estado atualizado com sucesso!');
         navigate('/estados');
       }
     } catch (err: any) {
       console.error('Erro ao salvar estado:', err);
-      // Extrair mensagem de erro da API se disponível
       const errorMessage = err.response?.data?.mensagem || err.response?.data?.erro || err.message || 'Erro ao salvar estado. Verifique os dados e tente novamente.';
       setError(errorMessage);
       toast.error(errorMessage);

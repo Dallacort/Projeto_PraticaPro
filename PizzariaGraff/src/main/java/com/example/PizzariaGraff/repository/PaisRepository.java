@@ -165,15 +165,15 @@ public class PaisRepository {
         return paises;
     }
     
-    public Optional<Pais> findById(String id) {
+    public Optional<Pais> findById(Long id) {
         System.out.println("PaisRepository: Buscando país com ID: " + id);
         String sql = "SELECT * FROM pais WHERE id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setString(1, id);
-            System.out.println("PaisRepository: Executando SQL: " + sql.replace("?", "'" + id + "'"));
+            stmt.setLong(1, id);
+            System.out.println("PaisRepository: Executando SQL: " + sql.replace("?", String.valueOf(id)));
             
             ResultSet rs = stmt.executeQuery();
             
@@ -198,53 +198,10 @@ public class PaisRepository {
                     if (countRs.next()) {
                         int total = countRs.getInt("total");
                         System.out.println("PaisRepository: Total de países na tabela: " + total);
-                        
-                        if (total > 0) {
-                            // Listar alguns países disponíveis para diagnóstico
-                            try (ResultSet sampleRs = checkStmt.executeQuery("SELECT id, nome, data_cadastro, ultima_modificacao FROM pais LIMIT 5")) {
-                                System.out.println("PaisRepository: Países disponíveis:");
-                                while (sampleRs.next()) {
-                                    Timestamp dataCadastro = sampleRs.getTimestamp("data_cadastro");
-                                    Timestamp ultimaMod = sampleRs.getTimestamp("ultima_modificacao");
-                                    System.out.println("  - ID: " + sampleRs.getString("id") + 
-                                                    ", Nome: " + sampleRs.getString("nome") + 
-                                                    ", Data Cadastro: " + (dataCadastro != null ? dataCadastro.toString() : "null") + 
-                                                    ", Última Mod: " + (ultimaMod != null ? ultimaMod.toString() : "null"));
-                                }
-                            }
-                        } else {
-                            System.out.println("PaisRepository: A tabela pais está vazia. Criando país padrão...");
-                            
-                            // Inserir um país padrão se a tabela estiver vazia
-                            LocalDateTime now = LocalDateTime.now();
-                            String insertBrasil = "INSERT INTO pais (id, nome, codigo, sigla, data_cadastro, ultima_modificacao) " +
-                                                "VALUES ('1', 'Brasil', '55', 'BR', ?, ?)";
-                            
-                            PreparedStatement pstmt = conn.prepareStatement(insertBrasil);
-                            pstmt.setTimestamp(1, Timestamp.valueOf(now));
-                            pstmt.setTimestamp(2, Timestamp.valueOf(now));
-                            pstmt.executeUpdate();
-                            pstmt.close();
-                            
-                            System.out.println("PaisRepository: País padrão criado com ID: 1, data_cadastro: " + now);
-                            
-                            // Verificar se o ID solicitado é "1" e retornar o país recém-criado
-                            if ("1".equals(id)) {
-                                Pais brasil = new Pais();
-                                brasil.setId("1");
-                                brasil.setNome("Brasil");
-                                brasil.setCodigo("55");
-                                brasil.setSigla("BR");
-                                brasil.setDataCadastro(now);
-                                brasil.setUltimaModificacao(now);
-                                return Optional.of(brasil);
-                            }
-                        }
                     }
-                } catch (SQLException diagEx) {
-                    System.err.println("PaisRepository: Erro ao diagnosticar tabela pais: " + diagEx.getMessage());
                 }
             }
+            
             rs.close();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -259,7 +216,7 @@ public class PaisRepository {
     }
     
     public Pais save(Pais pais) {
-        if (pais.getId() == null || pais.getId().isEmpty()) {
+        if (pais.getId() == null) {
             return insert(pais);
         } else {
             return update(pais);
@@ -267,46 +224,46 @@ public class PaisRepository {
     }
     
     private Pais insert(Pais pais) {
-        // Obter o próximo ID disponível
-        long proximoId = 1;
+        LocalDateTime now = LocalDateTime.now();
+        pais.setDataCadastro(now);
+        pais.setUltimaModificacao(now);
+        
+        // Garantir que o campo ativo nunca seja null
+        if (pais.getAtivo() == null) {
+            pais.setAtivo(true);
+        }
+        
+        // Usar AUTO_INCREMENT do MySQL, removendo a definição manual do ID
+        String sql = "INSERT INTO pais (nome, codigo, sigla, data_cadastro, ultima_modificacao, ativo) VALUES (?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = databaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT MAX(CAST(id AS SIGNED)) AS max_id FROM pais")) {
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            if (rs.next() && rs.getObject("max_id") != null) {
-                proximoId = rs.getLong("max_id") + 1;
+            stmt.setString(1, pais.getNome());
+            stmt.setString(2, pais.getCodigo());
+            stmt.setString(3, pais.getSigla());
+            stmt.setTimestamp(4, Timestamp.valueOf(pais.getDataCadastro()));
+            stmt.setTimestamp(5, Timestamp.valueOf(pais.getUltimaModificacao()));
+            stmt.setBoolean(6, pais.getAtivo());
+            
+            int rowsAffected = stmt.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                // Obter o ID gerado automaticamente
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        pais.setId(generatedKeys.getLong(1));
+                    } else {
+                        throw new SQLException("Falha ao inserir país, nenhum ID foi gerado");
+                    }
+                }
             }
             
-            // Converter para string e atribuir ao país
-            pais.setId(String.valueOf(proximoId));
-            
-            // Definir a data de cadastro e última modificação
-            LocalDateTime now = LocalDateTime.now();
-            
-            // Inserir o registro com o ID já definido
-            String sql = "INSERT INTO pais (id, nome, codigo, sigla, data_cadastro, ultima_modificacao, ativo) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, pais.getId());
-                pstmt.setString(2, pais.getNome());
-                pstmt.setString(3, pais.getCodigo());
-                pstmt.setString(4, pais.getSigla());
-                pstmt.setTimestamp(5, Timestamp.valueOf(now));
-                pstmt.setTimestamp(6, Timestamp.valueOf(now));
-                pstmt.setBoolean(7, pais.getAtivo());
-                
-                System.out.println("PaisRepository: Inserindo país com data_cadastro: " + now);
-                System.out.println("PaisRepository: Inserindo país com ultima_modificacao: " + now);
-                
-                pstmt.executeUpdate();
-                
-                // Atualiza o objeto após a inserção
-                pais.setDataCadastro(now);
-                pais.setUltimaModificacao(now);
-            }
         } catch (SQLException e) {
             e.printStackTrace();
+            System.err.println("Erro SQL detalhado: " + e.getMessage());
+            System.err.println("Estado SQL: " + e.getSQLState());
+            System.err.println("Código de erro: " + e.getErrorCode());
             throw new RuntimeException("Erro ao inserir país: " + e.getMessage(), e);
         }
         
@@ -314,8 +271,12 @@ public class PaisRepository {
     }
     
     private Pais update(Pais pais) {
-        // Atualizar data de última modificação
-        LocalDateTime now = LocalDateTime.now();
+        pais.setUltimaModificacao(LocalDateTime.now());
+        
+        // Garantir que o campo ativo nunca seja null
+        if (pais.getAtivo() == null) {
+            pais.setAtivo(true);
+        }
         
         String sql = "UPDATE pais SET nome = ?, codigo = ?, sigla = ?, ultima_modificacao = ?, ativo = ? WHERE id = ?";
         
@@ -325,16 +286,11 @@ public class PaisRepository {
             stmt.setString(1, pais.getNome());
             stmt.setString(2, pais.getCodigo());
             stmt.setString(3, pais.getSigla());
-            stmt.setTimestamp(4, Timestamp.valueOf(now));
+            stmt.setTimestamp(4, Timestamp.valueOf(pais.getUltimaModificacao()));
             stmt.setBoolean(5, pais.getAtivo());
-            stmt.setString(6, pais.getId());
-            
-            System.out.println("PaisRepository: Atualizando país com ultima_modificacao: " + now);
+            stmt.setLong(6, pais.getId());
             
             stmt.executeUpdate();
-            
-            // Atualiza o objeto após a atualização no banco
-            pais.setUltimaModificacao(now);
         } catch (SQLException e) {
             e.printStackTrace();
             throw new RuntimeException("Erro ao atualizar país: " + e.getMessage(), e);
@@ -343,14 +299,21 @@ public class PaisRepository {
         return pais;
     }
     
-    public void deleteById(String id) {
+    public void deleteById(Long id) {
+        System.out.println("PaisRepository: Deletando país com ID: " + id);
         String sql = "DELETE FROM pais WHERE id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setString(1, id);
-            stmt.executeUpdate();
+            stmt.setLong(1, id);
+            int rowsAffected = stmt.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                System.out.println("PaisRepository: País deletado com sucesso");
+            } else {
+                System.out.println("PaisRepository: Nenhum país encontrado para deletar com ID: " + id);
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             throw new RuntimeException("Erro ao deletar país: " + e.getMessage(), e);
@@ -384,17 +347,21 @@ public class PaisRepository {
         return paises;
     }
     
-    public void softDeleteById(String id) {
+    public void softDeleteById(Long id) {
+        System.out.println("PaisRepository: Soft delete do país com ID: " + id);
         String sql = "UPDATE pais SET ativo = false WHERE id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setString(1, id);
+            stmt.setLong(1, id);
             int rowsAffected = stmt.executeUpdate();
             
-            System.out.println("PaisRepository.softDeleteById() - País desativado: ID=" + id + ", " + rowsAffected + " registro(s) afetado(s)");
-            
+            if (rowsAffected > 0) {
+                System.out.println("PaisRepository: País desativado com sucesso");
+            } else {
+                System.out.println("PaisRepository: Nenhum país encontrado para desativar com ID: " + id);
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             throw new RuntimeException("Erro ao desativar país: " + e.getMessage(), e);
@@ -402,60 +369,37 @@ public class PaisRepository {
     }
     
     private Pais mapResultSetToPais(ResultSet rs) throws SQLException {
-        try {
-            Pais pais = new Pais();
-            // Modificando para tratar o ID como String
-            pais.setId(rs.getString("id"));
-            pais.setNome(rs.getString("nome"));
-            
-            try {
-                pais.setCodigo(rs.getString("codigo"));
-            } catch (SQLException e) {
-                System.out.println("Coluna 'codigo' não encontrada. Definindo valor padrão.");
-                pais.setCodigo("");
-            }
-            
-            pais.setSigla(rs.getString("sigla"));
-            
-            // Carregar data de cadastro com o mesmo padrão do CondicaoPagamentoRepository
-            try {
-                Timestamp dataCadastro = rs.getTimestamp("data_cadastro");
-                if (dataCadastro != null) {
-                    pais.setDataCadastro(dataCadastro.toLocalDateTime());
-                    System.out.println("PaisRepository: Data de cadastro carregada: " + pais.getDataCadastro());
-                } else {
-                    System.out.println("PaisRepository: Timestamp de data_cadastro é null");
-                }
-            } catch (SQLException e) {
-                System.err.println("Coluna 'data_cadastro' não encontrada ou erro ao ler: " + e.getMessage());
-            }
-            
-            // Carregar última modificação com o mesmo padrão do CondicaoPagamentoRepository
-            try {
-                Timestamp ultimaModificacao = rs.getTimestamp("ultima_modificacao");
-                if (ultimaModificacao != null) {
-                    pais.setUltimaModificacao(ultimaModificacao.toLocalDateTime());
-                    System.out.println("PaisRepository: Última modificação carregada: " + pais.getUltimaModificacao());
-                } else {
-                    System.out.println("PaisRepository: Timestamp de ultima_modificacao é null");
-                }
-            } catch (SQLException e) {
-                System.err.println("Coluna 'ultima_modificacao' não encontrada ou erro ao ler: " + e.getMessage());
-            }
-            
-            // Carregar campo ativo
-            try {
-                boolean ativo = rs.getBoolean("ativo");
-                pais.setAtivo(ativo);
-            } catch (SQLException e) {
-                // Se a coluna não existir, definir como true
-                pais.setAtivo(true);
-            }
-            
-            return pais;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new SQLException("Erro ao mapear ResultSet para Pais: " + e.getMessage(), e);
+        Pais pais = new Pais();
+        pais.setId(rs.getLong("id"));
+        pais.setNome(rs.getString("nome"));
+        pais.setCodigo(rs.getString("codigo"));
+        pais.setSigla(rs.getString("sigla"));
+        
+        // Carregar campos de data
+        Timestamp dataCadastro = rs.getTimestamp("data_cadastro");
+        if (dataCadastro != null) {
+            pais.setDataCadastro(dataCadastro.toLocalDateTime());
         }
+        
+        Timestamp ultimaModificacao = rs.getTimestamp("ultima_modificacao");
+        if (ultimaModificacao != null) {
+            pais.setUltimaModificacao(ultimaModificacao.toLocalDateTime());
+        }
+        
+        // Garantir que o campo ativo nunca seja null
+        try {
+            boolean ativo = rs.getBoolean("ativo");
+            pais.setAtivo(ativo);
+        } catch (SQLException e) {
+            // Se a coluna não existir, definir como ativo
+            pais.setAtivo(true);
+        }
+        
+        // Garantia adicional - nunca deixar ativo como null
+        if (pais.getAtivo() == null) {
+            pais.setAtivo(true);
+        }
+        
+        return pais;
     }
 } 

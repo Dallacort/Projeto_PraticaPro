@@ -44,7 +44,7 @@ const PaisForm: React.FC = () => {
         
         if (id) {
           console.log(`Carregando dados do país com ID: ${id}`);
-          const paisData = await getPais(id);
+          const paisData = await getPais(Number(id));
           console.log('Dados recebidos do país:', paisData);
           
           if (paisData) {
@@ -146,7 +146,7 @@ const PaisForm: React.FC = () => {
         navigate('/paises');
       } else if (id) {
         console.log('Atualizando país:', id, formData);
-        const paisAtualizado = await updatePais(id, formData);
+        const paisAtualizado = await updatePais(Number(id), formData);
         console.log('País atualizado:', paisAtualizado);
         toast.success('País atualizado com sucesso!');
         navigate('/paises');

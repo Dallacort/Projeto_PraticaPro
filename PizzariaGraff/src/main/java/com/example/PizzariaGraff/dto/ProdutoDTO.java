@@ -89,11 +89,15 @@ public class ProdutoDTO {
         this.dataCriacao = produto.getDataCriacao();
         this.dataAlteracao = produto.getDataAlteracao();
         
-        // Nomes das entidades relacionadas podem ser setados separadamente
-        if (produto.getMarca() != null) {
+        // Usar os novos campos marcaNome e unidadeMedidaNome diretamente do modelo
+        this.marcaNome = produto.getMarcaNome();
+        this.unidadeMedidaNome = produto.getUnidadeMedidaNome();
+        
+        // Fallback para nomes das entidades relacionadas se não estiverem preenchidos
+        if (this.marcaNome == null && produto.getMarca() != null) {
             this.marcaNome = produto.getMarca().getMarca();
         }
-        if (produto.getUnidadeMedida() != null) {
+        if (this.unidadeMedidaNome == null && produto.getUnidadeMedida() != null) {
             this.unidadeMedidaNome = produto.getUnidadeMedida().getUnidadeMedida();
         }
     }

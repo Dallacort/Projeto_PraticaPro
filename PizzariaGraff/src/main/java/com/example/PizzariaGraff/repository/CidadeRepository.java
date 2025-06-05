@@ -389,8 +389,8 @@ public class CidadeRepository {
                 estado.setUf(rs.getString("estado_uf"));
                 
                 // Carregar dados do país associado ao estado
-                String paisId = rs.getString("estado_pais_id");
-                if (paisId != null && !paisId.isEmpty()) {
+                Long paisId = rs.getLong("estado_pais_id");
+                if (paisId != null && paisId > 0) {
                     Pais pais = new Pais();
                     pais.setId(paisId);
                     

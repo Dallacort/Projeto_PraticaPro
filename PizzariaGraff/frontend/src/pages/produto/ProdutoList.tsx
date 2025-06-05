@@ -33,6 +33,10 @@ const ProdutoList: React.FC = () => {
     fetchProdutos();
   }, [fetchProdutos, location.key]);
 
+  const handleView = (id: string | number) => {
+    navigate(`/produtos/${id}/visualizar`);
+  };
+
   const handleEdit = (id: string | number) => {
     navigate(`/produtos/${id}`);
   };
@@ -76,21 +80,63 @@ const ProdutoList: React.FC = () => {
 
   const columns = [
     { header: 'ID', accessor: 'id' },
-    { header: 'Nome', accessor: 'nome' },
+    { 
+      header: 'Produto', 
+      accessor: 'produto',
+      cell: (item: Produto) => (
+        <div className="font-medium">{item.produto || item.nome}</div>
+      )
+    },
+    { 
+      header: 'Código/Referência', 
+      accessor: 'codigoBarras',
+      cell: (item: Produto) => {
+        const codigo = item.codigoBarras || item.codigo || item.referencia;
+        return <div className="text-sm">{codigo || '-'}</div>;
+      }
+    },
+    { 
+      header: 'Marca', 
+      accessor: 'marcaNome',
+      cell: (item: Produto) => (
+        <div className="text-sm">
+          {item.marcaNome || '-'}
+        </div>
+      )
+    },
+    { 
+      header: 'Unidade', 
+      accessor: 'unidadeMedidaNome',
+      cell: (item: Produto) => (
+        <div className="text-sm">
+          {item.unidadeMedidaNome || item.unidade || '-'}
+        </div>
+      )
+    },
     { 
       header: 'Quantidade', 
       accessor: 'quantidade',
-      cell: (item: Produto) => item.quantidade !== undefined ? item.quantidade.toString() : '0'
+      cell: (item: Produto) => {
+        const qtd = item.quantidade !== undefined ? item.quantidade : item.estoque;
+        return <div className="text-center">{qtd !== undefined ? qtd.toString() : '0'}</div>;
+      }
     },
     { 
-      header: 'Valor', 
-      accessor: 'valor',
-      cell: (item: Produto) => formatCurrency(item.valor)
+      header: 'Valor Venda', 
+      accessor: 'valorVenda',
+      cell: (item: Produto) => {
+        const valor = item.valorVenda || item.precoVenda || item.valor;
+        return formatCurrency(valor);
+      }
     },
     { 
-      header: 'Data de Cadastro', 
-      accessor: 'dataCadastro',
-      cell: (item: Produto) => formatDate(item.dataCadastro)
+      header: 'Status', 
+      accessor: 'ativo',
+      cell: (item: Produto) => (
+        <span className={item.ativo ? 'text-green-600' : 'text-red-600'}>
+          {item.ativo ? 'Ativo' : 'Inativo'}
+        </span>
+      )
     }
   ];
 
@@ -116,16 +162,6 @@ const ProdutoList: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Produtos</h1>
         <div className="flex space-x-2">
-          <button
-            onClick={fetchProdutos}
-            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center"
-            disabled={loading}
-          >
-            <svg className={`w-5 h-5 mr-2 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Atualizar
-          </button>
           <button
             onClick={handleCreate}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center"
@@ -156,6 +192,7 @@ const ProdutoList: React.FC = () => {
           columns={columns}
           data={produtos}
           loading={loading}
+          onView={handleView}
           onEdit={handleEdit}
           onDelete={deleteLoading === null ? handleDelete : undefined}
           emptyMessage="Nenhum produto cadastrado"

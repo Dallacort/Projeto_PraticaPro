@@ -222,7 +222,7 @@ public class EstadoRepository {
         return Optional.empty();
     }
     
-    public List<Estado> findByPaisId(String paisId) {
+    public List<Estado> findByPaisId(Long paisId) {
         List<Estado> estados = new ArrayList<>();
         String sql = "SELECT e.*, p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo " +
                      "FROM estado e " +
@@ -235,7 +235,7 @@ public class EstadoRepository {
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setString(1, paisId);
+            stmt.setLong(1, paisId);
             ResultSet rs = stmt.executeQuery();
             
             while (rs.next()) {
@@ -280,23 +280,35 @@ public class EstadoRepository {
             
             stmt.setString(1, estado.getNome());
             stmt.setString(2, estado.getUf());
-            stmt.setString(3, estado.getPais() != null ? estado.getPais().getId() : null);
+            
+            // Verificar se pais está definido e tem ID válido
+            if (estado.getPais() != null && estado.getPais().getId() != null) {
+                stmt.setLong(3, estado.getPais().getId());
+            } else {
+                stmt.setNull(3, java.sql.Types.BIGINT);
+            }
+            
             stmt.setTimestamp(4, Timestamp.valueOf(now));
             stmt.setTimestamp(5, Timestamp.valueOf(now));
             stmt.setBoolean(6, estado.getAtivo());
             
-            stmt.executeUpdate();
+            int rowsAffected = stmt.executeUpdate();
             
-            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    estado.setId(generatedKeys.getLong(1));
-                } else {
-                    throw new SQLException("Falha ao inserir estado, nenhum ID obtido.");
+            if (rowsAffected > 0) {
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        estado.setId(generatedKeys.getLong(1));
+                    } else {
+                        throw new SQLException("Falha ao inserir estado, nenhum ID obtido.");
+                    }
                 }
             }
             
         } catch (SQLException e) {
             e.printStackTrace();
+            System.err.println("Erro SQL detalhado: " + e.getMessage());
+            System.err.println("Estado SQL: " + e.getSQLState());
+            System.err.println("Código de erro: " + e.getErrorCode());
             throw new RuntimeException("Erro ao inserir estado: " + e.getMessage(), e);
         }
         
@@ -318,15 +330,29 @@ public class EstadoRepository {
             
             stmt.setString(1, estado.getNome());
             stmt.setString(2, estado.getUf());
-            stmt.setString(3, estado.getPais() != null ? estado.getPais().getId() : null);
+            
+            // Verificar se pais está definido e tem ID válido
+            if (estado.getPais() != null && estado.getPais().getId() != null) {
+                stmt.setLong(3, estado.getPais().getId());
+            } else {
+                stmt.setNull(3, java.sql.Types.BIGINT);
+            }
+            
             stmt.setTimestamp(4, Timestamp.valueOf(now));
             stmt.setBoolean(5, estado.getAtivo());
             stmt.setLong(6, estado.getId());
             
-            stmt.executeUpdate();
+            int rowsAffected = stmt.executeUpdate();
+            
+            if (rowsAffected == 0) {
+                throw new RuntimeException("Nenhum estado foi atualizado com ID: " + estado.getId());
+            }
             
         } catch (SQLException e) {
             e.printStackTrace();
+            System.err.println("Erro SQL detalhado: " + e.getMessage());
+            System.err.println("Estado SQL: " + e.getSQLState());
+            System.err.println("Código de erro: " + e.getErrorCode());
             throw new RuntimeException("Erro ao atualizar estado: " + e.getMessage(), e);
         }
         
@@ -405,8 +431,8 @@ public class EstadoRepository {
         estado.setUf(rs.getString("uf"));
         
         // Carregar dados do país
-        String paisId = rs.getString("pais_id");
-        if (paisId != null) {
+        Long paisId = rs.getLong("pais_id");
+        if (!rs.wasNull()) {
             Pais pais = new Pais();
             pais.setId(paisId);
             

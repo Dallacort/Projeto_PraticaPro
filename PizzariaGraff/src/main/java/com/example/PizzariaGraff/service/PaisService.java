@@ -24,7 +24,7 @@ public class PaisService {
         }
     }
     
-    public Pais findById(String id) {
+    public Pais findById(Long id) {
         try {
             return paisRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("País não encontrado com o ID: " + id));
@@ -36,6 +36,11 @@ public class PaisService {
     
     public Pais save(Pais pais) {
         try {
+            // Garantir que o campo ativo nunca seja null
+            if (pais.getAtivo() == null) {
+                pais.setAtivo(true);
+            }
+            
             return paisRepository.save(pais);
         } catch (Exception e) {
             e.printStackTrace();
@@ -43,7 +48,7 @@ public class PaisService {
         }
     }
     
-    public void deleteById(String id) {
+    public void deleteById(Long id) {
         try {
             paisRepository.deleteById(id);
         } catch (Exception e) {

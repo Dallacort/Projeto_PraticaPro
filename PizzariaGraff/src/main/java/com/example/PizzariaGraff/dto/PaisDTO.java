@@ -4,7 +4,7 @@ import com.example.PizzariaGraff.model.Pais;
 import java.time.LocalDateTime;
 
 public class PaisDTO {
-    private String id;
+    private Long id;
     private String nome;
     private String codigo;
     private String sigla;
@@ -15,7 +15,7 @@ public class PaisDTO {
     public PaisDTO() {
     }
 
-    public PaisDTO(String id, String nome, String codigo, String sigla) {
+    public PaisDTO(Long id, String nome, String codigo, String sigla) {
         this.id = id;
         this.nome = nome;
         this.codigo = codigo;
@@ -47,11 +47,11 @@ public class PaisDTO {
         return pais;
     }
 
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
