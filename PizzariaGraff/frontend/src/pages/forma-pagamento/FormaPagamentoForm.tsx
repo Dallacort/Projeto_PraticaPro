@@ -3,6 +3,9 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import FormField from '../../components/FormField';
 import FormaPagamentoService, { FormaPagamentoInput } from '../../services/FormaPagamentoService';
 import { FormaPagamento } from '../../types';
+import { FaSpinner } from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import { formatDate } from '../../utils/formatters';
 
 const FormaPagamentoForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -82,34 +85,23 @@ const FormaPagamentoForm: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     
-    // Para campos do tipo checkbox, use o checked em vez do value
-    if (type === 'checkbox') {
-      const checkbox = e.target as HTMLInputElement;
-      setFormData((prev) => ({
-        ...prev,
-        [name]: checkbox.checked,
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
   };
 
   const validateForm = () => {
     const errors: string[] = [];
-    
-    if (!formData.nome) errors.push("Nome é obrigatório");
-    if (!formData.descricao) errors.push("Descrição é obrigatória");
-    
+    if (!formData.nome?.trim()) errors.push("Nome é obrigatório");
+    if (!formData.descricao?.trim()) errors.push("Descrição é obrigatória");
     return errors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     const validationErrors = validateForm();
     if (validationErrors.length > 0) {
       setError(validationErrors.join(". "));
@@ -120,7 +112,6 @@ const FormaPagamentoForm: React.FC = () => {
       setSaving(true);
       setError(null);
       
-      // Garantir que os dados estejam no formato correto
       const dataToSend: FormaPagamentoInput = {
         nome: formData.nome,
         descricao: formData.descricao,
@@ -132,41 +123,14 @@ const FormaPagamentoForm: React.FC = () => {
       
       if (isNew) {
         console.log('Criando nova forma de pagamento...');
-        try {
-          const result = await FormaPagamentoService.create(dataToSend);
-          console.log('Forma de pagamento criada com sucesso:', result);
-          alert('Forma de pagamento cadastrada com sucesso!');
-          navigate('/formas-pagamento');
-        } catch (createError: any) {
-          console.error('Erro específico ao criar forma de pagamento:', createError);
-          // Se estiver em modo de desenvolvimento, continuar mesmo com erro
-          if (process.env.REACT_APP_USE_MOCK_DATA === 'true') {
-            console.warn('Continuando em modo de desenvolvimento mesmo com erro');
-            alert('Forma de pagamento cadastrada com sucesso! (Modo de desenvolvimento)');
-            navigate('/formas-pagamento');
-          } else {
-            throw createError;
-          }
-        }
+        await FormaPagamentoService.create(dataToSend);
+        toast.success('Forma de pagamento cadastrada com sucesso!');
       } else if (id) {
         console.log('Atualizando forma de pagamento com ID:', id);
-        try {
-          const result = await FormaPagamentoService.update(Number(id), dataToSend);
-          console.log('Forma de pagamento atualizada com sucesso:', result);
-          alert('Forma de pagamento atualizada com sucesso!');
-          navigate('/formas-pagamento');
-        } catch (updateError: any) {
-          console.error('Erro específico ao atualizar forma de pagamento:', updateError);
-          // Se estiver em modo de desenvolvimento, continuar mesmo com erro
-          if (process.env.REACT_APP_USE_MOCK_DATA === 'true') {
-            console.warn('Continuando em modo de desenvolvimento mesmo com erro');
-            alert('Forma de pagamento atualizada com sucesso! (Modo de desenvolvimento)');
-            navigate('/formas-pagamento');
-          } else {
-            throw updateError;
-          }
-        }
+        await FormaPagamentoService.update(Number(id), dataToSend);
+        toast.success('Forma de pagamento atualizada com sucesso!');
       }
+      navigate('/formas-pagamento');
     } catch (err: any) {
       console.error('Erro ao salvar forma de pagamento:', err);
       // Extrair mensagem de erro da API se disponível
@@ -177,126 +141,131 @@ const FormaPagamentoForm: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '-';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      console.error('Erro ao formatar data:', error);
-      return '-';
-    }
-  };
-
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <span className="ml-3">Carregando dados da forma de pagamento...</span>
+      <div className="flex justify-center items-center h-full">
+        <div className="text-primary">
+          <FaSpinner className="animate-spin text-blue-500" size={24} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4">
-      <div className="mb-4">
-        <h1 className="text-xl font-semibold">
-          {isNew ? 'Cadastrar Forma de Pagamento' : 'Editar Forma de Pagamento'}
+    <div className="flex flex-col bg-white shadow-md rounded-lg overflow-hidden max-w-7xl w-full mx-auto my-4">
+      <div className="flex justify-between items-center bg-gray-50 p-4 border-b">
+        <h1 className="text-xl font-bold text-gray-800">
+          {isNew ? 'Nova Forma de Pagamento' : 'Editar Forma de Pagamento'}
         </h1>
       </div>
 
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
-          <span className="block sm:inline">{error}</span>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-lg p-6 shadow-lg border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nome <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="nome"
-              value={formData.nome}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-              placeholder="Digite o nome"
-              required
-            />
-            {error && !formData.nome && (
-              <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>
-            )}
+      <form onSubmit={handleSubmit} className="p-4 space-y-6">
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
           </div>
+        )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descrição <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="descricao"
-              value={formData.descricao}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-              placeholder="Digite a descrição"
-              required
-            />
-            {error && !formData.descricao && (
-              <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <div className="flex items-center mt-2">
-              <input
-                type="checkbox"
-                id="ativo"
-                name="ativo"
-                checked={formData.ativo}
-                onChange={handleChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded shadow-sm"
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+          <div className="border-b pb-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Dados Básicos</h2>
+              <div className="flex items-center">
+                <label className="flex items-center cursor-pointer">
+                  <span className="mr-2 text-sm font-medium text-gray-700">Ativo</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      name="ativo"
+                      checked={formData.ativo}
+                      onChange={handleChange}
+                      className="sr-only"
+                    />
+                    <div className={`block w-14 h-8 rounded-full ${formData.ativo ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform ${formData.ativo ? 'translate-x-6' : ''}`}></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+            
+            {/* Primeira linha: Código, Nome */}
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '100px 2fr' }}>
+              <FormField
+                label="Código"
+                name="id"
+                value={id && !isNew ? id : 'Novo'}
+                onChange={() => {}}
+                disabled={true}
               />
-              <label htmlFor="ativo" className="ml-2 text-sm text-gray-700">
-                Ativo
-              </label>
+              
+              <FormField
+                label="Nome"
+                name="nome"
+                value={formData.nome}
+                onChange={handleChange}
+                required
+                maxLength={50}
+                placeholder="Ex: Dinheiro"
+              />
+            </div>
+
+            {/* Segunda linha: Descrição */}
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '1fr' }}>
+              <FormField
+                label="Descrição"
+                name="descricao"
+                value={formData.descricao}
+                onChange={handleChange}
+                required
+                maxLength={100}
+                placeholder="Ex: Pagamento em dinheiro"
+              />
             </div>
           </div>
         </div>
 
-        {!isNew && (
-          <div className="mt-4 text-sm text-gray-500">
-            <p>Criado em: {formatDate(dataCadastro) || 'N/A'}</p>
-            <p>Última modificação: {formatDate(ultimaModificacao) || 'N/A'}</p>
-          </div>
-        )}
+        <div className="flex justify-between items-end pt-6 border-t mt-6">
+          {/* Informações do Registro */}
+          {(dataCadastro || ultimaModificacao) && (
+            <div className="text-sm text-gray-600">
+              <h3 className="font-semibold text-gray-700 mb-1">Informações do Registro:</h3>
+              {dataCadastro && (
+                <p>
+                  Cadastrado em: {formatDate(dataCadastro)}
+                </p>
+              )}
+              {ultimaModificacao && (
+                <p>
+                  Última modificação: {formatDate(ultimaModificacao)}
+                </p>
+              )}
+            </div>
+          )}
 
-        <div className="flex justify-end gap-2 mt-6">
-          <button
-            type="button"
-            onClick={() => navigate('/formas-pagamento')}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 shadow-sm"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 shadow-sm"
-          >
-            {saving ? 'Salvando...' : 'Salvar'}
-          </button>
+          {/* Botões de Ação */}
+          <div className="flex gap-3 ml-auto">
+            <button
+              type="button"
+              onClick={() => navigate('/formas-pagamento')}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50`}
+            >
+              {saving ? (
+                <span className="inline-flex items-center">
+                  <FaSpinner className="animate-spin mr-2" />
+                  Salvando...
+                </span>
+              ) : (
+                'Salvar'
+              )}
+            </button>
+          </div>
         </div>
       </form>
     </div>

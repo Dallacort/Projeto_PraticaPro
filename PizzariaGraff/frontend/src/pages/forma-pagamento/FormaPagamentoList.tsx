@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import FormaPagamentoService from '../../services/FormaPagamentoService';
 import { FormaPagamento } from '../../types';
 import DataTable from '../../components/DataTable';
+import FormaPagamentoViewModal from '../../components/modals/FormaPagamentoViewModal';
+import { toast } from 'react-toastify';
 
 // Define a interface Column localmente
 interface Column<T> {
@@ -17,6 +19,12 @@ const FormaPagamentoList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<{ [key: string]: boolean }>({});
+  
+  // Estados para o modal de visualização
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedFormaPagamentoView, setSelectedFormaPagamentoView] = useState<FormaPagamento | null>(null);
+  const [viewModalLoading, setViewModalLoading] = useState(false);
+  
   const navigate = useNavigate();
 
   const fetchFormasPagamento = useCallback(async () => {
@@ -43,6 +51,26 @@ const FormaPagamentoList: React.FC = () => {
     fetchFormasPagamento();
   }, [fetchFormasPagamento]);
 
+  const handleView = async (id: string | number) => {
+    setViewModalLoading(true);
+    setIsViewModalOpen(true);
+    try {
+      const formaPagamentoData = await FormaPagamentoService.getById(Number(id));
+      setSelectedFormaPagamentoView(formaPagamentoData);
+    } catch (err) {
+      console.error('Erro ao buscar forma de pagamento para visualização:', err);
+      toast.error('Erro ao carregar detalhes da forma de pagamento.');
+      setIsViewModalOpen(false);
+    } finally {
+      setViewModalLoading(false);
+    }
+  };
+
+  const closeViewModal = () => {
+    setIsViewModalOpen(false);
+    setSelectedFormaPagamentoView(null);
+  };
+
   const handleEdit = (id: string | number) => {
     navigate(`/formas-pagamento/${id}`);
   };
@@ -62,10 +90,10 @@ const FormaPagamentoList: React.FC = () => {
         
         await FormaPagamentoService.delete(Number(id));
         await fetchFormasPagamento();
-        alert('Forma de pagamento excluída com sucesso!');
+        toast.success('Forma de pagamento excluída com sucesso!');
       } catch (error) {
         console.error('Erro ao excluir forma de pagamento:', error);
-        alert('Erro ao excluir forma de pagamento. Tente novamente.');
+        toast.error('Erro ao excluir forma de pagamento. Tente novamente.');
       } finally {
         setDeleteLoading(prev => ({ ...prev, [id.toString()]: false }));
       }
@@ -119,9 +147,17 @@ const FormaPagamentoList: React.FC = () => {
         data={formasPagamento}
         loading={loading}
         emptyMessage="Nenhuma forma de pagamento encontrada."
+        onView={handleView}
         onEdit={handleEdit}
         onDelete={handleDelete}
         title="Lista de Formas de Pagamento"
+      />
+
+      <FormaPagamentoViewModal 
+        isOpen={isViewModalOpen}
+        onClose={closeViewModal}
+        formaPagamento={selectedFormaPagamentoView}
+        loading={viewModalLoading}
       />
     </div>
   );

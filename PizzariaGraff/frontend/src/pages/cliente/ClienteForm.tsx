@@ -134,10 +134,19 @@ const ClienteForm: React.FC = () => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value),
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value),
+      };
+      
+      // Se o tipo de pessoa mudou, limpar o campo CPF/CNPJ
+      if (name === 'tipo') {
+        newData.cpfCpnj = '';
+      }
+      
+      return newData;
+    });
   };
 
   const validateForm = () => {
@@ -180,14 +189,17 @@ const ClienteForm: React.FC = () => {
         dataNascimento: formData.dataNascimento,
         estadoCivil: formData.estadoCivil,
         sexo: formData.sexo,
-        tipo: formData.tipo,
-        limiteCredito: formData.limiteCredito,
+        tipo: Number(formData.tipo),
+        limiteCredito: Number(formData.limiteCredito),
         observacao: formData.observacao,
-        ativo: formData.ativo,
+        ativo: Boolean(formData.ativo),
         cidade: cidadeSelecionada,
         condicaoPagamentoId: formData.condicaoPagamentoId,
       };
       
+      console.log('Payload enviado:', clienteDataPayload);
+      console.log('Status ativo:', formData.ativo, 'Tipo:', typeof formData.ativo);
+
       if (isNew) {
         await createCliente(clienteDataPayload);
         alert('Cliente cadastrado com sucesso!');
