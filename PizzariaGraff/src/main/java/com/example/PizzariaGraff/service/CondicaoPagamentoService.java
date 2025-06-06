@@ -183,22 +183,45 @@ public class CondicaoPagamentoService {
                 throw new IllegalArgumentException("Condição de pagamento com ID " + dto.getId() + " não encontrada");
             }
             
-            // Força a exclusão de todas as parcelas existentes antes de salvar as novas
-            System.out.println("Excluindo parcelas existentes para a condição ID: " + dto.getId());
-            condicaoPagamentoRepository.deleteParcelasByCondicaoPagamentoId(dto.getId());
+            // Só mexe nas parcelas se foram enviadas novas parcelas
+            boolean temParcelasNovas = dto.getParcelasCondicaoPagamento() != null && !dto.getParcelasCondicaoPagamento().isEmpty();
             
-            // Reset os IDs das parcelas para forçar inserção
-            if (dto.getParcelasCondicaoPagamento() != null) {
+            if (temParcelasNovas) {
+                System.out.println("Enviadas " + dto.getParcelasCondicaoPagamento().size() + " parcelas - substituindo as existentes");
+                // Força a exclusão de todas as parcelas existentes antes de salvar as novas
+                condicaoPagamentoRepository.deleteParcelasByCondicaoPagamentoId(dto.getId());
+                
+                // Reset os IDs das parcelas para forçar inserção
                 for (ParcelaCondicaoPagamentoDTO parcela : dto.getParcelasCondicaoPagamento()) {
                     parcela.setId(null); // Força a criação de novas parcelas
                     parcela.setCondicaoPagamentoId(dto.getId()); // Garante que a condição ID seja a correta
                 }
+            } else {
+                System.out.println("Nenhuma parcela enviada - mantendo as parcelas existentes da condição ID: " + dto.getId());
+                // Busca as parcelas existentes para manter
+                CondicaoPagamento condicaoAtual = condicaoExistente.get();
+                if (condicaoAtual.getParcelasCondicaoPagamento() != null) {
+                    System.out.println("Mantendo " + condicaoAtual.getParcelasCondicaoPagamento().size() + " parcelas existentes");
+                }
             }
             
-            CondicaoPagamento condicao = fromDTO(dto);
-            System.out.println("Convertido para entidade com " + 
-                (condicao.getParcelasCondicaoPagamento() != null ? 
-                condicao.getParcelasCondicaoPagamento().size() : 0) + " parcelas");
+            CondicaoPagamento condicao;
+            if (temParcelasNovas) {
+                // Se tem parcelas novas, usa o fromDTO normal
+                condicao = fromDTO(dto);
+                System.out.println("Convertido para entidade com " + 
+                    (condicao.getParcelasCondicaoPagamento() != null ? 
+                    condicao.getParcelasCondicaoPagamento().size() : 0) + " parcelas novas");
+            } else {
+                // Se não tem parcelas novas, mantém as existentes
+                condicao = fromDTO(dto);
+                // Mantém as parcelas existentes
+                CondicaoPagamento condicaoAtual = condicaoExistente.get();
+                condicao.setParcelasCondicaoPagamento(condicaoAtual.getParcelasCondicaoPagamento());
+                System.out.println("Convertido para entidade mantendo " + 
+                    (condicao.getParcelasCondicaoPagamento() != null ? 
+                    condicao.getParcelasCondicaoPagamento().size() : 0) + " parcelas existentes");
+            }
             
             CondicaoPagamento savedCondicao = condicaoPagamentoRepository.save(condicao);
             System.out.println("Entidade atualizada com ID: " + savedCondicao.getId());

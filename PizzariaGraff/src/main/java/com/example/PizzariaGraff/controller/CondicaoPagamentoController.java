@@ -73,7 +73,7 @@ public class CondicaoPagamentoController {
 
     @PostMapping
     @Operation(summary = "Cria uma nova condição de pagamento")
-    public ResponseEntity<CondicaoPagamentoDTO> criar(@RequestBody CondicaoPagamentoDTO condicaoDTO) {
+    public ResponseEntity<?> criar(@RequestBody CondicaoPagamentoDTO condicaoDTO) {
         try {
             System.out.println("Recebendo requisição para criar condição de pagamento");
             System.out.println("Dados recebidos: " + condicaoDTO.getCondicaoPagamento());
@@ -86,32 +86,54 @@ public class CondicaoPagamentoController {
             return ResponseEntity.ok(resultado);
         } catch (IllegalArgumentException e) {
             System.err.println("Erro de validação ao criar condição de pagamento: " + e.getMessage());
-            return ResponseEntity.badRequest().body(null);
+            e.printStackTrace();
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("erro", e.getMessage());
+            errorResponse.put("tipo", "Erro de validação");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         } catch (Exception e) {
             System.err.println("Erro ao criar condição de pagamento: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("erro", "Erro interno do servidor: " + e.getMessage());
+            errorResponse.put("tipo", "Erro interno");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Atualiza uma condição de pagamento existente")
-    public ResponseEntity<CondicaoPagamentoDTO> atualizar(
+    public ResponseEntity<?> atualizar(
             @PathVariable Long id, 
             @RequestBody CondicaoPagamentoDTO condicaoDTO) {
         try {
             System.out.println("Recebendo requisição para atualizar condição de pagamento ID: " + id);
+            System.out.println("Dados recebidos: " + condicaoDTO.getCondicaoPagamento());
+            System.out.println("Parcelas recebidas: " + 
+                (condicaoDTO.getParcelasCondicaoPagamento() != null ? condicaoDTO.getParcelasCondicaoPagamento().size() : 0));
+            System.out.println("DTO toString: " + condicaoDTO.toString());
+            
+            // Log detalhado dos campos
+            System.out.println("=== PAYLOAD DETALHADO ===");
+            System.out.println("ID: " + condicaoDTO.getId());
+            System.out.println("CondicaoPagamento: [" + condicaoDTO.getCondicaoPagamento() + "]");
+            System.out.println("NumeroParcelas: " + condicaoDTO.getNumeroParcelas());
+            System.out.println("Parcelas: " + condicaoDTO.getParcelas());
+            System.out.println("DiasEntreParcelas: " + condicaoDTO.getDiasEntreParcelas());
+            System.out.println("=========================");
             
             if (!id.equals(condicaoDTO.getId())) {
                 condicaoDTO.setId(id);
             }
             
             // Verifica se a condição existe
-            try {
-                condicaoPagamentoService.findById(id);
-            } catch (RuntimeException e) {
-                System.err.println("Condição de pagamento não encontrada para atualização");
-                return ResponseEntity.notFound().build();
+            CondicaoPagamentoDTO existingCondicao = condicaoPagamentoService.findById(id);
+            if (existingCondicao == null) {
+                System.err.println("Condição de pagamento não encontrada para atualização. ID: " + id);
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("erro", "Condição de pagamento não encontrada");
+                errorResponse.put("id", id.toString());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
             }
             
             CondicaoPagamentoDTO resultado = condicaoPagamentoService.update(condicaoDTO);
@@ -120,11 +142,18 @@ public class CondicaoPagamentoController {
             return ResponseEntity.ok(resultado);
         } catch (IllegalArgumentException e) {
             System.err.println("Erro de validação ao atualizar condição de pagamento: " + e.getMessage());
-            return ResponseEntity.badRequest().body(null);
+            e.printStackTrace();
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("erro", e.getMessage());
+            errorResponse.put("tipo", "Erro de validação");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         } catch (Exception e) {
             System.err.println("Erro ao atualizar condição de pagamento: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("erro", "Erro interno do servidor: " + e.getMessage());
+            errorResponse.put("tipo", "Erro interno");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 

@@ -8,6 +8,24 @@ import { toast } from 'react-toastify';
 import Icon from '../../components/Icon';
 import { FaPlus, FaTrash, FaSpinner, FaSearch, FaArrowLeft } from 'react-icons/fa';
 import FormaPagamentoModal from '../../components/FormaPagamentoModal';
+// import { formatDate } from '../../utils/dateUtils';
+
+// Função simples para formatar datas
+const formatDate = (dateString: string | undefined): string => {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleString('pt-BR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return dateString;
+  }
+};
 
 interface CondicaoPagamentoFormProps {
   mode?: 'edit' | 'view';
@@ -526,9 +544,18 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   <span className={`px-2 py-1 rounded text-xs ${formData.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {formData.ativo ? 'Ativo' : 'Inativo'}
                   </span>
-                )}
+                )}  
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Primeira linha: Código, Condição de Pagamento, Número de Parcelas */}
+              <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '1fr 2fr' }}>
+                <FormField
+                  name="id"
+                  label="Código"
+                  value={id && id !== 'novo' ? id : 'Novo'}
+                  onChange={() => {}}
+                  disabled={true}
+                />
+                
                 <FormField
                   name="condicaoPagamento"
                   label="Condição de Pagamento"
@@ -540,7 +567,12 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   disabled={isViewMode}
                 />
                 
-                <FormField
+            
+              </div>
+              
+              {/* Segunda linha: Dias 1ª Parcela, Dias Entre Parcelas */}
+              <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+              <FormField
                   name="numeroParcelas"
                   label="Número de Parcelas"
                   type="number"
@@ -550,7 +582,7 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   error={errors.numeroParcelas}
                   disabled={isViewMode}
                 />
-                
+
                 <FormField
                   name="diasPrimeiraParcela"
                   label="Dias para 1ª Parcela"
@@ -571,6 +603,11 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   error={errors.diasEntreParcelas}
                 />
                 
+                <div></div> {/* Espaço vazio para manter o grid */}
+              </div>
+              
+              {/* Terceira linha: Percentuais */}
+              <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
                 <FormField
                   name="percentualJuros"
                   label="Percentual de Juros (%)"
@@ -603,8 +640,11 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   error={errors.percentualDesconto}
                   disabled={isViewMode}
                 />
-                
-                <div className="col-span-1 md:col-span-2">
+              </div>
+              
+              {/* Quarta linha: Forma de Pagamento Padrão */}
+              <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '1fr' }}>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Forma de Pagamento Padrão
                   </label>
@@ -763,20 +803,27 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
             </div>
           </div>
           
-          <div className="flex justify-end space-x-4 pt-4 border-t">
-            <div className="flex-1 text-sm text-gray-500">
-              {id && id !== 'novo' && (
-                <div className="flex flex-col">
-                  <span className="font-medium mb-1">Informações do Registro:</span>
-                  {entityData.dataCadastro && (
-                    <span className="mb-1 ml-2">Cadastrado em: {new Date(entityData.dataCadastro).toLocaleDateString('pt-BR')}</span>
-                  )}
-                  {entityData.ultimaModificacao && (
-                    <span className="ml-2">Última modificação: {new Date(entityData.ultimaModificacao).toLocaleDateString('pt-BR')}</span>
-                  )}
-                </div>
+          {/* Rodapé do formulário com informações de registro e botões */}
+        <div className="flex justify-between items-end pt-6 border-t mt-6">
+          {/* Informações do Registro (sempre que existirem datas) */}
+          {(entityData.dataCadastro || entityData.ultimaModificacao) && (
+            <div className="text-sm text-gray-600">
+              <h3 className="font-semibold text-gray-700 mb-1">Informações do Registro:</h3>
+              {entityData.dataCadastro && (
+                <p>
+                  Cadastrado em: {formatDate(entityData.dataCadastro)}
+                </p>
+              )}
+              {entityData.ultimaModificacao && (
+                <p>
+                  Última modificação: {formatDate(entityData.ultimaModificacao)}
+                </p>
               )}
             </div>
+          )}
+
+          {/* Botões de Ação - Sempre à direita */}
+          <div className="flex gap-3 ml-auto">
             <button
               type="button"
               onClick={() => navigate('/condicoes-pagamento')}
@@ -801,6 +848,7 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
               </button>
             )}
           </div>
+        </div>
         </form>
       )}
 

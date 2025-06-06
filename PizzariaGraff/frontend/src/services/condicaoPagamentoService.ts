@@ -209,6 +209,13 @@ const CondicaoPagamentoService = {
         console.error('Erro detalhado:', error.response.data);
         console.error('Status:', error.response.status);
         console.error('Headers:', error.response.headers);
+        
+        // Se o backend retornou uma mensagem de erro específica, use ela
+        if (error.response.data && error.response.data.erro) {
+          const customError = new Error(error.response.data.erro);
+          customError.name = 'ValidationError';
+          throw customError;
+        }
       }
       throw error;
     }
@@ -250,7 +257,6 @@ const CondicaoPagamentoService = {
         percentualJuros: data.percentualJuros || 0.0,
         percentualMulta: data.percentualMulta || 0.0,
         percentualDesconto: data.percentualDesconto || 0.0,
-        formaPagamentoPadraoId: data.formaPagamentoPadraoId, // Garantir o envio deste campo
         parcelasCondicaoPagamento: data.parcelas.map(parcela => ({
           numero: parcela.numero || 1,
           dias: parcela.dias || 0,
