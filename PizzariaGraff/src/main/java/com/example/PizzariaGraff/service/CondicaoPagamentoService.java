@@ -277,11 +277,13 @@ public class CondicaoPagamentoService {
         condicao.setCondicaoPagamento(dto.getCondicaoPagamento());
         condicao.setNumeroParcelas(dto.getNumeroParcelas());
         condicao.setParcelas(dto.getParcelas());
+        
         condicao.setDiasPrimeiraParcela(dto.getDiasPrimeiraParcela());
         condicao.setDiasEntreParcelas(dto.getDiasEntreParcelas());
         condicao.setPercentualJuros(dto.getPercentualJuros());
         condicao.setPercentualMulta(dto.getPercentualMulta());
         condicao.setPercentualDesconto(dto.getPercentualDesconto());
+        
         condicao.setAtivo(dto.getAtivo());
         condicao.setDataCadastro(dto.getDataCadastro());
         condicao.setUltimaModificacao(dto.getUltimaModificacao());

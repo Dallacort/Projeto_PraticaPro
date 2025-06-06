@@ -79,7 +79,6 @@ public class CondicaoPagamentoController {
             System.out.println("Dados recebidos: " + condicaoDTO.getCondicaoPagamento());
             System.out.println("Parcelas recebidas: " + 
                 (condicaoDTO.getParcelasCondicaoPagamento() != null ? condicaoDTO.getParcelasCondicaoPagamento().size() : 0));
-            System.out.println("DTO completo: " + condicaoDTO);
             
             CondicaoPagamentoDTO resultado = condicaoPagamentoService.create(condicaoDTO);
             System.out.println("Condição de pagamento criada com sucesso. ID: " + resultado.getId());

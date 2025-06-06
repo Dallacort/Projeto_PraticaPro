@@ -174,6 +174,11 @@ const CondicaoPagamentoService = {
         numeroParcelas: data.numeroParcelas || 1,
         parcelas: data.numeroParcelas || 1, // Aqui enviamos o número inteiro de parcelas
         ativo: Boolean(data.ativo !== false),
+        diasPrimeiraParcela: data.diasPrimeiraParcela || 0,
+        diasEntreParcelas: data.diasEntreParcelas || 0,
+        percentualJuros: data.percentualJuros || 0.0,
+        percentualMulta: data.percentualMulta || 0.0,
+        percentualDesconto: data.percentualDesconto || 0.0,
         parcelasCondicaoPagamento: data.parcelas.map(parcela => ({
           numero: parcela.numero || 1,
           dias: parcela.dias || 0,
@@ -240,6 +245,11 @@ const CondicaoPagamentoService = {
         numeroParcelas: data.numeroParcelas || 1,
         parcelas: data.numeroParcelas || 1,
         ativo: Boolean(data.ativo !== false),
+        diasPrimeiraParcela: data.diasPrimeiraParcela || 0,
+        diasEntreParcelas: data.diasEntreParcelas || 0,
+        percentualJuros: data.percentualJuros || 0.0,
+        percentualMulta: data.percentualMulta || 0.0,
+        percentualDesconto: data.percentualDesconto || 0.0,
         formaPagamentoPadraoId: data.formaPagamentoPadraoId, // Garantir o envio deste campo
         parcelasCondicaoPagamento: data.parcelas.map(parcela => ({
           numero: parcela.numero || 1,

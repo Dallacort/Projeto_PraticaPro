@@ -191,8 +191,9 @@ public class CondicaoPagamentoRepository {
     
     private CondicaoPagamento insert(CondicaoPagamento condicao) {
         String sql = "INSERT INTO condicao_pagamento " +
-                     "(condicao_pagamento, numero_parcelas, parcelas, ativo, data_cadastro, ultima_modificacao) " +
-                     "VALUES (?, ?, ?, ?, ?, ?)";
+                     "(condicao_pagamento, numero_parcelas, parcelas, ativo, dias_primeira_parcela, dias_entre_parcelas, " +
+                     "percentual_juros, percentual_multa, percentual_desconto, data_cadastro, ultima_modificacao) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -203,8 +204,13 @@ public class CondicaoPagamentoRepository {
             stmt.setInt(2, condicao.getNumeroParcelas() != null ? condicao.getNumeroParcelas() : 1);
             stmt.setInt(3, condicao.getParcelas() != null ? condicao.getParcelas() : 1);
             stmt.setBoolean(4, condicao.getAtivo() != null ? condicao.getAtivo() : true);
-            stmt.setTimestamp(5, Timestamp.valueOf(now));
-            stmt.setTimestamp(6, Timestamp.valueOf(now));
+            stmt.setInt(5, condicao.getDiasPrimeiraParcela() != null ? condicao.getDiasPrimeiraParcela() : 0);
+            stmt.setInt(6, condicao.getDiasEntreParcelas() != null ? condicao.getDiasEntreParcelas() : 0);
+            stmt.setDouble(7, condicao.getPercentualJuros() != null ? condicao.getPercentualJuros() : 0.0);
+            stmt.setDouble(8, condicao.getPercentualMulta() != null ? condicao.getPercentualMulta() : 0.0);
+            stmt.setDouble(9, condicao.getPercentualDesconto() != null ? condicao.getPercentualDesconto() : 0.0);
+            stmt.setTimestamp(10, Timestamp.valueOf(now));
+            stmt.setTimestamp(11, Timestamp.valueOf(now));
             
             stmt.executeUpdate();
             
@@ -233,7 +239,8 @@ public class CondicaoPagamentoRepository {
     private CondicaoPagamento update(CondicaoPagamento condicao) {
         String sql = "UPDATE condicao_pagamento SET " +
                      "condicao_pagamento = ?, numero_parcelas = ?, parcelas = ?, " +
-                     "ativo = ?, ultima_modificacao = ? " +
+                     "ativo = ?, dias_primeira_parcela = ?, dias_entre_parcelas = ?, " +
+                     "percentual_juros = ?, percentual_multa = ?, percentual_desconto = ?, ultima_modificacao = ? " +
                      "WHERE id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
@@ -245,8 +252,13 @@ public class CondicaoPagamentoRepository {
             stmt.setInt(2, condicao.getNumeroParcelas() != null ? condicao.getNumeroParcelas() : 1);
             stmt.setInt(3, condicao.getParcelas() != null ? condicao.getParcelas() : 1);
             stmt.setBoolean(4, condicao.getAtivo() != null ? condicao.getAtivo() : true);
-            stmt.setTimestamp(5, Timestamp.valueOf(now));
-            stmt.setLong(6, condicao.getId());
+            stmt.setInt(5, condicao.getDiasPrimeiraParcela() != null ? condicao.getDiasPrimeiraParcela() : 0);
+            stmt.setInt(6, condicao.getDiasEntreParcelas() != null ? condicao.getDiasEntreParcelas() : 0);
+            stmt.setDouble(7, condicao.getPercentualJuros() != null ? condicao.getPercentualJuros() : 0.0);
+            stmt.setDouble(8, condicao.getPercentualMulta() != null ? condicao.getPercentualMulta() : 0.0);
+            stmt.setDouble(9, condicao.getPercentualDesconto() != null ? condicao.getPercentualDesconto() : 0.0);
+            stmt.setTimestamp(10, Timestamp.valueOf(now));
+            stmt.setLong(11, condicao.getId());
             
             stmt.executeUpdate();
             

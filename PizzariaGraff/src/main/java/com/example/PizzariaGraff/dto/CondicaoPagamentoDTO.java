@@ -181,4 +181,23 @@ public class CondicaoPagamentoDTO {
     public void setUltimaModificacao(LocalDateTime ultimaModificacao) {
         this.ultimaModificacao = ultimaModificacao;
     }
+    
+    @Override
+    public String toString() {
+        return "CondicaoPagamentoDTO{" +
+                "id=" + id +
+                ", condicaoPagamento='" + condicaoPagamento + '\'' +
+                ", numeroParcelas=" + numeroParcelas +
+                ", parcelas=" + parcelas +
+                ", ativo=" + ativo +
+                ", diasPrimeiraParcela=" + diasPrimeiraParcela +
+                ", diasEntreParcelas=" + diasEntreParcelas +
+                ", percentualJuros=" + percentualJuros +
+                ", percentualMulta=" + percentualMulta +
+                ", percentualDesconto=" + percentualDesconto +
+                ", parcelasCondicaoPagamento=" + (parcelasCondicaoPagamento != null ? parcelasCondicaoPagamento.size() : 0) + " parcelas" +
+                ", dataCadastro=" + dataCadastro +
+                ", ultimaModificacao=" + ultimaModificacao +
+                '}';
+    }
 } 
