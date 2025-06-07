@@ -297,7 +297,7 @@ const EstadoForm: React.FC = () => {
                   : undefined}
               />
               
-              <div className="col-span-1 md:col-span-2">
+              <div className="col-span-1 md:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   País <span className="text-red-500">*</span>
                 </label>
@@ -323,17 +323,17 @@ const EstadoForm: React.FC = () => {
         {/* Rodapé do formulário com informações de registro e botões */}
         <div className="flex justify-between items-end pt-6 border-t mt-6">
           {/* Informações do Registro (apenas para edição) */}
-          {!isNew && (dataCadastro || ultimaModificacao) && (
+          {!isNew && (entityData.dataCadastro || entityData.ultimaModificacao) && (
             <div className="text-sm text-gray-600">
               <h3 className="font-semibold text-gray-700 mb-1">Informações do Registro:</h3>
-              {dataCadastro && (
+              {entityData.dataCadastro && (
                 <p>
-                  Cadastrado em: {formatDate(dataCadastro)}
+                  Cadastrado em: {formatDate(entityData.dataCadastro)}
                 </p>
               )}
-              {ultimaModificacao && (
+              {entityData.ultimaModificacao && (
                 <p>
-                  Última modificação: {formatDate(ultimaModificacao)}
+                  Última modificação: {formatDate(entityData.ultimaModificacao)}
                 </p>
               )}
             </div>
@@ -343,7 +343,7 @@ const EstadoForm: React.FC = () => {
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => navigate('/cidades')}
+              onClick={() => navigate('/estados')}
               className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none"
             >
               Cancelar
@@ -351,7 +351,7 @@ const EstadoForm: React.FC = () => {
             <button
               type="submit"
               disabled={saving}
-              className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50`}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md focus:outline-none disabled:opacity-50"
             >
               {saving ? (
                 <span className="inline-flex items-center">
