@@ -164,6 +164,22 @@ const CidadeForm: React.FC = () => {
           <div className="border-b pb-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Dados Básicos</h2>
+              <div className="flex items-center">
+                <label className="flex items-center cursor-pointer">
+                  <span className="mr-2 text-sm font-medium text-gray-700">Ativo</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      name="ativo"
+                      checked={formData.ativo}
+                      onChange={handleChange}
+                      className="sr-only"
+                    />
+                    <div className={`block w-14 h-8 rounded-full ${formData.ativo ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform ${formData.ativo ? 'translate-x-6' : ''}`}></div>
+                  </div>
+                </label>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
