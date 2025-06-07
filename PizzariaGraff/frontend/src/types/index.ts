@@ -5,6 +5,7 @@ export interface Pais {
   nome: string;
   codigo: string;
   sigla: string;
+  nacionalidade?: string;
   dataCadastro?: string;
   ultimaModificacao?: string;
   ativo?: boolean;
@@ -58,6 +59,7 @@ export interface Cliente {
   cep?: string;
   cidade: Cidade;
   cidadeId?: number;
+  nacionalidadeId?: number;
   nacionalidade?: string;
   dataNascimento?: string;
   estadoCivil?: string;

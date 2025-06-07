@@ -37,9 +37,14 @@ public class PaisRepository {
             
             // Verificar se a coluna ativo existe
             boolean temAtivo = false;
+            boolean temNacionalidade = false;
             
             try (ResultSet colunas = metaData.getColumns(null, null, "pais", "ativo")) {
                 temAtivo = colunas.next();
+            }
+            
+            try (ResultSet colunas = metaData.getColumns(null, null, "pais", "nacionalidade")) {
+                temNacionalidade = colunas.next();
             }
             
             if (!temAtivo) {
@@ -49,6 +54,37 @@ public class PaisRepository {
                     System.out.println("Coluna ativo adicionada à tabela pais");
                     stmt.execute("UPDATE pais SET ativo = true");
                     System.out.println("Registros atualizados com ativo = true");
+                }
+            }
+            
+            if (!temNacionalidade) {
+                System.out.println("Adicionando coluna nacionalidade à tabela pais");
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("ALTER TABLE pais ADD COLUMN nacionalidade VARCHAR(100)");
+                    System.out.println("Coluna nacionalidade adicionada à tabela pais");
+                    
+                    // Atualizar países existentes com nacionalidades
+                    int updatedBrasil = stmt.executeUpdate("UPDATE pais SET nacionalidade = 'Brasileira' WHERE sigla = 'BR' OR nome LIKE '%BRASIL%'");
+                    System.out.println("Nacionalidade 'Brasileira' definida para " + updatedBrasil + " registro(s) do Brasil");
+                    
+                    // Inserir alguns países principais se não existirem
+                    try {
+                        stmt.executeUpdate("INSERT IGNORE INTO pais (nome, codigo, sigla, nacionalidade, ativo, data_cadastro, ultima_modificacao) VALUES " +
+                                          "('Estados Unidos', 'USA', 'US', 'Americana', true, NOW(), NOW())");
+                        System.out.println("País Estados Unidos inserido");
+                    } catch (Exception e) { /* já existe */ }
+                    
+                    try {
+                        stmt.executeUpdate("INSERT IGNORE INTO pais (nome, codigo, sigla, nacionalidade, ativo, data_cadastro, ultima_modificacao) VALUES " +
+                                          "('Argentina', 'ARG', 'AR', 'Argentina', true, NOW(), NOW())");
+                        System.out.println("País Argentina inserido");
+                    } catch (Exception e) { /* já existe */ }
+                    
+                    try {
+                        stmt.executeUpdate("INSERT IGNORE INTO pais (nome, codigo, sigla, nacionalidade, ativo, data_cadastro, ultima_modificacao) VALUES " +
+                                          "('Paraguai', 'PRY', 'PY', 'Paraguaia', true, NOW(), NOW())");
+                        System.out.println("País Paraguai inserido");
+                    } catch (Exception e) { /* já existe */ }
                 }
             }
         } catch (SQLException e) {
@@ -234,7 +270,7 @@ public class PaisRepository {
         }
         
         // Usar AUTO_INCREMENT do MySQL, removendo a definição manual do ID
-        String sql = "INSERT INTO pais (nome, codigo, sigla, data_cadastro, ultima_modificacao, ativo) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO pais (nome, codigo, sigla, nacionalidade, data_cadastro, ultima_modificacao, ativo) VALUES (?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -242,9 +278,10 @@ public class PaisRepository {
             stmt.setString(1, pais.getNome());
             stmt.setString(2, pais.getCodigo());
             stmt.setString(3, pais.getSigla());
-            stmt.setTimestamp(4, Timestamp.valueOf(pais.getDataCadastro()));
-            stmt.setTimestamp(5, Timestamp.valueOf(pais.getUltimaModificacao()));
-            stmt.setBoolean(6, pais.getAtivo());
+            stmt.setString(4, pais.getNacionalidade());
+            stmt.setTimestamp(5, Timestamp.valueOf(pais.getDataCadastro()));
+            stmt.setTimestamp(6, Timestamp.valueOf(pais.getUltimaModificacao()));
+            stmt.setBoolean(7, pais.getAtivo());
             
             int rowsAffected = stmt.executeUpdate();
             
@@ -278,7 +315,7 @@ public class PaisRepository {
             pais.setAtivo(true);
         }
         
-        String sql = "UPDATE pais SET nome = ?, codigo = ?, sigla = ?, ultima_modificacao = ?, ativo = ? WHERE id = ?";
+        String sql = "UPDATE pais SET nome = ?, codigo = ?, sigla = ?, nacionalidade = ?, ultima_modificacao = ?, ativo = ? WHERE id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -286,9 +323,10 @@ public class PaisRepository {
             stmt.setString(1, pais.getNome());
             stmt.setString(2, pais.getCodigo());
             stmt.setString(3, pais.getSigla());
-            stmt.setTimestamp(4, Timestamp.valueOf(pais.getUltimaModificacao()));
-            stmt.setBoolean(5, pais.getAtivo());
-            stmt.setLong(6, pais.getId());
+            stmt.setString(4, pais.getNacionalidade());
+            stmt.setTimestamp(5, Timestamp.valueOf(pais.getUltimaModificacao()));
+            stmt.setBoolean(6, pais.getAtivo());
+            stmt.setLong(7, pais.getId());
             
             stmt.executeUpdate();
         } catch (SQLException e) {
@@ -374,6 +412,7 @@ public class PaisRepository {
         pais.setNome(rs.getString("nome"));
         pais.setCodigo(rs.getString("codigo"));
         pais.setSigla(rs.getString("sigla"));
+        pais.setNacionalidade(rs.getString("nacionalidade"));
         
         // Carregar campos de data
         Timestamp dataCadastro = rs.getTimestamp("data_cadastro");

@@ -32,11 +32,13 @@ public class ClienteRepository {
         String sql = "SELECT c.*, " +
                      "cid.nome as cidade_nome, " +
                      "e.id as estado_id, e.nome as estado_nome, e.uf as estado_uf, e.pais_id as estado_pais_id, " +
-                     "p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo " +
+                     "p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo, " +
+                     "pn.nacionalidade as nacionalidade " +
                      "FROM cliente c " +
                      "LEFT JOIN cidade cid ON c.cidade_id = cid.id " +
                      "LEFT JOIN estado e ON cid.estado_id = e.id " +
                      "LEFT JOIN pais p ON e.pais_id = p.id " +
+                     "LEFT JOIN pais pn ON c.nacionalidade_id = pn.id " +
                      "ORDER BY c.cliente ASC";
         
         try (Connection conn = databaseConnection.getConnection();
@@ -59,11 +61,13 @@ public class ClienteRepository {
         String sql = "SELECT c.*, " +
                      "cid.nome as cidade_nome, " +
                      "e.id as estado_id, e.nome as estado_nome, e.uf as estado_uf, e.pais_id as estado_pais_id, " +
-                     "p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo " +
+                     "p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo, " +
+                     "pn.nacionalidade as nacionalidade " +
                      "FROM cliente c " +
                      "LEFT JOIN cidade cid ON c.cidade_id = cid.id " +
                      "LEFT JOIN estado e ON cid.estado_id = e.id " +
                      "LEFT JOIN pais p ON e.pais_id = p.id " +
+                     "LEFT JOIN pais pn ON c.nacionalidade_id = pn.id " +
                      "WHERE c.id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
@@ -86,11 +90,13 @@ public class ClienteRepository {
         String sql = "SELECT c.*, " +
                      "cid.nome as cidade_nome, " +
                      "e.id as estado_id, e.nome as estado_nome, e.uf as estado_uf, e.pais_id as estado_pais_id, " +
-                     "p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo " +
+                     "p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo, " +
+                     "pn.nacionalidade as nacionalidade " +
                      "FROM cliente c " +
                      "LEFT JOIN cidade cid ON c.cidade_id = cid.id " +
                      "LEFT JOIN estado e ON cid.estado_id = e.id " +
                      "LEFT JOIN pais p ON e.pais_id = p.id " +
+                     "LEFT JOIN pais pn ON c.nacionalidade_id = pn.id " +
                      "WHERE c.cpf_cpnj = ?";
         
         try (Connection conn = databaseConnection.getConnection();
@@ -114,11 +120,13 @@ public class ClienteRepository {
         String sql = "SELECT c.*, " +
                      "cid.nome as cidade_nome, " +
                      "e.id as estado_id, e.nome as estado_nome, e.uf as estado_uf, e.pais_id as estado_pais_id, " +
-                     "p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo " +
+                     "p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo, " +
+                     "pn.nacionalidade as nacionalidade " +
                      "FROM cliente c " +
                      "LEFT JOIN cidade cid ON c.cidade_id = cid.id " +
                      "LEFT JOIN estado e ON cid.estado_id = e.id " +
                      "LEFT JOIN pais p ON e.pais_id = p.id " +
+                     "LEFT JOIN pais pn ON c.nacionalidade_id = pn.id " +
                      "WHERE c.cidade_id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
@@ -147,7 +155,7 @@ public class ClienteRepository {
     
     private Cliente insert(Cliente cliente) {
         String sql = "INSERT INTO cliente (cliente, apelido, bairro, cep, numero, endereco, cidade_id, " +
-                     "complemento, id_brasileiro, limite_credito, nacionalidade, rg_inscricao_estadual, " +
+                     "complemento, id_brasileiro, limite_credito, nacionalidade_id, rg_inscricao_estadual, " +
                      "cpf_cpnj, data_nascimento, email, telefone, estado_civil, tipo, sexo, " +
                      "condicao_pagamento_id, limite_credito2, observacao, situacao, data_criacao, data_alteracao) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -167,7 +175,7 @@ public class ClienteRepository {
             stmt.setString(8, cliente.getComplemento());
             stmt.setObject(9, cliente.getIdBrasileiro());
             stmt.setBigDecimal(10, cliente.getLimiteCredito());
-            stmt.setString(11, cliente.getNacionalidade());
+            stmt.setObject(11, cliente.getNacionalidadeId());
             stmt.setString(12, cliente.getRgInscricaoEstadual());
             stmt.setString(13, cliente.getCpfCpnj());
             stmt.setDate(14, cliente.getDataNascimento() != null ? Date.valueOf(cliente.getDataNascimento()) : null);
@@ -208,7 +216,7 @@ public class ClienteRepository {
     private Cliente update(Cliente cliente) {
         String sql = "UPDATE cliente SET cliente = ?, apelido = ?, bairro = ?, cep = ?, numero = ?, " +
                      "endereco = ?, cidade_id = ?, complemento = ?, id_brasileiro = ?, limite_credito = ?, " +
-                     "nacionalidade = ?, rg_inscricao_estadual = ?, cpf_cpnj = ?, data_nascimento = ?, " +
+                     "nacionalidade_id = ?, rg_inscricao_estadual = ?, cpf_cpnj = ?, data_nascimento = ?, " +
                      "email = ?, telefone = ?, estado_civil = ?, tipo = ?, sexo = ?, " +
                      "condicao_pagamento_id = ?, limite_credito2 = ?, observacao = ?, situacao = ?, " +
                      "data_alteracao = ? WHERE id = ?";
@@ -228,7 +236,7 @@ public class ClienteRepository {
             stmt.setString(8, cliente.getComplemento());
             stmt.setObject(9, cliente.getIdBrasileiro());
             stmt.setBigDecimal(10, cliente.getLimiteCredito());
-            stmt.setString(11, cliente.getNacionalidade());
+            stmt.setObject(11, cliente.getNacionalidadeId());
             stmt.setString(12, cliente.getRgInscricaoEstadual());
             stmt.setString(13, cliente.getCpfCpnj());
             stmt.setDate(14, cliente.getDataNascimento() != null ? Date.valueOf(cliente.getDataNascimento()) : null);
@@ -280,6 +288,7 @@ public class ClienteRepository {
         cliente.setComplemento(rs.getString("complemento"));
         cliente.setIdBrasileiro(rs.getObject("id_brasileiro", Integer.class));
         cliente.setLimiteCredito(rs.getBigDecimal("limite_credito"));
+        cliente.setNacionalidadeId(rs.getObject("nacionalidade_id", Long.class));
         cliente.setNacionalidade(rs.getString("nacionalidade"));
         cliente.setRgInscricaoEstadual(rs.getString("rg_inscricao_estadual"));
         cliente.setCpfCpnj(rs.getString("cpf_cpnj"));

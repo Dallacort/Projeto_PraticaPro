@@ -8,6 +8,7 @@ public class Pais {
     private String nome;
     private String codigo;
     private String sigla;
+    private String nacionalidade;
     private List<Estado> estados;
     private LocalDateTime dataCadastro;
     private LocalDateTime ultimaModificacao;
@@ -44,6 +45,14 @@ public class Pais {
 
     public void setSigla(String sigla) {
         this.sigla = sigla;
+    }
+
+    public String getNacionalidade() {
+        return nacionalidade;
+    }
+
+    public void setNacionalidade(String nacionalidade) {
+        this.nacionalidade = nacionalidade;
     }
 
     public List<Estado> getEstados() {

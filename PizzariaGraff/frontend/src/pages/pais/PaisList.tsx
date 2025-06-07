@@ -90,6 +90,7 @@ const PaisList: React.FC = () => {
     { header: 'Nome', accessor: 'nome' },
     { header: 'Sigla', accessor: 'sigla' },
     { header: 'Código', accessor: 'codigo' },
+    { header: 'Nacionalidade', accessor: 'nacionalidade' },
     {
       header: 'Status',
       accessor: 'ativo',

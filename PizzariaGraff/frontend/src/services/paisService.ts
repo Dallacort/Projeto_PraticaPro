@@ -10,6 +10,7 @@ export const adaptPaisFromApi = (apiPais: any): Pais => {
     nome: apiPais.nome || '',
     codigo: apiPais.codigo || '',
     sigla: apiPais.sigla || '',
+    nacionalidade: apiPais.nacionalidade || '',
     ativo: apiPais.ativo !== undefined ? apiPais.ativo : true,
     dataCadastro: apiPais.dataCadastro || null,
     ultimaModificacao: apiPais.ultimaModificacao || null
@@ -22,6 +23,7 @@ export const adaptPaisToApi = (pais: Omit<Pais, 'id'>): any => {
     nome: pais.nome,
     sigla: pais.sigla,
     codigo: pais.codigo,
+    nacionalidade: pais.nacionalidade,
     ativo: pais.ativo !== undefined ? pais.ativo : true
   };
 };

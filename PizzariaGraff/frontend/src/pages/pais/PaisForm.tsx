@@ -21,6 +21,7 @@ const PaisForm: React.FC = () => {
     nome: '',
     sigla: '',
     codigo: '',
+    nacionalidade: '',
     ativo: true
   });
   
@@ -52,6 +53,7 @@ const PaisForm: React.FC = () => {
               nome: paisData.nome,
               sigla: paisData.sigla,
               codigo: paisData.codigo,
+              nacionalidade: paisData.nacionalidade || '',
               ativo: paisData.ativo !== undefined ? paisData.ativo : true
             });
             
@@ -113,13 +115,20 @@ const PaisForm: React.FC = () => {
     if (!formData.nome) errors.push("Nome é obrigatório");
     if (!formData.sigla) errors.push("Sigla é obrigatória");
     if (!formData.codigo) errors.push("Código é obrigatório");
+    if (!formData.nacionalidade) errors.push("Nacionalidade é obrigatória");
     
-    // Validações específicas
+    // Validações de tamanho
+    if (formData.nome && formData.nome.length > 25) 
+      errors.push("Nome deve ter no máximo 25 caracteres");
+    
     if (formData.sigla && formData.sigla.length !== 2) 
       errors.push("Sigla deve ter exatamente 2 caracteres");
     
     if (formData.codigo && formData.codigo.length !== 3)
       errors.push("Código deve ter exatamente 3 caracteres");
+    
+    if (formData.nacionalidade && formData.nacionalidade.length > 25)
+      errors.push("Nacionalidade deve ter no máximo 25 caracteres");
     
     return errors;
   };
@@ -225,6 +234,7 @@ const PaisForm: React.FC = () => {
                 value={formData.nome}
                 onChange={handleChange}
                 required
+                maxLength={50}
                 placeholder="Nome do país"
                 error={!formData.nome && error ? 'Campo obrigatório' : undefined}
               />
@@ -236,6 +246,7 @@ const PaisForm: React.FC = () => {
                   value={formData.sigla}
                   onChange={handleChange}
                   required
+                  maxLength={2}
                   placeholder="BR"
                   error={(!formData.sigla || (formData.sigla.length !== 2)) && error 
                     ? 'Sigla deve ter exatamente 2 caracteres' 
@@ -248,12 +259,24 @@ const PaisForm: React.FC = () => {
                   value={formData.codigo}
                   onChange={handleChange}
                   required
+                  maxLength={3}
                   placeholder="BRA"
                   error={(!formData.codigo || (formData.codigo.length !== 3)) && error 
                     ? 'Código deve ter exatamente 3 caracteres' 
                     : undefined}
                 />
               </div>
+              
+              <FormField
+                label="Nacionalidade"
+                name="nacionalidade"
+                value={formData.nacionalidade}
+                onChange={handleChange}
+                required
+                maxLength={50}
+                placeholder="Brasileira"
+                error={!formData.nacionalidade && error ? 'Campo obrigatório' : undefined}
+              />
             </div>
           </div>
         </div>

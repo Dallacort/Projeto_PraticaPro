@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import FormField from '../../components/FormField';
 import { getCliente, createCliente, updateCliente } from '../../services/clienteService';
+import { getNacionalidades, NacionalidadeResponse } from '../../services/nacionalidadeService';
 import { Cliente, Cidade, CondicaoPagamento } from '../../types';
 import { FaSpinner, FaSearch } from 'react-icons/fa';
 import CidadeModal from '../../components/modals/CidadeModal';
@@ -20,6 +21,7 @@ interface ClienteFormData {
   complemento: string;
   bairro: string;
   cep: string;
+  nacionalidadeId: string;
   nacionalidade: string;
   dataNascimento: string;
   estadoCivil: string;
@@ -53,6 +55,7 @@ const ClienteForm: React.FC = () => {
     complemento: '',
     bairro: '',
     cep: '',
+    nacionalidadeId: '',
     nacionalidade: '',
     dataNascimento: '',
     estadoCivil: '',
@@ -72,6 +75,7 @@ const ClienteForm: React.FC = () => {
   const [dataCadastro, setDataCadastro] = useState<string | undefined>(undefined);
   const [cidadeSelecionada, setCidadeSelecionada] = useState<Cidade | null>(null);
   const [condicaoPagamentoSelecionada, setCondicaoPagamentoSelecionada] = useState<CondicaoPagamento | null>(null);
+  const [nacionalidades, setNacionalidades] = useState<NacionalidadeResponse[]>([]);
   const [isCidadeModalOpen, setIsCidadeModalOpen] = useState(false);
   const [isCondicaoPagamentoModalOpen, setIsCondicaoPagamentoModalOpen] = useState(false);
 
@@ -80,6 +84,10 @@ const ClienteForm: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
+        
+        // Carregar nacionalidades
+        const nacionalidadesData = await getNacionalidades();
+        setNacionalidades(nacionalidadesData);
         
         if (!isNew && id) {
           const clienteData = await getCliente(Number(id));
@@ -99,6 +107,7 @@ const ClienteForm: React.FC = () => {
             complemento: clienteData.complemento || '',
             bairro: clienteData.bairro || '',
             cep: clienteData.cep || '',
+            nacionalidadeId: String(clienteData.nacionalidadeId || ''),
             nacionalidade: clienteData.nacionalidade || '',
             dataNascimento: clienteData.dataNascimento || '',
             estadoCivil: clienteData.estadoCivil || '',
@@ -185,6 +194,7 @@ const ClienteForm: React.FC = () => {
         complemento: formData.complemento,
         bairro: formData.bairro,
         cep: formData.cep,
+        nacionalidadeId: Number(formData.nacionalidadeId) || null,
         nacionalidade: formData.nacionalidade,
         dataNascimento: formData.dataNascimento,
         estadoCivil: formData.estadoCivil,
@@ -460,14 +470,22 @@ const ClienteForm: React.FC = () => {
                 onChange={handleChange}
               />
 
-              <FormField
-                label="Nacionalidade"
-                name="nacionalidade"
-                value={formData.nacionalidade}
-                onChange={handleChange}
-                maxLength={50}
-                placeholder="Ex: Brasileira"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nacionalidade</label>
+                <select
+                  name="nacionalidadeId"
+                  value={formData.nacionalidadeId}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="">Selecione...</option>
+                  {nacionalidades.map((nac) => (
+                    <option key={nac.id} value={nac.id}>
+                      {nac.nacionalidade}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Quarta linha: RG, CPF/CNPJ, Limite de Crédito, Condição de Pagamento */}

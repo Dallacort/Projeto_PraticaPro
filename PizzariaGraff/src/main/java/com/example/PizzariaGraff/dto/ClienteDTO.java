@@ -48,6 +48,9 @@ public class ClienteDTO {
     @Schema(description = "Limite de crédito", example = "1000.00")
     private BigDecimal limiteCredito;
     
+    @Schema(description = "ID da Nacionalidade (País)", example = "1")
+    private Long nacionalidadeId;
+    
     @Schema(description = "Nacionalidade", example = "Brasileira")
     private String nacionalidade;
     
@@ -111,6 +114,7 @@ public class ClienteDTO {
         this.complemento = cliente.getComplemento();
         this.idBrasileiro = cliente.getIdBrasileiro();
         this.limiteCredito = cliente.getLimiteCredito();
+        this.nacionalidadeId = cliente.getNacionalidadeId();
         this.nacionalidade = cliente.getNacionalidade();
         this.rgInscricaoEstadual = cliente.getRgInscricaoEstadual();
         this.cpfCpnj = cliente.getCpfCpnj();
@@ -151,6 +155,7 @@ public class ClienteDTO {
         cliente.setComplemento(this.complemento);
         cliente.setIdBrasileiro(this.idBrasileiro);
         cliente.setLimiteCredito(this.limiteCredito);
+        cliente.setNacionalidadeId(this.nacionalidadeId);
         cliente.setNacionalidade(this.nacionalidade);
         cliente.setRgInscricaoEstadual(this.rgInscricaoEstadual);
         cliente.setCpfCpnj(this.cpfCpnj);
@@ -264,6 +269,14 @@ public class ClienteDTO {
 
     public void setLimiteCredito(BigDecimal limiteCredito) {
         this.limiteCredito = limiteCredito;
+    }
+
+    public Long getNacionalidadeId() {
+        return nacionalidadeId;
+    }
+
+    public void setNacionalidadeId(Long nacionalidadeId) {
+        this.nacionalidadeId = nacionalidadeId;
     }
 
     public String getNacionalidade() {

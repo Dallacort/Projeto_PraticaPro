@@ -17,7 +17,8 @@ public class Cliente {
     private String complemento; // varchar(255) - NULL
     private Integer idBrasileiro; // int4 - NULL
     private BigDecimal limiteCredito; // numeric(10,2)
-    private String nacionalidade; // varchar(255)
+    private Long nacionalidadeId; // FK para tabela pais
+    private String nacionalidade; // Campo calculado (nome da nacionalidade)
     private String rgInscricaoEstadual; // varchar(14) - NULL
     private String cpfCpnj; // varchar(14) - NULL
     private LocalDate dataNascimento; // date - NULL
@@ -125,6 +126,14 @@ public class Cliente {
 
     public void setLimiteCredito(BigDecimal limiteCredito) {
         this.limiteCredito = limiteCredito;
+    }
+
+    public Long getNacionalidadeId() {
+        return nacionalidadeId;
+    }
+
+    public void setNacionalidadeId(Long nacionalidadeId) {
+        this.nacionalidadeId = nacionalidadeId;
     }
 
     public String getNacionalidade() {

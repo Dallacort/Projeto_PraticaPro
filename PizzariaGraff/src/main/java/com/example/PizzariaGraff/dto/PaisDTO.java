@@ -8,6 +8,7 @@ public class PaisDTO {
     private String nome;
     private String codigo;
     private String sigla;
+    private String nacionalidade;
     private LocalDateTime dataCadastro;
     private LocalDateTime ultimaModificacao;
     private Boolean ativo;
@@ -15,11 +16,12 @@ public class PaisDTO {
     public PaisDTO() {
     }
 
-    public PaisDTO(Long id, String nome, String codigo, String sigla) {
+    public PaisDTO(Long id, String nome, String codigo, String sigla, String nacionalidade) {
         this.id = id;
         this.nome = nome;
         this.codigo = codigo;
         this.sigla = sigla;
+        this.nacionalidade = nacionalidade;
     }
 
     public static PaisDTO fromEntity(Pais pais) {
@@ -27,7 +29,8 @@ public class PaisDTO {
             pais.getId(),
             pais.getNome(),
             pais.getCodigo(),
-            pais.getSigla()
+            pais.getSigla(),
+            pais.getNacionalidade()
         );
         dto.setDataCadastro(pais.getDataCadastro());
         dto.setUltimaModificacao(pais.getUltimaModificacao());
@@ -41,6 +44,7 @@ public class PaisDTO {
         pais.setNome(this.nome);
         pais.setCodigo(this.codigo);
         pais.setSigla(this.sigla);
+        pais.setNacionalidade(this.nacionalidade);
         pais.setDataCadastro(this.dataCadastro);
         pais.setUltimaModificacao(this.ultimaModificacao);
         pais.setAtivo(this.ativo != null ? this.ativo : true);
@@ -77,6 +81,14 @@ public class PaisDTO {
 
     public void setSigla(String sigla) {
         this.sigla = sigla;
+    }
+
+    public String getNacionalidade() {
+        return nacionalidade;
+    }
+
+    public void setNacionalidade(String nacionalidade) {
+        this.nacionalidade = nacionalidade;
     }
 
     public LocalDateTime getDataCadastro() {
