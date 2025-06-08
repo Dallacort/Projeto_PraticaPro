@@ -35,6 +35,18 @@ const adaptClienteFromApi = (cliente: any): Cliente => {
     }
   }
   
+  // Converter data de nascimento se for array
+  let dataNascimento = '';
+  if (cliente.dataNascimento) {
+    if (Array.isArray(cliente.dataNascimento) && cliente.dataNascimento.length >= 3) {
+      // Formato: [ano, mes, dia]
+      const [ano, mes, dia] = cliente.dataNascimento;
+      dataNascimento = `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+    } else {
+      dataNascimento = cliente.dataNascimento;
+    }
+  }
+
   return {
     id: cliente.id,
     cliente: cliente.cliente || cliente.nome || '',
@@ -51,18 +63,19 @@ const adaptClienteFromApi = (cliente: any): Cliente => {
     complemento: cliente.complemento || '',
     bairro: cliente.bairro || '',
     cep: cliente.cep || '',
-    nacionalidade: cliente.nacionalidade || '',
-    dataNascimento: cliente.dataNascimento || '',
+    nacionalidadeId: cliente.nacionalidadeId || null,
+    dataNascimento: dataNascimento,
     estadoCivil: cliente.estadoCivil || '',
     sexo: cliente.sexo || '',
     tipo: cliente.tipo || 1,
     limiteCredito: cliente.limiteCredito || 0,
     observacao: cliente.observacao || '',
     condicaoPagamentoId: cliente.condicaoPagamentoId || null,
+    condicaoPagamentoNome: cliente.condicaoPagamentoNome || null,
     cidade: cidade,
     ativo: cliente.ativo === undefined ? true : cliente.ativo,
-    dataCadastro: cliente.dataCadastro || null,
-    ultimaModificacao: cliente.ultimaModificacao || null
+    dataCadastro: cliente.dataCadastro || cliente.dataCriacao || null,
+    ultimaModificacao: cliente.ultimaModificacao || cliente.dataAlteracao || null
   };
 };
 
@@ -77,9 +90,8 @@ const adaptClienteToApi = (cliente: Omit<Cliente, 'id' | 'dataCadastro' | 'ultim
     endereco: cliente.endereco || null,
     cidadeId: cliente.cidade?.id ? Number(cliente.cidade.id) : null,
     complemento: cliente.complemento || null,
-    idBrasileiro: null,
     limiteCredito: cliente.limiteCredito ? Number(cliente.limiteCredito) : 0,
-    nacionalidade: cliente.nacionalidade || null,
+    nacionalidadeId: cliente.nacionalidadeId ? Number(cliente.nacionalidadeId) : null,
     rgInscricaoEstadual: cliente.rgInscricaoEstadual || cliente.inscricaoEstadual || null,
     cpfCpnj: cliente.cpfCpnj || cliente.cpfCnpj || null,
     dataNascimento: cliente.dataNascimento || null,
@@ -89,9 +101,8 @@ const adaptClienteToApi = (cliente: Omit<Cliente, 'id' | 'dataCadastro' | 'ultim
     tipo: cliente.tipo ? Number(cliente.tipo) : 1,
     sexo: cliente.sexo || null,
     condicaoPagamentoId: cliente.condicaoPagamentoId ? Number(cliente.condicaoPagamentoId) : null,
-    limiteCredito2: null,
     observacao: cliente.observacao || null,
-    situacao: null,
+    ativo: cliente.ativo !== undefined ? cliente.ativo : true,
     dataCriacao: null,
     dataAlteracao: null
   };

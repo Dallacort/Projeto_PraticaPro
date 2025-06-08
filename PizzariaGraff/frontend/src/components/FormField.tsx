@@ -45,7 +45,7 @@ const FormField: React.FC<FormFieldProps> = ({
           value={value}
           onChange={onChange}
           disabled={disabled}
-          className={`w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm ${
+          className={`w-full px-3 py-2 h-10 border rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm ${
             error ? 'border-red-500' : 'border-gray-300'
           }`}
           required={required}
@@ -80,7 +80,7 @@ const FormField: React.FC<FormFieldProps> = ({
           disabled={disabled}
           placeholder={placeholder}
           maxLength={maxLength}
-          className={`w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm ${
+          className={`w-full px-3 py-2 h-10 border rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm ${
             error ? 'border-red-500' : 'border-gray-300'
           }`}
           required={required}

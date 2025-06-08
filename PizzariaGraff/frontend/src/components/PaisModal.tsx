@@ -27,6 +27,7 @@ const PaisModal: React.FC<PaisModalProps> = ({
     nome: '',
     sigla: '',
     codigo: '',
+    nacionalidade: '',
     ativo: true
   });
 
@@ -53,6 +54,7 @@ const PaisModal: React.FC<PaisModalProps> = ({
         nome: '',
         sigla: '',
         codigo: '',
+        nacionalidade: '',
         ativo: true
       });
     }
@@ -239,6 +241,13 @@ const PaisModal: React.FC<PaisModalProps> = ({
                   onChange={handleNovoPaisChange}
                   required
                   placeholder="Ex: 055"
+                />
+                <FormField
+                  label="Nacionalidade"
+                  name="nacionalidade"
+                  value={novoPaisData.nacionalidade || ''}
+                  onChange={handleNovoPaisChange}
+                  placeholder="Ex: Brasileiro"
                 />
               </div>
             )}

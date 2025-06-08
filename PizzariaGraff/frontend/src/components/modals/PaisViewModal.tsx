@@ -53,6 +53,11 @@ const PaisViewModal: React.FC<PaisViewModalProps> = ({
                 <p className="font-semibold">{pais.codigo}</p>
               </div>
 
+              <div>
+                <p className="text-sm font-medium text-gray-500">Nacionalidade</p>
+                <p className="font-semibold">{pais.nacionalidade || 'N/A'}</p>
+              </div>
+
               {/* Informações do registro com datas */}
               <div className="col-span-1 md:col-span-2 mt-2">
                 <h4 className="text-sm font-medium text-gray-500 mb-2">Informações do Registro</h4>

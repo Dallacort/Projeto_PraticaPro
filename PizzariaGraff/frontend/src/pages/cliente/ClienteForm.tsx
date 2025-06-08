@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import FormField from '../../components/FormField';
 import { getCliente, createCliente, updateCliente } from '../../services/clienteService';
+import CondicaoPagamentoService from '../../services/condicaoPagamentoService';
 import { getNacionalidades, NacionalidadeResponse } from '../../services/nacionalidadeService';
 import { Cliente, Cidade, CondicaoPagamento } from '../../types';
 import { FaSpinner, FaSearch } from 'react-icons/fa';
 import CidadeModal from '../../components/modals/CidadeModal';
 import CondicaoPagamentoModal from '../../components/modals/CondicaoPagamentoModal';
+import NacionalidadeModal from '../../components/modals/NacionalidadeModal';
 import { formatDate } from '../../utils/formatters';
 
 interface ClienteFormData {
@@ -22,7 +24,6 @@ interface ClienteFormData {
   bairro: string;
   cep: string;
   nacionalidadeId: string;
-  nacionalidade: string;
   dataNascimento: string;
   estadoCivil: string;
   sexo: string;
@@ -56,7 +57,6 @@ const ClienteForm: React.FC = () => {
     bairro: '',
     cep: '',
     nacionalidadeId: '',
-    nacionalidade: '',
     dataNascimento: '',
     estadoCivil: '',
     sexo: '',
@@ -76,8 +76,10 @@ const ClienteForm: React.FC = () => {
   const [cidadeSelecionada, setCidadeSelecionada] = useState<Cidade | null>(null);
   const [condicaoPagamentoSelecionada, setCondicaoPagamentoSelecionada] = useState<CondicaoPagamento | null>(null);
   const [nacionalidades, setNacionalidades] = useState<NacionalidadeResponse[]>([]);
+  const [nacionalidadeSelecionada, setNacionalidadeSelecionada] = useState<NacionalidadeResponse | null>(null);
   const [isCidadeModalOpen, setIsCidadeModalOpen] = useState(false);
   const [isCondicaoPagamentoModalOpen, setIsCondicaoPagamentoModalOpen] = useState(false);
+  const [isNacionalidadeModalOpen, setIsNacionalidadeModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -95,6 +97,8 @@ const ClienteForm: React.FC = () => {
             throw new Error('Cliente não encontrado');
           }
           
+          console.log('Dados do cliente carregados:', clienteData);
+          
           setFormData({
             cliente: clienteData.cliente || clienteData.nome || '',
             apelido: clienteData.apelido || '',
@@ -108,20 +112,42 @@ const ClienteForm: React.FC = () => {
             bairro: clienteData.bairro || '',
             cep: clienteData.cep || '',
             nacionalidadeId: String(clienteData.nacionalidadeId || ''),
-            nacionalidade: clienteData.nacionalidade || '',
             dataNascimento: clienteData.dataNascimento || '',
             estadoCivil: clienteData.estadoCivil || '',
             sexo: clienteData.sexo || '',
             tipo: clienteData.tipo || 1,
             limiteCredito: Number(clienteData.limiteCredito) || 0,
             observacao: clienteData.observacao || '',
-            cidadeId: String(clienteData.cidade.id),
+            cidadeId: String(clienteData.cidade?.id || ''),
             condicaoPagamentoId: String(clienteData.condicaoPagamentoId || ''),
             ativo: clienteData.ativo !== undefined ? clienteData.ativo : true, 
           });
           
-          setCidadeSelecionada(clienteData.cidade);
-          setCondicaoPagamentoSelecionada(null);
+          // Configurar cidade selecionada
+          if (clienteData.cidade) {
+            setCidadeSelecionada(clienteData.cidade);
+          }
+          
+          // Configurar nacionalidade selecionada
+          if (clienteData.nacionalidadeId) {
+            const nacionalidadeEncontrada = nacionalidadesData.find(nac => nac.id === clienteData.nacionalidadeId);
+            if (nacionalidadeEncontrada) {
+              setNacionalidadeSelecionada(nacionalidadeEncontrada);
+            }
+          }
+          
+          // Configurar condição de pagamento selecionada
+          if (clienteData.condicaoPagamentoId && clienteData.condicaoPagamentoNome) {
+            setCondicaoPagamentoSelecionada({
+              id: clienteData.condicaoPagamentoId,
+              condicaoPagamento: clienteData.condicaoPagamentoNome,
+              numeroParcelas: 1,
+              diasPrimeiraParcela: 0,
+              diasEntreParcelas: 0,
+              ativo: true
+            });
+          }
+          
           setUltimaModificacao(clienteData.ultimaModificacao || clienteData.dataAlteracao);
           setDataCadastro(clienteData.dataCadastro || clienteData.dataCriacao);
         }
@@ -158,19 +184,125 @@ const ClienteForm: React.FC = () => {
     });
   };
 
-  const validateForm = () => {
-    const errors: string[] = [];
-    if (!formData.cliente?.trim()) errors.push("Nome é obrigatório");
-    if (!formData.cpfCpnj?.trim()) errors.push("CPF/CNPJ é obrigatório");
-    if (!formData.cidadeId) errors.push("Cidade é obrigatória");
-    return errors;
+  // Função para determinar o label do campo CPF/CNPJ baseado no tipo
+  const getCpfCnpjLabel = () => {
+    const isBrasileiro = nacionalidadeSelecionada?.id === 1;
+    const asterisco = isBrasileiro ? ' *' : '';
+    return formData.tipo === 1 ? `CPF${asterisco}` : `CNPJ${asterisco}`;
   };
+
+  const getCpfCnpjPlaceholder = () => {
+    return formData.tipo === 1 ? '000.000.000-00' : '00.000.000/0001-00';
+  };
+
+  const getCpfCnpjMaxLength = () => {
+    return formData.tipo === 1 ? 11 : 14;
+  };
+
+  // Função para validar CPF
+  const validarCPF = (cpf: string) => {
+    cpf = cpf.replace(/[^\d]/g, '');
+    if (cpf.length !== 11) return false;
+    
+    // Verificar se todos os dígitos são iguais
+    if (/^(\d)\1{10}$/.test(cpf)) return false;
+    
+    // Validar primeiro dígito
+    let soma = 0;
+    for (let i = 0; i < 9; i++) {
+      soma += parseInt(cpf.charAt(i)) * (10 - i);
+    }
+    let resto = 11 - (soma % 11);
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(cpf.charAt(9))) return false;
+    
+    // Validar segundo dígito
+    soma = 0;
+    for (let i = 0; i < 10; i++) {
+      soma += parseInt(cpf.charAt(i)) * (11 - i);
+    }
+    resto = 11 - (soma % 11);
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(cpf.charAt(10))) return false;
+    
+    return true;
+  };
+
+  // Função para validar CNPJ
+  const validarCNPJ = (cnpj: string) => {
+    cnpj = cnpj.replace(/[^\d]/g, '');
+    if (cnpj.length !== 14) return false;
+    
+    // Verificar se todos os dígitos são iguais
+    if (/^(\d)\1{13}$/.test(cnpj)) return false;
+    
+    // Validar primeiro dígito
+    let soma = 0;
+    let peso = 2;
+    for (let i = 11; i >= 0; i--) {
+      soma += parseInt(cnpj.charAt(i)) * peso;
+      peso++;
+      if (peso === 10) peso = 2;
+    }
+    let resto = soma % 11;
+    let digito1 = resto < 2 ? 0 : 11 - resto;
+    if (digito1 !== parseInt(cnpj.charAt(12))) return false;
+    
+    // Validar segundo dígito
+    soma = 0;
+    peso = 2;
+    for (let i = 12; i >= 0; i--) {
+      soma += parseInt(cnpj.charAt(i)) * peso;
+      peso++;
+      if (peso === 10) peso = 2;
+    }
+    resto = soma % 11;
+    let digito2 = resto < 2 ? 0 : 11 - resto;
+    if (digito2 !== parseInt(cnpj.charAt(13))) return false;
+    
+    return true;
+  };
+
+  // Função para validar o formulário
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const validationErrors = validateForm();
-    if (validationErrors.length > 0) {
-      setError(validationErrors.join(". "));
+    
+    // Validação do formulário
+    const errors: string[] = [];
+    
+    if (!formData.cliente?.trim()) errors.push("Nome é obrigatório");
+    
+    // Verificar se é brasileiro (nacionalidade Brasil tem ID 1)
+    const isBrasileiro = nacionalidadeSelecionada?.id === 1;
+    
+    // CPF/CNPJ é obrigatório e validado apenas para brasileiros
+    if (isBrasileiro) {
+      if (!formData.cpfCpnj?.trim()) {
+        errors.push(`${getCpfCnpjLabel()} é obrigatório para brasileiros`);
+      } else {
+        const cpfCnpjLimpo = formData.cpfCpnj.replace(/[^\d]/g, '');
+        if (formData.tipo === 1) {
+          if (!validarCPF(cpfCnpjLimpo)) {
+            errors.push("CPF inválido");
+          }
+        } else {
+          if (!validarCNPJ(cpfCnpjLimpo)) {
+            errors.push("CNPJ inválido");
+          }
+        }
+      }
+    }
+    // Para não brasileiros, CPF/CNPJ é opcional e não é validado
+    
+    if (!formData.cidadeId) errors.push("Cidade é obrigatória");
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.push("Email inválido");
+    }
+    
+    if (errors.length > 0) {
+      setError(errors.join(". "));
       return;
     }
 
@@ -182,10 +314,14 @@ const ClienteForm: React.FC = () => {
         throw new Error('Cidade não selecionada ou inválida.');
       }
       
+      // Para não brasileiros, enviar CPF/CNPJ como null se estiver vazio
+      const isBrasileiro = nacionalidadeSelecionada?.id === 1;
+      const cpfCnpjValue = formData.cpfCpnj?.trim() ? formData.cpfCpnj : (isBrasileiro ? formData.cpfCpnj : null);
+      
       const clienteDataPayload: any = {
         cliente: formData.cliente,
         apelido: formData.apelido,
-        cpfCpnj: formData.cpfCpnj,
+        cpfCpnj: cpfCnpjValue,
         rgInscricaoEstadual: formData.rgInscricaoEstadual,
         email: formData.email,
         telefone: formData.telefone,
@@ -195,7 +331,6 @@ const ClienteForm: React.FC = () => {
         bairro: formData.bairro,
         cep: formData.cep,
         nacionalidadeId: Number(formData.nacionalidadeId) || null,
-        nacionalidade: formData.nacionalidade,
         dataNascimento: formData.dataNascimento,
         estadoCivil: formData.estadoCivil,
         sexo: formData.sexo,
@@ -251,13 +386,16 @@ const ClienteForm: React.FC = () => {
     setIsCondicaoPagamentoModalOpen(false);
   };
 
-  // Função para determinar o label do campo CPF/CNPJ baseado no tipo
-  const getCpfCnpjLabel = () => {
-    return formData.tipo === 1 ? 'CPF' : 'CNPJ';
-  };
+  const handleOpenNacionalidadeModal = () => setIsNacionalidadeModalOpen(true);
+  const handleCloseNacionalidadeModal = () => setIsNacionalidadeModalOpen(false);
 
-  const getCpfCnpjPlaceholder = () => {
-    return formData.tipo === 1 ? '000.000.000-00' : '00.000.000/0000-00';
+  const handleSelectNacionalidade = (nacionalidade: NacionalidadeResponse) => {
+    setFormData(prev => ({
+      ...prev,
+      nacionalidadeId: String(nacionalidade.id),
+    }));
+    setNacionalidadeSelecionada(nacionalidade);
+    setIsNacionalidadeModalOpen(false);
   };
 
   if (loading) {
@@ -323,7 +461,7 @@ const ClienteForm: React.FC = () => {
                   name="tipo"
                   value={formData.tipo}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10"
                 >
                   <option value={1}>Pessoa Física</option>
                   <option value={2}>Pessoa Jurídica</option>
@@ -331,13 +469,13 @@ const ClienteForm: React.FC = () => {
               </div>
 
               <FormField
-                label="Cliente"
+                label="Cliente *"
                 name="cliente"
                 value={formData.cliente}
                 onChange={handleChange}
                 required
                 maxLength={50}
-                placeholder="Ex: João Silva"
+                placeholder="Nome completo do cliente"
               />
 
               <FormField
@@ -346,28 +484,36 @@ const ClienteForm: React.FC = () => {
                 value={formData.apelido}
                 onChange={handleChange}
                 maxLength={50}
-                placeholder="Ex: Joãozinho"
+                placeholder="Como é conhecido"
               />
 
-              <FormField
-                label="Estado Civil"
-                name="estadoCivil"
-                value={formData.estadoCivil}
-                onChange={handleChange}
-                maxLength={50}
-                placeholder="Ex: Solteiro(a)"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Estado Civil</label>
+                <select
+                  name="estadoCivil"
+                  value={formData.estadoCivil}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10"
+                >
+                  <option value="">Selecionar...</option>
+                  <option value="Solteiro">Solteiro</option>
+                  <option value="Casado">Casado</option>
+                  <option value="Divorciado">Divorciado</option>
+                  <option value="Viúvo">Viúvo</option>
+                  <option value="União Estável">União Estável</option>
+                </select>
+              </div>
             </div>
 
             {/* Segunda linha: Endereço, Número, Complemento, Bairro, CEP, Cidade */}
-            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '3fr 100px 1.5fr 1.5fr 120px 2fr' }}>
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '3fr 150px 1.5fr 1.5fr 120px 2fr' }}>
               <FormField
                 label="Endereço"
                 name="endereco"
                 value={formData.endereco}
                 onChange={handleChange}
                 maxLength={50}
-                placeholder="Ex: Rua das Flores"
+                placeholder="Rua, Avenida, etc."
               />
 
               <FormField
@@ -376,7 +522,7 @@ const ClienteForm: React.FC = () => {
                 value={formData.numero}
                 onChange={handleChange}
                 maxLength={10}
-                placeholder="Ex: 123"
+                placeholder="123A"
               />
 
               <FormField
@@ -385,7 +531,7 @@ const ClienteForm: React.FC = () => {
                 value={formData.complemento}
                 onChange={handleChange}
                 maxLength={50}
-                placeholder="Ex: Apto 45"
+                placeholder="Apto, Bloco, etc."
               />
 
               <FormField
@@ -394,7 +540,7 @@ const ClienteForm: React.FC = () => {
                 value={formData.bairro}
                 onChange={handleChange}
                 maxLength={50}
-                placeholder="Ex: Centro"
+                placeholder="Nome do bairro"
               />
 
               <FormField
@@ -402,15 +548,15 @@ const ClienteForm: React.FC = () => {
                 name="cep"
                 value={formData.cep}
                 onChange={handleChange}
-                maxLength={9}
-                placeholder="00000-000"
+                maxLength={8}
+                placeholder="00000000"
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade *</label>
                 <div 
                   onClick={handleOpenCidadeModal} 
-                  className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative"
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && handleOpenCidadeModal()}
@@ -418,7 +564,7 @@ const ClienteForm: React.FC = () => {
                   <input
                     type="text"
                     readOnly
-                    value={cidadeSelecionada ? `${cidadeSelecionada.nome} - ${cidadeSelecionada.estado?.uf}` : 'Selecione...'}
+                    value={cidadeSelecionada ? cidadeSelecionada.nome : 'Selecione...'}
                     className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
                     placeholder="Selecione..."
                   />
@@ -434,8 +580,8 @@ const ClienteForm: React.FC = () => {
                 name="telefone"
                 value={formData.telefone}
                 onChange={handleChange}
-                maxLength={15}
-                placeholder="(41) 99999-9999"
+                maxLength={11}
+                placeholder="11999999999"
               />
 
               <FormField
@@ -454,7 +600,7 @@ const ClienteForm: React.FC = () => {
                   name="sexo"
                   value={formData.sexo}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10"
                 >
                   <option value="">Selecionar...</option>
                   <option value="M">Masculino</option>
@@ -472,19 +618,22 @@ const ClienteForm: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nacionalidade</label>
-                <select
-                  name="nacionalidadeId"
-                  value={formData.nacionalidadeId}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                <div 
+                  onClick={handleOpenNacionalidadeModal} 
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleOpenNacionalidadeModal()}
                 >
-                  <option value="">Selecione...</option>
-                  {nacionalidades.map((nac) => (
-                    <option key={nac.id} value={nac.id}>
-                      {nac.nacionalidade}
-                    </option>
-                  ))}
-                </select>
+                  <input
+                    type="text"
+                    readOnly
+                    value={nacionalidadeSelecionada ? nacionalidadeSelecionada.nacionalidade : 'Selecione...'}
+                    className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
+                    placeholder="Selecione..."
+                  />
+                  <FaSearch className="text-gray-500" />
+                </div>
               </div>
             </div>
 
@@ -495,8 +644,8 @@ const ClienteForm: React.FC = () => {
                 name="rgInscricaoEstadual"
                 value={formData.rgInscricaoEstadual}
                 onChange={handleChange}
-                maxLength={10}
-                placeholder="Ex: 1234567890"
+                maxLength={12}
+                placeholder="000000000"
               />
 
               <FormField
@@ -504,8 +653,8 @@ const ClienteForm: React.FC = () => {
                 name="cpfCpnj"
                 value={formData.cpfCpnj}
                 onChange={handleChange}
-                required
-                maxLength={formData.tipo === 1 ? 14 : 18}
+                required={nacionalidadeSelecionada?.id === 1} // Só obrigatório para brasileiros
+                maxLength={getCpfCnpjMaxLength()}
                 placeholder={getCpfCnpjPlaceholder()}
               />
 
@@ -523,7 +672,7 @@ const ClienteForm: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Condição de Pagamento</label>
                 <div 
                   onClick={handleOpenCondicaoPagamentoModal} 
-                  className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative"
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && handleOpenCondicaoPagamentoModal()}
@@ -548,7 +697,7 @@ const ClienteForm: React.FC = () => {
                   name="observacao"
                   value={formData.observacao}
                   onChange={handleChange}
-                  maxLength={255}
+                  maxLength={250}
                   placeholder="Observações gerais sobre o cliente"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   rows={3}
@@ -613,6 +762,12 @@ const ClienteForm: React.FC = () => {
         isOpen={isCondicaoPagamentoModalOpen}
         onClose={handleCloseCondicaoPagamentoModal}
         onSelect={handleSelectCondicaoPagamento}
+      />
+
+      <NacionalidadeModal
+        isOpen={isNacionalidadeModalOpen}
+        onClose={handleCloseNacionalidadeModal}
+        onSelect={handleSelectNacionalidade}
       />
     </div>
   );

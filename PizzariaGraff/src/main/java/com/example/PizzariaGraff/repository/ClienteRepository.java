@@ -1,15 +1,12 @@
 package com.example.PizzariaGraff.repository;
 
 import com.example.PizzariaGraff.repository.DatabaseConnection;
-import com.example.PizzariaGraff.model.Cliente;
-import com.example.PizzariaGraff.model.Cidade;
-import com.example.PizzariaGraff.model.Estado;
-import com.example.PizzariaGraff.model.Pais;
+import com.example.PizzariaGraff.model.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
 import java.sql.*;
-import java.time.LocalDate;
+import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,57 +14,49 @@ import java.util.Optional;
 
 @Repository
 public class ClienteRepository {
-    
-    private final DatabaseConnection databaseConnection;
-    private final CidadeRepository cidadeRepository;
-    
-    public ClienteRepository(DatabaseConnection databaseConnection, CidadeRepository cidadeRepository) {
-        this.databaseConnection = databaseConnection;
-        this.cidadeRepository = cidadeRepository;
-    }
-    
+
+    @Autowired
+    private DatabaseConnection databaseConnection;
+
     public List<Cliente> findAll() {
         List<Cliente> clientes = new ArrayList<>();
-        
         String sql = "SELECT c.*, " +
                      "cid.nome as cidade_nome, " +
                      "e.id as estado_id, e.nome as estado_nome, e.uf as estado_uf, e.pais_id as estado_pais_id, " +
                      "p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo, " +
-                     "pn.nacionalidade as nacionalidade " +
+                     "cp.id as condicao_pagamento_id_rel, cp.condicao_pagamento as condicao_pagamento_nome " +
                      "FROM cliente c " +
                      "LEFT JOIN cidade cid ON c.cidade_id = cid.id " +
                      "LEFT JOIN estado e ON cid.estado_id = e.id " +
                      "LEFT JOIN pais p ON e.pais_id = p.id " +
-                     "LEFT JOIN pais pn ON c.nacionalidade_id = pn.id " +
-                     "ORDER BY c.cliente ASC";
+                     "LEFT JOIN condicao_pagamento cp ON c.condicao_pagamento_id = cp.id " +
+                     "ORDER BY c.cliente";
         
         try (Connection conn = databaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
             
             while (rs.next()) {
-                Cliente cliente = mapResultSetToCliente(rs);
-                clientes.add(cliente);
+                clientes.add(mapResultSetToCliente(rs));
             }
-            
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar clientes", e);
         }
         
         return clientes;
     }
-    
+
     public Optional<Cliente> findById(Long id) {
         String sql = "SELECT c.*, " +
                      "cid.nome as cidade_nome, " +
                      "e.id as estado_id, e.nome as estado_nome, e.uf as estado_uf, e.pais_id as estado_pais_id, " +
                      "p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo, " +
-                     "pn.nacionalidade as nacionalidade " +
+                     "cp.id as condicao_pagamento_id_rel, cp.condicao_pagamento as condicao_pagamento_nome " +
                      "FROM cliente c " +
                      "LEFT JOIN cidade cid ON c.cidade_id = cid.id " +
                      "LEFT JOIN estado e ON cid.estado_id = e.id " +
                      "LEFT JOIN pais p ON e.pais_id = p.id " +
-                     "LEFT JOIN pais pn ON c.nacionalidade_id = pn.id " +
+                     "LEFT JOIN condicao_pagamento cp ON c.condicao_pagamento_id = cp.id " +
                      "WHERE c.id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
@@ -85,18 +74,49 @@ public class ClienteRepository {
         
         return Optional.empty();
     }
+
+    public List<Cliente> findByNomeContaining(String nome) {
+        List<Cliente> clientes = new ArrayList<>();
+        String sql = "SELECT c.*, " +
+                     "cid.nome as cidade_nome, " +
+                     "e.id as estado_id, e.nome as estado_nome, e.uf as estado_uf, e.pais_id as estado_pais_id, " +
+                     "p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo, " +
+                     "cp.id as condicao_pagamento_id_rel, cp.condicao_pagamento as condicao_pagamento_nome " +
+                     "FROM cliente c " +
+                     "LEFT JOIN cidade cid ON c.cidade_id = cid.id " +
+                     "LEFT JOIN estado e ON cid.estado_id = e.id " +
+                     "LEFT JOIN pais p ON e.pais_id = p.id " +
+                     "LEFT JOIN condicao_pagamento cp ON c.condicao_pagamento_id = cp.id " +
+                     "WHERE UPPER(c.cliente) LIKE UPPER(?) " +
+                     "ORDER BY c.cliente";
+        
+        try (Connection conn = databaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, "%" + nome + "%");
+            ResultSet rs = stmt.executeQuery();
+            
+            while (rs.next()) {
+                clientes.add(mapResultSetToCliente(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar clientes por nome", e);
+        }
+        
+        return clientes;
+    }
     
     public Optional<Cliente> findByCpfCpnj(String cpfCpnj) {
         String sql = "SELECT c.*, " +
                      "cid.nome as cidade_nome, " +
                      "e.id as estado_id, e.nome as estado_nome, e.uf as estado_uf, e.pais_id as estado_pais_id, " +
                      "p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo, " +
-                     "pn.nacionalidade as nacionalidade " +
+                     "cp.id as condicao_pagamento_id_rel, cp.condicao_pagamento as condicao_pagamento_nome " +
                      "FROM cliente c " +
                      "LEFT JOIN cidade cid ON c.cidade_id = cid.id " +
                      "LEFT JOIN estado e ON cid.estado_id = e.id " +
                      "LEFT JOIN pais p ON e.pais_id = p.id " +
-                     "LEFT JOIN pais pn ON c.nacionalidade_id = pn.id " +
+                     "LEFT JOIN condicao_pagamento cp ON c.condicao_pagamento_id = cp.id " +
                      "WHERE c.cpf_cpnj = ?";
         
         try (Connection conn = databaseConnection.getConnection();
@@ -114,37 +134,7 @@ public class ClienteRepository {
         
         return Optional.empty();
     }
-    
-    public List<Cliente> findByCidadeId(Long cidadeId) {
-        List<Cliente> clientes = new ArrayList<>();
-        String sql = "SELECT c.*, " +
-                     "cid.nome as cidade_nome, " +
-                     "e.id as estado_id, e.nome as estado_nome, e.uf as estado_uf, e.pais_id as estado_pais_id, " +
-                     "p.nome as pais_nome, p.sigla as pais_sigla, p.codigo as pais_codigo, " +
-                     "pn.nacionalidade as nacionalidade " +
-                     "FROM cliente c " +
-                     "LEFT JOIN cidade cid ON c.cidade_id = cid.id " +
-                     "LEFT JOIN estado e ON cid.estado_id = e.id " +
-                     "LEFT JOIN pais p ON e.pais_id = p.id " +
-                     "LEFT JOIN pais pn ON c.nacionalidade_id = pn.id " +
-                     "WHERE c.cidade_id = ?";
-        
-        try (Connection conn = databaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setLong(1, cidadeId);
-            ResultSet rs = stmt.executeQuery();
-            
-            while (rs.next()) {
-                clientes.add(mapResultSetToCliente(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Erro ao buscar clientes por cidade", e);
-        }
-        
-        return clientes;
-    }
-    
+
     public Cliente save(Cliente cliente) {
         if (cliente.getId() == null) {
             return insert(cliente);
@@ -152,13 +142,44 @@ public class ClienteRepository {
             return update(cliente);
         }
     }
+
+    public boolean existsById(Long id) {
+        String sql = "SELECT 1 FROM cliente WHERE id = ?";
+        
+        try (Connection conn = databaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setLong(1, id);
+            ResultSet rs = stmt.executeQuery();
+            
+            return rs.next();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao verificar existência do cliente", e);
+        }
+    }
+
+    public boolean existsByCpfCpnjAndNotId(String cpfCpnj, Long id) {
+        String sql = "SELECT 1 FROM cliente WHERE cpf_cpnj = ? AND id != ?";
+        
+        try (Connection conn = databaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, cpfCpnj);
+            stmt.setLong(2, id);
+            ResultSet rs = stmt.executeQuery();
+            
+            return rs.next();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao verificar CPF/CNPJ duplicado", e);
+        }
+    }
     
     private Cliente insert(Cliente cliente) {
         String sql = "INSERT INTO cliente (cliente, apelido, bairro, cep, numero, endereco, cidade_id, " +
-                     "complemento, id_brasileiro, limite_credito, nacionalidade_id, rg_inscricao_estadual, " +
+                     "complemento, limite_credito, nacionalidade_id, rg_inscricao_estadual, " +
                      "cpf_cpnj, data_nascimento, email, telefone, estado_civil, tipo, sexo, " +
-                     "condicao_pagamento_id, limite_credito2, observacao, situacao, data_criacao, data_alteracao) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "condicao_pagamento_id, observacao, ativo, data_criacao, data_alteracao) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -173,23 +194,21 @@ public class ClienteRepository {
             stmt.setString(6, cliente.getEndereco());
             stmt.setObject(7, cliente.getCidadeId());
             stmt.setString(8, cliente.getComplemento());
-            stmt.setObject(9, cliente.getIdBrasileiro());
-            stmt.setBigDecimal(10, cliente.getLimiteCredito());
-            stmt.setObject(11, cliente.getNacionalidadeId());
-            stmt.setString(12, cliente.getRgInscricaoEstadual());
-            stmt.setString(13, cliente.getCpfCpnj());
-            stmt.setDate(14, cliente.getDataNascimento() != null ? Date.valueOf(cliente.getDataNascimento()) : null);
-            stmt.setString(15, cliente.getEmail());
-            stmt.setString(16, cliente.getTelefone());
-            stmt.setString(17, cliente.getEstadoCivil());
-            stmt.setObject(18, cliente.getTipo());
-            stmt.setString(19, cliente.getSexo());
-            stmt.setObject(20, cliente.getCondicaoPagamentoId());
-            stmt.setBigDecimal(21, cliente.getLimiteCredito2());
-            stmt.setString(22, cliente.getObservacao());
-            stmt.setDate(23, cliente.getSituacao() != null ? Date.valueOf(cliente.getSituacao()) : null);
-            stmt.setTimestamp(24, cliente.getDataCriacao() != null ? Timestamp.valueOf(cliente.getDataCriacao()) : Timestamp.valueOf(now));
-            stmt.setTimestamp(25, cliente.getDataAlteracao() != null ? Timestamp.valueOf(cliente.getDataAlteracao()) : Timestamp.valueOf(now));
+            stmt.setBigDecimal(9, cliente.getLimiteCredito());
+            stmt.setObject(10, cliente.getNacionalidadeId());
+            stmt.setString(11, cliente.getRgInscricaoEstadual());
+            stmt.setString(12, cliente.getCpfCpnj());
+            stmt.setDate(13, cliente.getDataNascimento() != null ? Date.valueOf(cliente.getDataNascimento()) : null);
+            stmt.setString(14, cliente.getEmail());
+            stmt.setString(15, cliente.getTelefone());
+            stmt.setString(16, cliente.getEstadoCivil());
+            stmt.setObject(17, cliente.getTipo());
+            stmt.setString(18, cliente.getSexo());
+            stmt.setObject(19, cliente.getCondicaoPagamentoId());
+            stmt.setString(20, cliente.getObservacao());
+            stmt.setBoolean(21, cliente.getAtivo() != null ? cliente.getAtivo() : true);
+            stmt.setTimestamp(22, cliente.getDataCriacao() != null ? Timestamp.valueOf(cliente.getDataCriacao()) : Timestamp.valueOf(now));
+            stmt.setTimestamp(23, cliente.getDataAlteracao() != null ? Timestamp.valueOf(cliente.getDataAlteracao()) : Timestamp.valueOf(now));
             
             stmt.executeUpdate();
             
@@ -215,16 +234,18 @@ public class ClienteRepository {
     
     private Cliente update(Cliente cliente) {
         String sql = "UPDATE cliente SET cliente = ?, apelido = ?, bairro = ?, cep = ?, numero = ?, " +
-                     "endereco = ?, cidade_id = ?, complemento = ?, id_brasileiro = ?, limite_credito = ?, " +
+                     "endereco = ?, cidade_id = ?, complemento = ?, limite_credito = ?, " +
                      "nacionalidade_id = ?, rg_inscricao_estadual = ?, cpf_cpnj = ?, data_nascimento = ?, " +
                      "email = ?, telefone = ?, estado_civil = ?, tipo = ?, sexo = ?, " +
-                     "condicao_pagamento_id = ?, limite_credito2 = ?, observacao = ?, situacao = ?, " +
-                     "data_alteracao = ? WHERE id = ?";
+                     "condicao_pagamento_id = ?, observacao = ?, ativo = ? WHERE id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            LocalDateTime now = LocalDateTime.now();
+            System.out.println("=== UPDATE CLIENTE SQL DEBUG ===");
+            System.out.println("SQL: " + sql);
+            System.out.println("Cliente ID: " + cliente.getId());
+            System.out.println("Nome: " + cliente.getCliente());
             
             stmt.setString(1, cliente.getCliente());
             stmt.setString(2, cliente.getApelido());
@@ -232,31 +253,70 @@ public class ClienteRepository {
             stmt.setString(4, cliente.getCep());
             stmt.setString(5, cliente.getNumero());
             stmt.setString(6, cliente.getEndereco());
-            stmt.setObject(7, cliente.getCidadeId());
+            
+            // Tratamento especial para cidadeId (MySQL)
+            if (cliente.getCidadeId() != null) {
+                stmt.setLong(7, cliente.getCidadeId());
+            } else {
+                stmt.setNull(7, Types.BIGINT);
+            }
+            
             stmt.setString(8, cliente.getComplemento());
-            stmt.setObject(9, cliente.getIdBrasileiro());
-            stmt.setBigDecimal(10, cliente.getLimiteCredito());
-            stmt.setObject(11, cliente.getNacionalidadeId());
-            stmt.setString(12, cliente.getRgInscricaoEstadual());
-            stmt.setString(13, cliente.getCpfCpnj());
-            stmt.setDate(14, cliente.getDataNascimento() != null ? Date.valueOf(cliente.getDataNascimento()) : null);
-            stmt.setString(15, cliente.getEmail());
-            stmt.setString(16, cliente.getTelefone());
-            stmt.setString(17, cliente.getEstadoCivil());
-            stmt.setObject(18, cliente.getTipo());
-            stmt.setString(19, cliente.getSexo());
-            stmt.setObject(20, cliente.getCondicaoPagamentoId());
-            stmt.setBigDecimal(21, cliente.getLimiteCredito2());
-            stmt.setString(22, cliente.getObservacao());
-            stmt.setDate(23, cliente.getSituacao() != null ? Date.valueOf(cliente.getSituacao()) : null);
-            stmt.setTimestamp(24, Timestamp.valueOf(now));
-            stmt.setLong(25, cliente.getId());
+            stmt.setBigDecimal(9, cliente.getLimiteCredito());
             
-            stmt.executeUpdate();
+            // Tratamento especial para nacionalidadeId (MySQL)
+            if (cliente.getNacionalidadeId() != null) {
+                stmt.setLong(10, cliente.getNacionalidadeId());
+            } else {
+                stmt.setNull(10, Types.BIGINT);
+            }
             
-            cliente.setDataAlteracao(now);
+            stmt.setString(11, cliente.getRgInscricaoEstadual());
+            stmt.setString(12, cliente.getCpfCpnj());
+            stmt.setDate(13, cliente.getDataNascimento() != null ? Date.valueOf(cliente.getDataNascimento()) : null);
+            stmt.setString(14, cliente.getEmail());
+            stmt.setString(15, cliente.getTelefone());
+            stmt.setString(16, cliente.getEstadoCivil());
+            
+            // Tratamento especial para tipo (MySQL)
+            if (cliente.getTipo() != null) {
+                stmt.setInt(17, cliente.getTipo());
+            } else {
+                stmt.setNull(17, Types.INTEGER);
+            }
+            
+            stmt.setString(18, cliente.getSexo());
+            
+            // Tratamento especial para condicaoPagamentoId (MySQL)
+            if (cliente.getCondicaoPagamentoId() != null) {
+                stmt.setLong(19, cliente.getCondicaoPagamentoId());
+            } else {
+                stmt.setNull(19, Types.BIGINT);
+            }
+            
+            stmt.setString(20, cliente.getObservacao());
+            
+            // Para MySQL tinyint(1) - usar setInt em vez de setBoolean
+            stmt.setInt(21, (cliente.getAtivo() != null && cliente.getAtivo()) ? 1 : 0);
+            
+            stmt.setLong(22, cliente.getId());
+            
+            System.out.println("Executando UPDATE...");
+            int rowsUpdated = stmt.executeUpdate();
+            System.out.println("Linhas atualizadas: " + rowsUpdated);
+            
+            if (rowsUpdated == 0) {
+                throw new RuntimeException("Nenhuma linha foi atualizada. Cliente ID " + cliente.getId() + " não encontrado.");
+            }
+            
+            System.out.println("UPDATE executado com sucesso");
+            
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao atualizar cliente", e);
+            System.err.println("Erro SQL no UPDATE: " + e.getMessage());
+            System.err.println("SQL State: " + e.getSQLState());
+            System.err.println("Error Code: " + e.getErrorCode());
+            e.printStackTrace();
+            throw new RuntimeException("Erro ao atualizar cliente: " + e.getMessage(), e);
         }
         
         return cliente;
@@ -286,10 +346,8 @@ public class ClienteRepository {
         cliente.setEndereco(rs.getString("endereco"));
         cliente.setCidadeId(rs.getObject("cidade_id", Long.class));
         cliente.setComplemento(rs.getString("complemento"));
-        cliente.setIdBrasileiro(rs.getObject("id_brasileiro", Integer.class));
         cliente.setLimiteCredito(rs.getBigDecimal("limite_credito"));
         cliente.setNacionalidadeId(rs.getObject("nacionalidade_id", Long.class));
-        cliente.setNacionalidade(rs.getString("nacionalidade"));
         cliente.setRgInscricaoEstadual(rs.getString("rg_inscricao_estadual"));
         cliente.setCpfCpnj(rs.getString("cpf_cpnj"));
         
@@ -304,13 +362,8 @@ public class ClienteRepository {
         cliente.setTipo(rs.getObject("tipo", Integer.class));
         cliente.setSexo(rs.getString("sexo"));
         cliente.setCondicaoPagamentoId(rs.getObject("condicao_pagamento_id", Long.class));
-        cliente.setLimiteCredito2(rs.getBigDecimal("limite_credito2"));
         cliente.setObservacao(rs.getString("observacao"));
-        
-        Date situacao = rs.getDate("situacao");
-        if (situacao != null) {
-            cliente.setSituacao(situacao.toLocalDate());
-        }
+        cliente.setAtivo(rs.getBoolean("ativo"));
         
         Timestamp dataCriacao = rs.getTimestamp("data_criacao");
         if (dataCriacao != null) {
@@ -352,19 +405,29 @@ public class ClienteRepository {
                     
                     cidade.setEstado(estado);
                 }
-            } catch (SQLException e) {
-                // Se não conseguir obter as colunas do JOIN, buscar cidade do repositório
-                try {
-                    Optional<Cidade> cidadeOpt = cidadeRepository.findById(cidadeId);
-                    if (cidadeOpt.isPresent()) {
-                        cidade = cidadeOpt.get();
-                    }
-                } catch (Exception ex) {
-                    System.err.println("Erro ao buscar cidade: " + ex.getMessage());
-                }
+            } catch (SQLException ignored) {
+                // Se não conseguir carregar os dados relacionados, mantém apenas o ID
             }
             
             cliente.setCidade(cidade);
+        }
+        
+        // Carregar a condição de pagamento associada
+        Long condicaoPagamentoId = rs.getLong("condicao_pagamento_id");
+        if (condicaoPagamentoId > 0) {
+            CondicaoPagamento condicaoPagamento = new CondicaoPagamento();
+            condicaoPagamento.setId(condicaoPagamentoId);
+            
+            try {
+                String nomeCondicaoPagamento = rs.getString("condicao_pagamento_nome");
+                if (nomeCondicaoPagamento != null) {
+                    condicaoPagamento.setCondicaoPagamento(nomeCondicaoPagamento);
+                }
+            } catch (SQLException ignored) {
+                // Se não conseguir carregar o nome, mantém apenas o ID
+            }
+            
+            cliente.setCondicaoPagamento(condicaoPagamento);
         }
         
         return cliente;

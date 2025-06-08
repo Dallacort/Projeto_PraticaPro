@@ -39,20 +39,35 @@ public class ClienteDTO {
     @Schema(description = "Nome da cidade")
     private String cidadeNome;
     
+    @Schema(description = "ID do estado")
+    private Long estadoId;
+    
+    @Schema(description = "Nome do estado")
+    private String estadoNome;
+    
+    @Schema(description = "UF do estado")
+    private String estadoUf;
+    
+    @Schema(description = "ID do país")
+    private Long paisId;
+    
+    @Schema(description = "Nome do país")
+    private String paisNome;
+    
+    @Schema(description = "Sigla do país")
+    private String paisSigla;
+    
+    @Schema(description = "Código do país")
+    private String paisCodigo;
+    
     @Schema(description = "Complemento do endereço", example = "Apto 101")
     private String complemento;
-    
-    @Schema(description = "ID brasileiro", example = "1")
-    private Integer idBrasileiro;
     
     @Schema(description = "Limite de crédito", example = "1000.00")
     private BigDecimal limiteCredito;
     
     @Schema(description = "ID da Nacionalidade (País)", example = "1")
     private Long nacionalidadeId;
-    
-    @Schema(description = "Nacionalidade", example = "Brasileira")
-    private String nacionalidade;
     
     @Schema(description = "RG ou Inscrição Estadual", example = "12345678901")
     private String rgInscricaoEstadual;
@@ -84,14 +99,11 @@ public class ClienteDTO {
     @Schema(description = "Nome da condição de pagamento")
     private String condicaoPagamentoNome;
     
-    @Schema(description = "Limite de crédito 2", example = "500.00")
-    private BigDecimal limiteCredito2;
-    
     @Schema(description = "Observação", example = "Cliente VIP")
     private String observacao;
     
-    @Schema(description = "Data da situação", example = "2024-01-15")
-    private LocalDate situacao;
+    @Schema(description = "Indica se o cliente está ativo", example = "true")
+    private Boolean ativo;
     
     @Schema(description = "Data de criação do registro")
     private LocalDateTime dataCriacao;
@@ -112,10 +124,8 @@ public class ClienteDTO {
         this.endereco = cliente.getEndereco();
         this.cidadeId = cliente.getCidadeId();
         this.complemento = cliente.getComplemento();
-        this.idBrasileiro = cliente.getIdBrasileiro();
         this.limiteCredito = cliente.getLimiteCredito();
         this.nacionalidadeId = cliente.getNacionalidadeId();
-        this.nacionalidade = cliente.getNacionalidade();
         this.rgInscricaoEstadual = cliente.getRgInscricaoEstadual();
         this.cpfCpnj = cliente.getCpfCpnj();
         this.dataNascimento = cliente.getDataNascimento();
@@ -125,15 +135,29 @@ public class ClienteDTO {
         this.tipo = cliente.getTipo();
         this.sexo = cliente.getSexo();
         this.condicaoPagamentoId = cliente.getCondicaoPagamentoId();
-        this.limiteCredito2 = cliente.getLimiteCredito2();
         this.observacao = cliente.getObservacao();
-        this.situacao = cliente.getSituacao();
+        this.ativo = cliente.getAtivo();
         this.dataCriacao = cliente.getDataCriacao();
         this.dataAlteracao = cliente.getDataAlteracao();
         
         // Relacionamentos
         if (cliente.getCidade() != null) {
             this.cidadeNome = cliente.getCidade().getNome();
+            
+            // Informações do estado
+            if (cliente.getCidade().getEstado() != null) {
+                this.estadoId = cliente.getCidade().getEstado().getId();
+                this.estadoNome = cliente.getCidade().getEstado().getNome();
+                this.estadoUf = cliente.getCidade().getEstado().getUf();
+                
+                // Informações do país
+                if (cliente.getCidade().getEstado().getPais() != null) {
+                    this.paisId = cliente.getCidade().getEstado().getPais().getId();
+                    this.paisNome = cliente.getCidade().getEstado().getPais().getNome();
+                    this.paisSigla = cliente.getCidade().getEstado().getPais().getSigla();
+                    this.paisCodigo = cliente.getCidade().getEstado().getPais().getCodigo();
+                }
+            }
         }
         
         if (cliente.getCondicaoPagamento() != null) {
@@ -153,10 +177,8 @@ public class ClienteDTO {
         cliente.setEndereco(this.endereco);
         cliente.setCidadeId(this.cidadeId);
         cliente.setComplemento(this.complemento);
-        cliente.setIdBrasileiro(this.idBrasileiro);
         cliente.setLimiteCredito(this.limiteCredito);
         cliente.setNacionalidadeId(this.nacionalidadeId);
-        cliente.setNacionalidade(this.nacionalidade);
         cliente.setRgInscricaoEstadual(this.rgInscricaoEstadual);
         cliente.setCpfCpnj(this.cpfCpnj);
         cliente.setDataNascimento(this.dataNascimento);
@@ -166,9 +188,8 @@ public class ClienteDTO {
         cliente.setTipo(this.tipo);
         cliente.setSexo(this.sexo);
         cliente.setCondicaoPagamentoId(this.condicaoPagamentoId);
-        cliente.setLimiteCredito2(this.limiteCredito2);
         cliente.setObservacao(this.observacao);
-        cliente.setSituacao(this.situacao);
+        cliente.setAtivo(this.ativo);
         cliente.setDataCriacao(this.dataCriacao);
         cliente.setDataAlteracao(this.dataAlteracao);
         return cliente;
@@ -247,20 +268,68 @@ public class ClienteDTO {
         this.cidadeNome = cidadeNome;
     }
 
+    public Long getEstadoId() {
+        return estadoId;
+    }
+
+    public void setEstadoId(Long estadoId) {
+        this.estadoId = estadoId;
+    }
+
+    public String getEstadoNome() {
+        return estadoNome;
+    }
+
+    public void setEstadoNome(String estadoNome) {
+        this.estadoNome = estadoNome;
+    }
+
+    public String getEstadoUf() {
+        return estadoUf;
+    }
+
+    public void setEstadoUf(String estadoUf) {
+        this.estadoUf = estadoUf;
+    }
+
+    public Long getPaisId() {
+        return paisId;
+    }
+
+    public void setPaisId(Long paisId) {
+        this.paisId = paisId;
+    }
+
+    public String getPaisNome() {
+        return paisNome;
+    }
+
+    public void setPaisNome(String paisNome) {
+        this.paisNome = paisNome;
+    }
+
+    public String getPaisSigla() {
+        return paisSigla;
+    }
+
+    public void setPaisSigla(String paisSigla) {
+        this.paisSigla = paisSigla;
+    }
+
+    public String getPaisCodigo() {
+        return paisCodigo;
+    }
+
+    public void setPaisCodigo(String paisCodigo) {
+        this.paisCodigo = paisCodigo;
+    }
+
     public String getComplemento() {
         return complemento;
     }
 
     public void setComplemento(String complemento) {
         this.complemento = complemento;
-    }
-
-    public Integer getIdBrasileiro() {
-        return idBrasileiro;
-    }
-
-    public void setIdBrasileiro(Integer idBrasileiro) {
-        this.idBrasileiro = idBrasileiro;
     }
 
     public BigDecimal getLimiteCredito() {
@@ -277,14 +346,6 @@ public class ClienteDTO {
 
     public void setNacionalidadeId(Long nacionalidadeId) {
         this.nacionalidadeId = nacionalidadeId;
-    }
-
-    public String getNacionalidade() {
-        return nacionalidade;
-    }
-
-    public void setNacionalidade(String nacionalidade) {
-        this.nacionalidade = nacionalidade;
     }
 
     public String getRgInscricaoEstadual() {
@@ -367,14 +428,6 @@ public class ClienteDTO {
         this.condicaoPagamentoNome = condicaoPagamentoNome;
     }
 
-    public BigDecimal getLimiteCredito2() {
-        return limiteCredito2;
-    }
-
-    public void setLimiteCredito2(BigDecimal limiteCredito2) {
-        this.limiteCredito2 = limiteCredito2;
-    }
-
     public String getObservacao() {
         return observacao;
     }
@@ -383,12 +436,12 @@ public class ClienteDTO {
         this.observacao = observacao;
     }
 
-    public LocalDate getSituacao() {
-        return situacao;
+    public Boolean getAtivo() {
+        return ativo;
     }
 
-    public void setSituacao(LocalDate situacao) {
-        this.situacao = situacao;
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
     }
 
     public LocalDateTime getDataCriacao() {

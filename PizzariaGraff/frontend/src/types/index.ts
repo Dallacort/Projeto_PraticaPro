@@ -60,22 +60,19 @@ export interface Cliente {
   cidade: Cidade;
   cidadeId?: number;
   nacionalidadeId?: number;
-  nacionalidade?: string;
   dataNascimento?: string;
   estadoCivil?: string;
   tipo?: number;
   sexo?: string;
   limiteCredito?: number;
-  limiteCredito2?: number;
   observacao?: string;
-  situacao?: string;
+  ativo?: boolean;
   condicaoPagamentoId?: number;
-  idBrasileiro?: number;
+  condicaoPagamentoNome?: string;
   dataCriacao?: string;
   dataAlteracao?: string;
   dataCadastro?: string;
   ultimaModificacao?: string;
-  ativo?: boolean;
 }
 
 export interface FormaPagamento {

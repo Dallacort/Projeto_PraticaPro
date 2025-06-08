@@ -15,10 +15,8 @@ public class Cliente {
     private String endereco; // varchar(255)
     private Long cidadeId;   // int4 - FK para Cidade
     private String complemento; // varchar(255) - NULL
-    private Integer idBrasileiro; // int4 - NULL
     private BigDecimal limiteCredito; // numeric(10,2)
     private Long nacionalidadeId; // FK para tabela pais
-    private String nacionalidade; // Campo calculado (nome da nacionalidade)
     private String rgInscricaoEstadual; // varchar(14) - NULL
     private String cpfCpnj; // varchar(14) - NULL
     private LocalDate dataNascimento; // date - NULL
@@ -28,9 +26,8 @@ public class Cliente {
     private Integer tipo; // int4
     private String sexo; // varchar(1) - NULL
     private Long condicaoPagamentoId; // int4 - FK para CondicaoPagamento
-    private BigDecimal limiteCredito2; // numeric(10,2) - NULL
     private String observacao; // varchar(255) - NULL
-    private LocalDate situacao; // date
+    private Boolean ativo; // boolean - NOT NULL DEFAULT true
     private LocalDateTime dataCriacao; // timestamp
     private LocalDateTime dataAlteracao; // timestamp - NULL
     
@@ -112,13 +109,7 @@ public class Cliente {
         this.complemento = complemento;
     }
 
-    public Integer getIdBrasileiro() {
-        return idBrasileiro;
-    }
 
-    public void setIdBrasileiro(Integer idBrasileiro) {
-        this.idBrasileiro = idBrasileiro;
-    }
 
     public BigDecimal getLimiteCredito() {
         return limiteCredito;
@@ -136,13 +127,7 @@ public class Cliente {
         this.nacionalidadeId = nacionalidadeId;
     }
 
-    public String getNacionalidade() {
-        return nacionalidade;
-    }
 
-    public void setNacionalidade(String nacionalidade) {
-        this.nacionalidade = nacionalidade;
-    }
 
     public String getRgInscricaoEstadual() {
         return rgInscricaoEstadual;
@@ -216,14 +201,6 @@ public class Cliente {
         this.condicaoPagamentoId = condicaoPagamentoId;
     }
 
-    public BigDecimal getLimiteCredito2() {
-        return limiteCredito2;
-    }
-
-    public void setLimiteCredito2(BigDecimal limiteCredito2) {
-        this.limiteCredito2 = limiteCredito2;
-    }
-
     public String getObservacao() {
         return observacao;
     }
@@ -232,12 +209,12 @@ public class Cliente {
         this.observacao = observacao;
     }
 
-    public LocalDate getSituacao() {
-        return situacao;
+    public Boolean getAtivo() {
+        return ativo;
     }
 
-    public void setSituacao(LocalDate situacao) {
-        this.situacao = situacao;
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
     }
 
     public LocalDateTime getDataCriacao() {

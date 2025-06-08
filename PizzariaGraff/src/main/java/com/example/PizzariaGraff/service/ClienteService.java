@@ -29,8 +29,8 @@ public class ClienteService {
                 .orElseThrow(() -> new RuntimeException("Cliente não encontrado com o CPF/CNPJ: " + cpfCpnj));
     }
     
-    public List<Cliente> findByCidadeId(Long cidadeId) {
-        return clienteRepository.findByCidadeId(cidadeId);
+    public List<Cliente> findByNomeContaining(String nome) {
+        return clienteRepository.findByNomeContaining(nome);
     }
     
     public Cliente save(Cliente cliente) {
