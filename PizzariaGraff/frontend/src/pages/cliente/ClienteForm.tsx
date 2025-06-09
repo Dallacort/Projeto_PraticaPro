@@ -10,6 +10,7 @@ import CidadeModal from '../../components/modals/CidadeModal';
 import CondicaoPagamentoModal from '../../components/modals/CondicaoPagamentoModal';
 import NacionalidadeModal from '../../components/modals/NacionalidadeModal';
 import { formatDate } from '../../utils/formatters';
+import { Validators } from '../../utils/validators';
 
 interface ClienteFormData {
   cliente: string;
@@ -80,6 +81,7 @@ const ClienteForm: React.FC = () => {
   const [isCidadeModalOpen, setIsCidadeModalOpen] = useState(false);
   const [isCondicaoPagamentoModalOpen, setIsCondicaoPagamentoModalOpen] = useState(false);
   const [isNacionalidadeModalOpen, setIsNacionalidadeModalOpen] = useState(false);
+  const [forceRender, setForceRender] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -170,14 +172,42 @@ const ClienteForm: React.FC = () => {
     const checked = (e.target as HTMLInputElement).checked;
     
     setFormData(prev => {
+      let newValue: any;
+      
+      // Tratamento especial para diferentes tipos de campos
+      if (type === 'checkbox') {
+        newValue = checked;
+      } else if (type === 'number') {
+        newValue = Number(value);
+      } else if (name === 'tipo') {
+        // Garantir que o campo tipo seja sempre um número
+        newValue = Number(value);
+      } else {
+        newValue = value;
+      }
+      
       const newData = {
         ...prev,
-        [name]: type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value),
+        [name]: newValue,
       };
       
-      // Se o tipo de pessoa mudou, limpar o campo CPF/CNPJ
+      // Se o tipo de pessoa mudou, limpar o campo CPF/CNPJ para evitar problemas de validação
       if (name === 'tipo') {
         newData.cpfCpnj = '';
+        // Forçar re-renderização
+        setForceRender(prev => prev + 1);
+      }
+      
+      // Se é o campo CPF/CNPJ, verificar se está dentro do limite correto para o tipo atual
+      if (name === 'cpfCpnj') {
+        const maxLength = newData.tipo === 1 ? 11 : 14;
+        const cleanValue = value.replace(/[^\d]/g, '');
+        if (cleanValue.length <= maxLength) {
+          newData.cpfCpnj = cleanValue;
+        } else {
+          // Se exceder o limite, cortar o valor
+          newData.cpfCpnj = cleanValue.substring(0, maxLength);
+        }
       }
       
       return newData;
@@ -199,107 +229,39 @@ const ClienteForm: React.FC = () => {
     return formData.tipo === 1 ? 11 : 14;
   };
 
-  // Função para validar CPF
-  const validarCPF = (cpf: string) => {
-    cpf = cpf.replace(/[^\d]/g, '');
-    if (cpf.length !== 11) return false;
-    
-    // Verificar se todos os dígitos são iguais
-    if (/^(\d)\1{10}$/.test(cpf)) return false;
-    
-    // Validar primeiro dígito
-    let soma = 0;
-    for (let i = 0; i < 9; i++) {
-      soma += parseInt(cpf.charAt(i)) * (10 - i);
-    }
-    let resto = 11 - (soma % 11);
-    if (resto === 10 || resto === 11) resto = 0;
-    if (resto !== parseInt(cpf.charAt(9))) return false;
-    
-    // Validar segundo dígito
-    soma = 0;
-    for (let i = 0; i < 10; i++) {
-      soma += parseInt(cpf.charAt(i)) * (11 - i);
-    }
-    resto = 11 - (soma % 11);
-    if (resto === 10 || resto === 11) resto = 0;
-    if (resto !== parseInt(cpf.charAt(10))) return false;
-    
-    return true;
-  };
-
-  // Função para validar CNPJ
-  const validarCNPJ = (cnpj: string) => {
-    cnpj = cnpj.replace(/[^\d]/g, '');
-    if (cnpj.length !== 14) return false;
-    
-    // Verificar se todos os dígitos são iguais
-    if (/^(\d)\1{13}$/.test(cnpj)) return false;
-    
-    // Validar primeiro dígito
-    let soma = 0;
-    let peso = 2;
-    for (let i = 11; i >= 0; i--) {
-      soma += parseInt(cnpj.charAt(i)) * peso;
-      peso++;
-      if (peso === 10) peso = 2;
-    }
-    let resto = soma % 11;
-    let digito1 = resto < 2 ? 0 : 11 - resto;
-    if (digito1 !== parseInt(cnpj.charAt(12))) return false;
-    
-    // Validar segundo dígito
-    soma = 0;
-    peso = 2;
-    for (let i = 12; i >= 0; i--) {
-      soma += parseInt(cnpj.charAt(i)) * peso;
-      peso++;
-      if (peso === 10) peso = 2;
-    }
-    resto = soma % 11;
-    let digito2 = resto < 2 ? 0 : 11 - resto;
-    if (digito2 !== parseInt(cnpj.charAt(13))) return false;
-    
-    return true;
-  };
-
-  // Função para validar o formulário
+  // Funções de validação usando a classe Validators
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação do formulário
-    const errors: string[] = [];
-    
-    if (!formData.cliente?.trim()) errors.push("Nome é obrigatório");
-    
-    // Verificar se é brasileiro (nacionalidade Brasil tem ID 1)
+    // Validação do formulário usando a classe Validators
     const isBrasileiro = nacionalidadeSelecionada?.id === 1;
     
-    // CPF/CNPJ é obrigatório e validado apenas para brasileiros
-    if (isBrasileiro) {
-      if (!formData.cpfCpnj?.trim()) {
-        errors.push(`${getCpfCnpjLabel()} é obrigatório para brasileiros`);
-      } else {
-        const cpfCnpjLimpo = formData.cpfCpnj.replace(/[^\d]/g, '');
-        if (formData.tipo === 1) {
-          if (!validarCPF(cpfCnpjLimpo)) {
-            errors.push("CPF inválido");
-          }
-        } else {
-          if (!validarCNPJ(cpfCnpjLimpo)) {
-            errors.push("CNPJ inválido");
-          }
+    const validations = [
+      () => Validators.validateRequired(formData.cliente, "Nome"),
+      () => Validators.validateRequired(formData.cidadeId, "Cidade"),
+      // CPF/CNPJ é obrigatório e validado apenas para brasileiros
+      () => {
+        if (isBrasileiro) {
+          return Validators.validateCpfCnpj(formData.cpfCpnj, formData.tipo, true);
         }
+        // Para não brasileiros, é opcional
+        if (formData.cpfCpnj?.trim()) {
+          return Validators.validateCpfCnpj(formData.cpfCpnj, formData.tipo, false);
+        }
+        return { isValid: true };
+      },
+      // Email é opcional, mas se preenchido deve ser válido
+      () => {
+        if (formData.email?.trim()) {
+          return Validators.validateEmail(formData.email);
+        }
+        return { isValid: true };
       }
-    }
-    // Para não brasileiros, CPF/CNPJ é opcional e não é validado
+    ];
     
-    if (!formData.cidadeId) errors.push("Cidade é obrigatória");
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.push("Email inválido");
-    }
+    const errors = Validators.validateMultiple(validations);
     
     if (errors.length > 0) {
       setError(errors.join(". "));
@@ -649,6 +611,7 @@ const ClienteForm: React.FC = () => {
               />
 
               <FormField
+                key={`cpfCnpj-${formData.tipo}-${forceRender}`} // Força re-renderização quando tipo muda
                 label={getCpfCnpjLabel()}
                 name="cpfCpnj"
                 value={formData.cpfCpnj}
