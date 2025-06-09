@@ -202,8 +202,8 @@ public class CondicaoPagamentoService {
             }
             
             CondicaoPagamento condicao = fromDTO(dto);
-            System.out.println("Convertido para entidade com " + 
-                (condicao.getParcelasCondicaoPagamento() != null ? 
+                System.out.println("Convertido para entidade com " + 
+                    (condicao.getParcelasCondicaoPagamento() != null ? 
                 condicao.getParcelasCondicaoPagamento().size() : 0) + " parcelas");
             
             CondicaoPagamento savedCondicao = condicaoPagamentoRepository.save(condicao);

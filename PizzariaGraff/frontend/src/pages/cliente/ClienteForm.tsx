@@ -553,10 +553,10 @@ const ClienteForm: React.FC = () => {
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
                 <div 
                   onClick={handleOpenCidadeModal} 
-                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"
+                  className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative"
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && handleOpenCidadeModal()}
@@ -564,7 +564,7 @@ const ClienteForm: React.FC = () => {
                   <input
                     type="text"
                     readOnly
-                    value={cidadeSelecionada ? cidadeSelecionada.nome : 'Selecione...'}
+                    value={cidadeSelecionada ? `${cidadeSelecionada.nome} - ${cidadeSelecionada.estado?.uf}` : 'Selecione...'}
                     className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
                     placeholder="Selecione..."
                   />

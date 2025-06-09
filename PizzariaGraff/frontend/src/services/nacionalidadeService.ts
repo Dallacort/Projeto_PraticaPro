@@ -49,7 +49,7 @@ export const getNacionalidadeByNome = async (nome: string): Promise<Nacionalidad
     console.error(`Erro ao buscar nacionalidade ${nome}:`, error);
     throw error;
   }
-};
+}; 
 
 // Função para gerar o nome da nacionalidade baseado no país
 const gerarNacionalidade = (nomePais: string): string => {

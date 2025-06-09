@@ -33,9 +33,9 @@ public class ProdutoFornecedorRepository {
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
                 "SELECT pf.*, p.nome as produto_nome, p.codigo as produto_codigo, " +
-                "f.razao_social as fornecedor_nome FROM produto_fornecedor pf " +
+                "f.fornecedor as fornecedor_nome FROM produto_fornecedor pf " +
                 "LEFT JOIN produto p ON pf.produto_id = p.id " +
-                "LEFT JOIN fornecedores f ON pf.fornecedor_id = f.id")) {
+                "LEFT JOIN fornecedor f ON pf.fornecedor_id = f.id")) {
             
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
@@ -52,9 +52,9 @@ public class ProdutoFornecedorRepository {
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
                 "SELECT pf.*, p.nome as produto_nome, p.codigo as produto_codigo, " +
-                "f.razao_social as fornecedor_nome FROM produto_fornecedor pf " +
+                "f.fornecedor as fornecedor_nome FROM produto_fornecedor pf " +
                 "LEFT JOIN produto p ON pf.produto_id = p.id " +
-                "LEFT JOIN fornecedores f ON pf.fornecedor_id = f.id " +
+                "LEFT JOIN fornecedor f ON pf.fornecedor_id = f.id " +
                 "WHERE pf.ativo = true")) {
             
             ResultSet resultSet = statement.executeQuery();
@@ -71,9 +71,9 @@ public class ProdutoFornecedorRepository {
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
                 "SELECT pf.*, p.nome as produto_nome, p.codigo as produto_codigo, " +
-                "f.razao_social as fornecedor_nome FROM produto_fornecedor pf " +
+                "f.fornecedor as fornecedor_nome FROM produto_fornecedor pf " +
                 "LEFT JOIN produto p ON pf.produto_id = p.id " +
-                "LEFT JOIN fornecedores f ON pf.fornecedor_id = f.id " +
+                "LEFT JOIN fornecedor f ON pf.fornecedor_id = f.id " +
                 "WHERE pf.id = ?")) {
             
             statement.setLong(1, id);
@@ -92,9 +92,9 @@ public class ProdutoFornecedorRepository {
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
                 "SELECT pf.*, p.nome as produto_nome, p.codigo as produto_codigo, " +
-                "f.razao_social as fornecedor_nome FROM produto_fornecedor pf " +
+                "f.fornecedor as fornecedor_nome FROM produto_fornecedor pf " +
                 "LEFT JOIN produto p ON pf.produto_id = p.id " +
-                "LEFT JOIN fornecedores f ON pf.fornecedor_id = f.id " +
+                "LEFT JOIN fornecedor f ON pf.fornecedor_id = f.id " +
                 "WHERE pf.produto_id = ?")) {
             
             statement.setLong(1, produtoId);
@@ -113,9 +113,9 @@ public class ProdutoFornecedorRepository {
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
                 "SELECT pf.*, p.nome as produto_nome, p.codigo as produto_codigo, " +
-                "f.razao_social as fornecedor_nome FROM produto_fornecedor pf " +
+                "f.fornecedor as fornecedor_nome FROM produto_fornecedor pf " +
                 "LEFT JOIN produto p ON pf.produto_id = p.id " +
-                "LEFT JOIN fornecedores f ON pf.fornecedor_id = f.id " +
+                "LEFT JOIN fornecedor f ON pf.fornecedor_id = f.id " +
                 "WHERE pf.fornecedor_id = ?")) {
             
             statement.setLong(1, fornecedorId);
