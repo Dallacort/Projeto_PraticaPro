@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Schema(description = "DTO para transferência de dados de Fornecedor")
 public class FornecedorDTO {
@@ -83,6 +84,12 @@ public class FornecedorDTO {
 
     @Schema(description = "ID da transportadora", example = "1")
     private Long transportadoraId;
+
+    @Schema(description = "Lista de emails adicionais")
+    private List<String> emailsAdicionais;
+
+    @Schema(description = "Lista de telefones adicionais")
+    private List<String> telefonesAdicionais;
 
     // Constructors
     public FornecedorDTO() {}
@@ -197,6 +204,10 @@ public class FornecedorDTO {
     public void setNacionalidadeId(Long nacionalidadeId) { this.nacionalidadeId = nacionalidadeId; }
     public Long getTransportadoraId() { return transportadoraId; }
     public void setTransportadoraId(Long transportadoraId) { this.transportadoraId = transportadoraId; }
+    public List<String> getEmailsAdicionais() { return emailsAdicionais; }
+    public void setEmailsAdicionais(List<String> emailsAdicionais) { this.emailsAdicionais = emailsAdicionais; }
+    public List<String> getTelefonesAdicionais() { return telefonesAdicionais; }
+    public void setTelefonesAdicionais(List<String> telefonesAdicionais) { this.telefonesAdicionais = telefonesAdicionais; }
 
     // Métodos legacy para compatibilidade (serão removidos)
     @Deprecated

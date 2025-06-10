@@ -11,6 +11,7 @@ import TransportadoraModal from '../../components/modals/TransportadoraModal';
 import TelefonesModal from '../../components/modals/TelefonesModal';
 import EmailsModal from '../../components/modals/EmailsModal';
 import { formatDate } from '../../utils/formatters';
+import { Validators } from '../../utils/validators';
 import { NacionalidadeResponse, getNacionalidades } from '../../services/nacionalidadeService';
 import { getTransportadoras } from '../../services/transportadoraService';
 import CondicaoPagamentoService from '../../services/condicaoPagamentoService';
@@ -109,14 +110,14 @@ const FornecedorForm: React.FC = () => {
             rgInscricaoEstadual: fornecedorData.rgInscricaoEstadual || fornecedorData.inscricaoEstadual || '',
             email: fornecedorData.email || '',
             telefone: fornecedorData.telefone || '',
-            telefonesAdicionais: [],
-            emailsAdicionais: [],
+            telefonesAdicionais: fornecedorData.telefonesAdicionais || [],
+            emailsAdicionais: fornecedorData.emailsAdicionais || [],
             endereco: fornecedorData.endereco || '',
             numero: fornecedorData.numero || '',
             complemento: fornecedorData.complemento || '',
             bairro: fornecedorData.bairro || '',
             cep: fornecedorData.cep || '',
-            tipo: fornecedorData.tipo || 2,
+            tipo: Number(fornecedorData.tipo) || 2,
             observacoes: fornecedorData.observacoes || '',
             limiteCredito: Number(fornecedorData.limiteCredito) || 0,
             situacao: fornecedorData.situacao || '',
@@ -192,10 +193,29 @@ const FornecedorForm: React.FC = () => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     
-    setFormData(prev => ({
-      ...prev,
+    let newData = {
+      ...formData,
       [name]: type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value),
-    }));
+    };
+
+    // Tratamento especial para select "tipo" - converter para número
+    if (name === 'tipo') {
+      newData.tipo = Number(value);
+    }
+
+    // Tratamento especial para CPF/CNPJ
+    if (name === 'cpfCnpj') {
+      const cleanValue = value.replace(/[^\d]/g, '');
+      const maxLength = newData.tipo === 1 ? 11 : 14;
+      
+      if (cleanValue.length <= maxLength) {
+        newData.cpfCnpj = cleanValue;
+      } else {
+        newData.cpfCnpj = cleanValue.substring(0, maxLength);
+      }
+    }
+    
+    setFormData(newData);
   };
 
   // Funções para gerenciar telefones adicionais
@@ -237,19 +257,83 @@ const FornecedorForm: React.FC = () => {
   };
 
   const validateForm = () => {
-    const errors: string[] = [];
-    if (!formData.fornecedor?.trim()) errors.push("Fornecedor é obrigatório");
-    if (!formData.apelido?.trim()) errors.push("Apelido é obrigatório");
-    if (!formData.email?.trim()) errors.push("Email é obrigatório");
-    if (!formData.telefone?.trim()) errors.push("Telefone é obrigatório");
-    if (!formData.cidadeId) errors.push("Cidade é obrigatória");
+    // Verificar se é brasileiro (nacionalidade Brasil = ID 1)
+    const isBrasileiro = nacionalidadeSelecionada?.id === 1;
     
-    // Validação de email principal
-    if (formData.email && !formData.email.includes('@')) {
-      errors.push("Email deve ter formato válido");
-    }
-    
-    return errors;
+    // Usar a classe Validators para validações robustas
+    const validations = [
+      () => Validators.validateRequired(formData.fornecedor, "Nome do fornecedor"),
+      () => Validators.validateRequired(formData.apelido, "Apelido"),
+      () => Validators.validateRequired(formData.email, "Email"),
+      () => Validators.validateRequired(formData.telefone, "Telefone"),
+      () => Validators.validateRequired(formData.cidadeId, "Cidade"),
+      () => Validators.validateRequired(formData.limiteCredito, "Limite de crédito"),
+      () => Validators.validateRequired(formData.situacao, "Data situação"),
+      
+      // CPF/CNPJ é obrigatório apenas para brasileiros
+      () => {
+        if (isBrasileiro) {
+          return Validators.validateCpfCnpj(formData.cpfCnpj, formData.tipo, true);
+        }
+        // Para não brasileiros, é opcional
+        if (formData.cpfCnpj?.trim()) {
+          return Validators.validateCpfCnpj(formData.cpfCnpj, formData.tipo, false);
+        }
+        return { isValid: true };
+      },
+      
+      // Validar email
+      () => Validators.validateEmail(formData.email),
+      
+      // Validar telefone
+      () => Validators.validateTelefone(formData.telefone),
+      
+      // Validar CEP se preenchido
+      () => {
+        if (formData.cep?.trim()) {
+          return Validators.validateCEP(formData.cep);
+        }
+        return { isValid: true }; // Campo opcional
+      },
+      
+      // Validar limite de crédito (deve ser positivo)
+      () => Validators.validatePositiveNumber(formData.limiteCredito, "Limite de crédito"),
+      
+      // Validar data situação
+      () => Validators.validateDate(formData.situacao, true),
+      
+      // Validar emails adicionais se fornecidos
+      () => {
+        if (formData.emailsAdicionais && formData.emailsAdicionais.length > 0) {
+          for (const email of formData.emailsAdicionais) {
+            if (email.trim()) {
+              const result = Validators.validateEmail(email);
+              if (!result.isValid) {
+                return { isValid: false, error: `Email adicional inválido: ${email}` };
+              }
+            }
+          }
+        }
+        return { isValid: true };
+      },
+      
+      // Validar telefones adicionais se fornecidos
+      () => {
+        if (formData.telefonesAdicionais && formData.telefonesAdicionais.length > 0) {
+          for (const telefone of formData.telefonesAdicionais) {
+            if (telefone.trim()) {
+              const result = Validators.validateTelefone(telefone);
+              if (!result.isValid) {
+                return { isValid: false, error: `Telefone adicional inválido: ${telefone}` };
+              }
+            }
+          }
+        }
+        return { isValid: true };
+      }
+    ];
+
+    return Validators.validateMultiple(validations);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -268,10 +352,14 @@ const FornecedorForm: React.FC = () => {
         throw new Error('Cidade deve ser selecionada.');
       }
       
+      // Para não brasileiros, enviar CPF/CNPJ como null se estiver vazio
+      const isBrasileiro = nacionalidadeSelecionada?.id === 1;
+      const cpfCnpjValue = formData.cpfCnpj?.trim() ? formData.cpfCnpj : (isBrasileiro ? formData.cpfCnpj : null);
+
       const fornecedorDataPayload: any = {
         fornecedor: formData.fornecedor,
         apelido: formData.apelido,
-        cpfCnpj: formData.cpfCnpj,
+        cpfCnpj: cpfCnpjValue,
         rgInscricaoEstadual: formData.rgInscricaoEstadual,
         email: formData.email,
         telefone: formData.telefone,
@@ -289,7 +377,6 @@ const FornecedorForm: React.FC = () => {
         transportadoraId: formData.transportadoraId ? Number(formData.transportadoraId) : null,
         cidade: cidadeSelecionada,
         condicaoPagamentoId: formData.condicaoPagamentoId,
-        // TODO: Implementar salvamento de telefones e emails adicionais no backend
         telefonesAdicionais: formData.telefonesAdicionais,
         emailsAdicionais: formData.emailsAdicionais,
       };
@@ -357,11 +444,18 @@ const FornecedorForm: React.FC = () => {
   };
 
   const getCpfCnpjLabel = () => {
-    return formData.tipo === 1 ? 'CPF' : 'CNPJ';
+    const isBrasileiro = nacionalidadeSelecionada?.id === 1;
+    const asterisco = isBrasileiro ? ' *' : '';
+    console.log('getCpfCnpjLabel - formData.tipo:', formData.tipo, 'type of:', typeof formData.tipo);
+    return formData.tipo === 1 ? `CPF${asterisco}` : `CNPJ${asterisco}`;
   };
 
   const getCpfCnpjPlaceholder = () => {
     return formData.tipo === 1 ? '000.000.000-00' : '00.000.000/0000-00';
+  };
+
+  const getCpfCnpjMaxLength = () => {
+    return formData.tipo === 1 ? 14 : 18;
   };
 
   if (loading) {
@@ -594,8 +688,7 @@ const FornecedorForm: React.FC = () => {
                 name="cpfCnpj"
                 value={formData.cpfCnpj}
                 onChange={handleChange}
-                required
-                maxLength={formData.tipo === 1 ? 14 : 18}
+                maxLength={getCpfCnpjMaxLength()}
                 placeholder={getCpfCnpjPlaceholder()}
               />
 

@@ -146,6 +146,8 @@ export interface Fornecedor {
   dataAlteracao?: string;
   dataCadastro?: string;
   ultimaModificacao?: string;
+  emailsAdicionais?: string[];
+  telefonesAdicionais?: string[];
 }
 
 export interface Produto {

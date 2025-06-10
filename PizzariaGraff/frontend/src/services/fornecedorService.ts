@@ -23,6 +23,8 @@ interface FornecedorPayload {
   nacionalidadeId?: number;
   transportadoraId?: number;
   ativo: boolean;
+  emailsAdicionais?: string[];
+  telefonesAdicionais?: string[];
 }
 
 // Adaptador para converter dados da API para o frontend
@@ -86,7 +88,9 @@ const adaptFornecedorFromApi = async (fornecedor: any): Promise<Fornecedor> => {
     dataCadastro: fornecedor.dataCadastro || fornecedor.dataCriacao,
     ultimaModificacao: fornecedor.ultimaModificacao || fornecedor.dataAlteracao,
     dataCriacao: fornecedor.dataCriacao,
-    dataAlteracao: fornecedor.dataAlteracao
+    dataAlteracao: fornecedor.dataAlteracao,
+    emailsAdicionais: fornecedor.emailsAdicionais || [],
+    telefonesAdicionais: fornecedor.telefonesAdicionais || []
   };
 };
 
@@ -133,6 +137,15 @@ const adaptFornecedorToApi = (fornecedor: any): FornecedorPayload => {
   // Só incluir transportadoraId se tiver valor válido
   if (fornecedor.transportadoraId && fornecedor.transportadoraId !== '') {
     payload.transportadoraId = Number(fornecedor.transportadoraId);
+  }
+  
+  // Incluir emails e telefones adicionais se fornecidos
+  if (fornecedor.emailsAdicionais && Array.isArray(fornecedor.emailsAdicionais)) {
+    payload.emailsAdicionais = fornecedor.emailsAdicionais.filter((email: string) => email && email.trim());
+  }
+  
+  if (fornecedor.telefonesAdicionais && Array.isArray(fornecedor.telefonesAdicionais)) {
+    payload.telefonesAdicionais = fornecedor.telefonesAdicionais.filter((telefone: string) => telefone && telefone.trim());
   }
   
   console.log('Payload final sendo enviado para API fornecedor:', JSON.stringify(payload, null, 2));

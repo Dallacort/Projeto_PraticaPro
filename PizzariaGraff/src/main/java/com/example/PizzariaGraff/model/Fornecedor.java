@@ -26,6 +26,9 @@ public class Fornecedor {
     private LocalDate situacao;          // date NOT NULL
     private LocalDateTime dataCriacao;   // timestamp NOT NULL
     private LocalDateTime dataAlteracao; // timestamp NOT NULL
+    private Boolean ativo;               // tinyint(1) NOT NULL DEFAULT 1
+    private Long nacionalidadeId;        // bigint(20) - FK para Nacionalidade
+    private Long transportadoraId;       // bigint(20) - FK para Transportadora
     
     // Relacionamentos
     private Cidade cidade;
@@ -229,6 +232,30 @@ public class Fornecedor {
         this.condicaoPagamento = condicaoPagamento;
     }
 
+    public Boolean getAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
+    }
+
+    public Long getNacionalidadeId() {
+        return nacionalidadeId;
+    }
+
+    public void setNacionalidadeId(Long nacionalidadeId) {
+        this.nacionalidadeId = nacionalidadeId;
+    }
+
+    public Long getTransportadoraId() {
+        return transportadoraId;
+    }
+
+    public void setTransportadoraId(Long transportadoraId) {
+        this.transportadoraId = transportadoraId;
+    }
+
     @Override
     public String toString() {
         return "Fornecedor{" +
@@ -240,6 +267,7 @@ public class Fornecedor {
                 ", tipo=" + tipo +
                 ", limiteCredito=" + limiteCredito +
                 ", situacao=" + situacao +
+                ", ativo=" + ativo +
                 '}';
     }
 } 
