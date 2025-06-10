@@ -87,9 +87,10 @@ public class FornecedorRepository {
 
     private Fornecedor insert(Fornecedor fornecedor) {
         String sql = "INSERT INTO fornecedor (fornecedor, apelido, bairro, cep, complemento, endereco, numero, " +
-                     "cidade_id, rg_inscricao_estadual, cpf_cnpj, email, contato, telefone, tipo, observacoes, " +
-                     "condicao_pagamento_id, limite_credito, situacao, data_criacao, data_alteracao) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "cidade_id, rg_inscricao_estadual, cpf_cnpj, email, telefone, tipo, observacoes, " +
+                     "condicao_pagamento_id, limite_credito, situacao, data_criacao, data_alteracao, " +
+                     "ativo, nacionalidade_id, transportadora_id) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -107,15 +108,17 @@ public class FornecedorRepository {
             stmt.setString(9, fornecedor.getRgInscricaoEstadual());
             stmt.setString(10, fornecedor.getCpfCnpj());
             stmt.setString(11, fornecedor.getEmail());
-            stmt.setString(12, fornecedor.getContato());
-            stmt.setString(13, fornecedor.getTelefone());
-            stmt.setInt(14, fornecedor.getTipo());
-            stmt.setString(15, fornecedor.getObservacoes());
-            stmt.setObject(16, fornecedor.getCondicaoPagamentoId());
-            stmt.setBigDecimal(17, fornecedor.getLimiteCredito());
-            stmt.setDate(18, fornecedor.getSituacao() != null ? Date.valueOf(fornecedor.getSituacao()) : null);
-            stmt.setTimestamp(19, fornecedor.getDataCriacao() != null ? Timestamp.valueOf(fornecedor.getDataCriacao()) : Timestamp.valueOf(now));
-            stmt.setTimestamp(20, fornecedor.getDataAlteracao() != null ? Timestamp.valueOf(fornecedor.getDataAlteracao()) : Timestamp.valueOf(now));
+            stmt.setString(12, fornecedor.getTelefone());
+            stmt.setInt(13, fornecedor.getTipo());
+            stmt.setString(14, fornecedor.getObservacoes());
+            stmt.setObject(15, fornecedor.getCondicaoPagamentoId());
+            stmt.setBigDecimal(16, fornecedor.getLimiteCredito());
+            stmt.setDate(17, fornecedor.getSituacao() != null ? Date.valueOf(fornecedor.getSituacao()) : null);
+            stmt.setTimestamp(18, fornecedor.getDataCriacao() != null ? Timestamp.valueOf(fornecedor.getDataCriacao()) : Timestamp.valueOf(now));
+            stmt.setTimestamp(19, fornecedor.getDataAlteracao() != null ? Timestamp.valueOf(fornecedor.getDataAlteracao()) : Timestamp.valueOf(now));
+            stmt.setBoolean(20, fornecedor.getAtivo() != null ? fornecedor.getAtivo() : true);
+            stmt.setObject(21, fornecedor.getNacionalidadeId());
+            stmt.setObject(22, fornecedor.getTransportadoraId());
 
             stmt.executeUpdate();
 
@@ -130,6 +133,9 @@ public class FornecedorRepository {
             if (fornecedor.getDataAlteracao() == null) {
                 fornecedor.setDataAlteracao(now);
             }
+            if (fornecedor.getAtivo() == null) {
+                fornecedor.setAtivo(true);
+            }
 
             rs.close();
         } catch (SQLException e) {
@@ -142,8 +148,9 @@ public class FornecedorRepository {
     private Fornecedor update(Fornecedor fornecedor) {
         String sql = "UPDATE fornecedor SET fornecedor = ?, apelido = ?, bairro = ?, cep = ?, complemento = ?, " +
                      "endereco = ?, numero = ?, cidade_id = ?, rg_inscricao_estadual = ?, cpf_cnpj = ?, " +
-                     "email = ?, contato = ?, telefone = ?, tipo = ?, observacoes = ?, condicao_pagamento_id = ?, " +
-                     "limite_credito = ?, situacao = ?, data_alteracao = ? WHERE id = ?";
+                     "email = ?, telefone = ?, tipo = ?, observacoes = ?, condicao_pagamento_id = ?, " +
+                     "limite_credito = ?, situacao = ?, data_alteracao = ?, ativo = ?, nacionalidade_id = ?, " +
+                     "transportadora_id = ? WHERE id = ?";
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -161,15 +168,17 @@ public class FornecedorRepository {
             stmt.setString(9, fornecedor.getRgInscricaoEstadual());
             stmt.setString(10, fornecedor.getCpfCnpj());
             stmt.setString(11, fornecedor.getEmail());
-            stmt.setString(12, fornecedor.getContato());
-            stmt.setString(13, fornecedor.getTelefone());
-            stmt.setInt(14, fornecedor.getTipo());
-            stmt.setString(15, fornecedor.getObservacoes());
-            stmt.setObject(16, fornecedor.getCondicaoPagamentoId());
-            stmt.setBigDecimal(17, fornecedor.getLimiteCredito());
-            stmt.setDate(18, fornecedor.getSituacao() != null ? Date.valueOf(fornecedor.getSituacao()) : null);
-            stmt.setTimestamp(19, Timestamp.valueOf(now));
-            stmt.setLong(20, fornecedor.getId());
+            stmt.setString(12, fornecedor.getTelefone());
+            stmt.setInt(13, fornecedor.getTipo());
+            stmt.setString(14, fornecedor.getObservacoes());
+            stmt.setObject(15, fornecedor.getCondicaoPagamentoId());
+            stmt.setBigDecimal(16, fornecedor.getLimiteCredito());
+            stmt.setDate(17, fornecedor.getSituacao() != null ? Date.valueOf(fornecedor.getSituacao()) : null);
+            stmt.setTimestamp(18, Timestamp.valueOf(now));
+            stmt.setBoolean(19, fornecedor.getAtivo() != null ? fornecedor.getAtivo() : true);
+            stmt.setObject(20, fornecedor.getNacionalidadeId());
+            stmt.setObject(21, fornecedor.getTransportadoraId());
+            stmt.setLong(22, fornecedor.getId());
 
             stmt.executeUpdate();
 
@@ -211,7 +220,6 @@ public class FornecedorRepository {
         fornecedor.setRgInscricaoEstadual(rs.getString("rg_inscricao_estadual"));
         fornecedor.setCpfCnpj(rs.getString("cpf_cnpj"));
         fornecedor.setEmail(rs.getString("email"));
-        fornecedor.setContato(rs.getString("contato"));
         fornecedor.setTelefone(rs.getString("telefone"));
         fornecedor.setTipo(rs.getInt("tipo"));
         fornecedor.setObservacoes(rs.getString("observacoes"));
@@ -235,6 +243,15 @@ public class FornecedorRepository {
         if (dataAlteracao != null) {
             fornecedor.setDataAlteracao(dataAlteracao.toLocalDateTime());
         }
+
+        // Novos campos
+        fornecedor.setAtivo(rs.getBoolean("ativo"));
+        
+        Long nacionalidadeId = rs.getObject("nacionalidade_id", Long.class);
+        fornecedor.setNacionalidadeId(nacionalidadeId);
+        
+        Long transportadoraId = rs.getObject("transportadora_id", Long.class);
+        fornecedor.setTransportadoraId(transportadoraId);
 
         return fornecedor;
     }

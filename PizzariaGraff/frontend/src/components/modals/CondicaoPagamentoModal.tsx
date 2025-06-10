@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CondicaoPagamento } from '../../types';
 import CondicaoPagamentoService from '../../services/condicaoPagamentoService';
-import { FaSpinner, FaSearch, FaTimes } from 'react-icons/fa';
+import { FaSpinner, FaSearch, FaTimes, FaPlus } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 interface CondicaoPagamentoModalProps {
@@ -56,6 +56,11 @@ const CondicaoPagamentoModal: React.FC<CondicaoPagamentoModalProps> = ({ isOpen,
       onClose();
     }
   };
+
+  const handleNovaCondicao = () => {
+    // Navegar para a tela de criação de condição de pagamento
+    window.open('/condicoes-pagamento/novo', '_blank');
+  };
   
   if (!isOpen) return null;
 
@@ -85,6 +90,13 @@ const CondicaoPagamentoModal: React.FC<CondicaoPagamentoModalProps> = ({ isOpen,
               />
               <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             </div>
+            <button
+              onClick={handleNovaCondicao}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center space-x-1 text-sm"
+            >
+              <FaPlus />
+              <span>Nova Condição</span>
+            </button>
           </div>
 
           {loading ? (

@@ -66,7 +66,7 @@ const FornecedorList: React.FC = () => {
       header: 'Fornecedor', 
       accessor: 'fornecedor',
       cell: (item: Fornecedor) => (
-        <span className="font-medium">{item.fornecedor || item.razaoSocial}</span>
+        <span>{item.fornecedor || item.razaoSocial}</span>
       )
     },
     { 

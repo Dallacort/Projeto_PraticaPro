@@ -79,7 +79,7 @@ const UnidadeMedidaList: React.FC = () => {
       header: 'Unidade de Medida', 
       accessor: 'unidadeMedida',
       cell: (item: UnidadeMedida) => (
-        <div className="font-medium">{item.unidadeMedida}</div>
+        <div>{item.unidadeMedida}</div>
       )
     },
     { 

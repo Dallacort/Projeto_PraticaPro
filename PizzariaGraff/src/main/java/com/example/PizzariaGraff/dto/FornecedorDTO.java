@@ -48,9 +48,6 @@ public class FornecedorDTO {
     @Schema(description = "Email", example = "contato@abc.com.br", required = true)
     private String email;
 
-    @Schema(description = "Contato", example = "João Silva")
-    private String contato;
-
     @Schema(description = "Telefone", example = "11999999999", required = true)
     private String telefone;
 
@@ -78,6 +75,15 @@ public class FornecedorDTO {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dataAlteracao;
 
+    @Schema(description = "Status ativo do fornecedor", example = "true", required = true)
+    private Boolean ativo;
+
+    @Schema(description = "ID da nacionalidade (país)", example = "1")
+    private Long nacionalidadeId;
+
+    @Schema(description = "ID da transportadora", example = "1")
+    private Long transportadoraId;
+
     // Constructors
     public FornecedorDTO() {}
 
@@ -94,7 +100,6 @@ public class FornecedorDTO {
         this.rgInscricaoEstadual = fornecedor.getRgInscricaoEstadual();
         this.cpfCnpj = fornecedor.getCpfCnpj();
         this.email = fornecedor.getEmail();
-        this.contato = fornecedor.getContato();
         this.telefone = fornecedor.getTelefone();
         this.tipo = fornecedor.getTipo();
         this.observacoes = fornecedor.getObservacoes();
@@ -103,6 +108,9 @@ public class FornecedorDTO {
         this.situacao = fornecedor.getSituacao();
         this.dataCriacao = fornecedor.getDataCriacao();
         this.dataAlteracao = fornecedor.getDataAlteracao();
+        this.ativo = fornecedor.getAtivo();
+        this.nacionalidadeId = fornecedor.getNacionalidadeId();
+        this.transportadoraId = fornecedor.getTransportadoraId();
     }
 
     // Método para converter DTO para Entity (sem parâmetro cidade)
@@ -120,7 +128,6 @@ public class FornecedorDTO {
         fornecedor.setRgInscricaoEstadual(this.rgInscricaoEstadual);
         fornecedor.setCpfCnpj(this.cpfCnpj);
         fornecedor.setEmail(this.email);
-        fornecedor.setContato(this.contato);
         fornecedor.setTelefone(this.telefone);
         fornecedor.setTipo(this.tipo);
         fornecedor.setObservacoes(this.observacoes);
@@ -129,6 +136,9 @@ public class FornecedorDTO {
         fornecedor.setSituacao(this.situacao);
         fornecedor.setDataCriacao(this.dataCriacao);
         fornecedor.setDataAlteracao(this.dataAlteracao);
+        fornecedor.setAtivo(this.ativo);
+        fornecedor.setNacionalidadeId(this.nacionalidadeId);
+        fornecedor.setTransportadoraId(this.transportadoraId);
         return fornecedor;
     }
 
@@ -165,8 +175,6 @@ public class FornecedorDTO {
     public void setCpfCnpj(String cpfCnpj) { this.cpfCnpj = cpfCnpj; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
-    public String getContato() { return contato; }
-    public void setContato(String contato) { this.contato = contato; }
     public String getTelefone() { return telefone; }
     public void setTelefone(String telefone) { this.telefone = telefone; }
     public Integer getTipo() { return tipo; }
@@ -183,6 +191,12 @@ public class FornecedorDTO {
     public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
     public LocalDateTime getDataAlteracao() { return dataAlteracao; }
     public void setDataAlteracao(LocalDateTime dataAlteracao) { this.dataAlteracao = dataAlteracao; }
+    public Boolean getAtivo() { return ativo; }
+    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
+    public Long getNacionalidadeId() { return nacionalidadeId; }
+    public void setNacionalidadeId(Long nacionalidadeId) { this.nacionalidadeId = nacionalidadeId; }
+    public Long getTransportadoraId() { return transportadoraId; }
+    public void setTransportadoraId(Long transportadoraId) { this.transportadoraId = transportadoraId; }
 
     // Métodos legacy para compatibilidade (serão removidos)
     @Deprecated

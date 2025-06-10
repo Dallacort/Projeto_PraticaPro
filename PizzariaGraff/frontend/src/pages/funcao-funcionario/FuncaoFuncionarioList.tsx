@@ -62,7 +62,7 @@ const FuncaoFuncionarioList: React.FC = () => {
       header: 'Descrição', 
       accessor: 'descricao',
       cell: (item: FuncaoFuncionario) => (
-        <span className="font-medium">{item.descricao}</span>
+        <span>{item.descricao}</span>
       )
     },
     { 

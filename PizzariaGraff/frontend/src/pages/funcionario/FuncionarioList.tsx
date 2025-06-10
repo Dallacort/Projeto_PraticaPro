@@ -62,7 +62,7 @@ const FuncionarioList: React.FC = () => {
       header: 'Nome', 
       accessor: 'funcionario',
       cell: (item: Funcionario) => (
-        <span className="font-medium">{item.funcionario || item.nome}</span>
+        <span>{item.funcionario || item.nome}</span>
       )
     },
     { 

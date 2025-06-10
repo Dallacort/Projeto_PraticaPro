@@ -84,7 +84,7 @@ const ProdutoList: React.FC = () => {
       header: 'Produto', 
       accessor: 'produto',
       cell: (item: Produto) => (
-        <div className="font-medium">{item.produto || item.nome}</div>
+        <div>{item.produto || item.nome}</div>
       )
     },
     { 
@@ -109,7 +109,7 @@ const ProdutoList: React.FC = () => {
       accessor: 'unidadeMedidaNome',
       cell: (item: Produto) => (
         <div className="text-sm">
-          {item.unidadeMedidaNome || item.unidade || '-'}
+          {item.unidadeMedidaNome || '-'}
         </div>
       )
     },

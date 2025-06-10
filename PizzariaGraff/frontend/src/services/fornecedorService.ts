@@ -8,7 +8,6 @@ interface FornecedorPayload {
   cpfCnpj: string;
   rgInscricaoEstadual: string;
   email: string;
-  contato: string;
   telefone: string;
   endereco: string;
   numero: string;
@@ -21,6 +20,9 @@ interface FornecedorPayload {
   situacao: string; // LocalDate no backend, enviado como string "yyyy-MM-dd"
   cidadeId: number;
   condicaoPagamentoId?: number;
+  nacionalidadeId?: number;
+  transportadoraId?: number;
+  ativo: boolean;
 }
 
 // Adaptador para converter dados da API para o frontend
@@ -60,7 +62,6 @@ const adaptFornecedorFromApi = async (fornecedor: any): Promise<Fornecedor> => {
     cpfCnpj: fornecedor.cpfCnpj || fornecedor.cnpj || '',
     rgInscricaoEstadual: fornecedor.rgInscricaoEstadual || fornecedor.inscricaoEstadual || '',
     email: fornecedor.email || '',
-    contato: fornecedor.contato || '',
     telefone: fornecedor.telefone || '',
     endereco: fornecedor.endereco || '',
     numero: fornecedor.numero || '',
@@ -72,6 +73,8 @@ const adaptFornecedorFromApi = async (fornecedor: any): Promise<Fornecedor> => {
     limiteCredito: Number(fornecedor.limiteCredito) || 0,
     situacao: fornecedor.situacao || '',
     condicaoPagamentoId: fornecedor.condicaoPagamentoId || null,
+    nacionalidadeId: fornecedor.nacionalidadeId || null,
+    transportadoraId: fornecedor.transportadoraId || null,
     cidadeId: fornecedor.cidadeId || fornecedor.cidade?.id || null,
     // Compatibilidade com campos antigos
     razaoSocial: fornecedor.fornecedor || fornecedor.razaoSocial || '',
@@ -104,11 +107,11 @@ const adaptFornecedorToApi = (fornecedor: any): FornecedorPayload => {
     limiteCredito: Number(fornecedor.limiteCredito) || 0,
     situacao: String(fornecedor.situacao || '').trim() || hoje,
     cidadeId: Number(fornecedor.cidade?.id || fornecedor.cidadeId),
+    ativo: fornecedor.ativo !== undefined ? Boolean(fornecedor.ativo) : true,
     
     // Campos opcionais 
     cpfCnpj: String(fornecedor.cpfCnpj || fornecedor.cnpj || '').trim(),
     rgInscricaoEstadual: String(fornecedor.rgInscricaoEstadual || fornecedor.inscricaoEstadual || '').trim(),
-    contato: String(fornecedor.contato || '').trim(),
     endereco: String(fornecedor.endereco || '').trim(),
     numero: String(fornecedor.numero || '').trim(),
     complemento: String(fornecedor.complemento || '').trim(),
@@ -120,6 +123,16 @@ const adaptFornecedorToApi = (fornecedor: any): FornecedorPayload => {
   // Só incluir condicaoPagamentoId se tiver valor válido
   if (fornecedor.condicaoPagamentoId && fornecedor.condicaoPagamentoId !== '') {
     payload.condicaoPagamentoId = Number(fornecedor.condicaoPagamentoId);
+  }
+
+  // Só incluir nacionalidadeId se tiver valor válido
+  if (fornecedor.nacionalidadeId && fornecedor.nacionalidadeId !== '') {
+    payload.nacionalidadeId = Number(fornecedor.nacionalidadeId);
+  }
+
+  // Só incluir transportadoraId se tiver valor válido
+  if (fornecedor.transportadoraId && fornecedor.transportadoraId !== '') {
+    payload.transportadoraId = Number(fornecedor.transportadoraId);
   }
   
   console.log('Payload final sendo enviado para API fornecedor:', JSON.stringify(payload, null, 2));
@@ -199,12 +212,12 @@ export const updateFornecedor = async (id: number, fornecedor: any): Promise<For
   }
 };
 
-// Exclui um fornecedor
+// Deleta um fornecedor
 export const deleteFornecedor = async (id: number): Promise<void> => {
   try {
     await api.delete(`/fornecedores/${id}`);
   } catch (error) {
-    console.error(`Erro ao excluir fornecedor ${id}:`, error);
+    console.error(`Erro ao deletar fornecedor ${id}:`, error);
     throw error;
   }
 }; 

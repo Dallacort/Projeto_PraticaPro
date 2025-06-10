@@ -79,7 +79,7 @@ const MarcaList: React.FC = () => {
       header: 'Marca', 
       accessor: 'marca',
       cell: (item: Marca) => (
-        <div className="font-medium">{item.marca}</div>
+        <div>{item.marca}</div>
       )
     },
     { 

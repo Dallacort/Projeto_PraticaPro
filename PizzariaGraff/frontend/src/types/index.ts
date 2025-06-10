@@ -126,7 +126,6 @@ export interface Fornecedor {
   rgInscricaoEstadual?: string;
   inscricaoEstadual?: string;
   email?: string;
-  contato?: string;
   telefone?: string;
   endereco?: string;
   numero?: string;
@@ -141,6 +140,8 @@ export interface Fornecedor {
   limiteCredito?: number;
   situacao?: string;
   ativo: boolean;
+  nacionalidadeId?: number;
+  transportadoraId?: number;
   dataCriacao?: string;
   dataAlteracao?: string;
   dataCadastro?: string;

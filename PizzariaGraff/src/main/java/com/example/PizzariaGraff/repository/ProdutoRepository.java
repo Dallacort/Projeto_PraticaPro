@@ -21,14 +21,18 @@ public class ProdutoRepository {
     
     public List<Produto> findAll() {
         List<Produto> produtos = new ArrayList<>();
-        String sql = "SELECT * FROM produto ORDER BY produto";
+        String sql = "SELECT p.*, m.marca as marca_nome, u.unidade_medida as unidade_nome " +
+                     "FROM produto p " +
+                     "LEFT JOIN marca m ON p.marca_id = m.id " +
+                     "LEFT JOIN unidade_medida u ON p.unidade_medida_id = u.id " +
+                     "ORDER BY p.produto";
         
         try (Connection conn = databaseConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
-                produtos.add(mapResultSetToProduto(rs));
+                produtos.add(mapResultSetToProdutoWithNames(rs));
             }
             
         } catch (SQLException e) {
@@ -39,7 +43,11 @@ public class ProdutoRepository {
     }
     
     public Optional<Produto> findById(Long id) {
-        String sql = "SELECT * FROM produto WHERE id = ?";
+        String sql = "SELECT p.*, m.marca as marca_nome, u.unidade_medida as unidade_nome " +
+                     "FROM produto p " +
+                     "LEFT JOIN marca m ON p.marca_id = m.id " +
+                     "LEFT JOIN unidade_medida u ON p.unidade_medida_id = u.id " +
+                     "WHERE p.id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -48,7 +56,7 @@ public class ProdutoRepository {
             ResultSet rs = stmt.executeQuery();
             
             if (rs.next()) {
-                return Optional.of(mapResultSetToProduto(rs));
+                return Optional.of(mapResultSetToProdutoWithNames(rs));
             }
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar produto por ID", e);
@@ -263,6 +271,54 @@ public class ProdutoRepository {
         if (ultimaModificacao != null) {
             produto.setDataAlteracao(ultimaModificacao.toLocalDateTime());
         }
+        
+        return produto;
+    }
+    
+    private Produto mapResultSetToProdutoWithNames(ResultSet rs) throws SQLException {
+        Produto produto = new Produto();
+        produto.setId(rs.getLong("id"));
+        produto.setProduto(rs.getString("produto"));
+        
+        Long unidadeMedidaId = rs.getObject("unidade_medida_id", Long.class);
+        produto.setUnidadeMedidaId(unidadeMedidaId);
+        
+        produto.setCodigoBarras(rs.getString("codigo_barras"));
+        produto.setReferencia(rs.getString("referencia"));
+        
+        Long marcaId = rs.getObject("marca_id", Long.class);
+        produto.setMarcaId(marcaId);
+        
+        Integer quantidadeMinima = rs.getObject("quantidade_minima", Integer.class);
+        produto.setQuantidadeMinima(quantidadeMinima);
+        
+        produto.setValorCompra(rs.getBigDecimal("valor_compra"));
+        produto.setValorVenda(rs.getBigDecimal("valor_venda"));
+        
+        Integer quantidade = rs.getObject("quantidade", Integer.class);
+        produto.setQuantidade(quantidade);
+        
+        produto.setPercentualLucro(rs.getBigDecimal("percentual_lucro"));
+        produto.setDescricao(rs.getString("descricao"));
+        produto.setObservacoes(rs.getString("observacoes"));
+        
+        Date situacao = rs.getDate("situacao");
+        if (situacao != null) {
+            produto.setSituacao(situacao.toLocalDate());
+        }
+        
+        Timestamp dataCriacao = rs.getTimestamp("data_criacao");
+        if (dataCriacao != null) {
+            produto.setDataCriacao(dataCriacao.toLocalDateTime());
+        }
+        
+        Timestamp ultimaModificacao = rs.getTimestamp("ultima_modificacao");
+        if (ultimaModificacao != null) {
+            produto.setDataAlteracao(ultimaModificacao.toLocalDateTime());
+        }
+        
+                 produto.setMarcaNome(rs.getString("marca_nome"));
+         produto.setUnidadeMedidaNome(rs.getString("unidade_nome"));
         
         return produto;
     }
