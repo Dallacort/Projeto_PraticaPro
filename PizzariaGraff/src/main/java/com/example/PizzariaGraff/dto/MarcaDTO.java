@@ -20,6 +20,9 @@ public class MarcaDTO {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate situacao;
 
+    @Schema(description = "Status ativo/inativo", example = "true")
+    private Boolean ativo;
+
     @Schema(description = "Data de criação do registro", example = "2024-01-15T10:30:00")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dataCriacao;
@@ -37,6 +40,7 @@ public class MarcaDTO {
         this.situacao = marca.getSituacao();
         this.dataCriacao = marca.getDataCriacao();
         this.dataAlteracao = marca.getDataAlteracao();
+        this.ativo = marca.getAtivo();
     }
 
     // Getters e Setters
@@ -64,6 +68,14 @@ public class MarcaDTO {
         this.situacao = situacao;
     }
 
+    public Boolean getAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
+    }
+
     public LocalDateTime getDataCriacao() {
         return dataCriacao;
     }
@@ -88,6 +100,7 @@ public class MarcaDTO {
         marca.setSituacao(this.situacao);
         marca.setDataCriacao(this.dataCriacao);
         marca.setDataAlteracao(this.dataAlteracao);
+        marca.setAtivo(this.ativo);
         return marca;
     }
 
@@ -97,6 +110,7 @@ public class MarcaDTO {
                 "id=" + id +
                 ", marca='" + marca + '\'' +
                 ", situacao=" + situacao +
+                ", ativo=" + ativo +
                 ", dataCriacao=" + dataCriacao +
                 ", dataAlteracao=" + dataAlteracao +
                 '}';

@@ -20,6 +20,10 @@ public class MarcaService {
         return marcaRepository.findAll();
     }
 
+    public List<Marca> listarAtivos() {
+        return marcaRepository.findByAtivoTrue();
+    }
+
     public Optional<Marca> buscarPorId(Long id) {
         return marcaRepository.findById(id);
     }

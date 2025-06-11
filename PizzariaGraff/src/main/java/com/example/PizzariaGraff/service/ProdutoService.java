@@ -20,6 +20,10 @@ public class ProdutoService {
         return produtoRepository.findAll();
     }
     
+    public List<Produto> findByAtivoTrue() {
+        return produtoRepository.findByAtivoTrue();
+    }
+    
     public Produto findById(Long id) {
         return produtoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Produto não encontrado com o ID: " + id));

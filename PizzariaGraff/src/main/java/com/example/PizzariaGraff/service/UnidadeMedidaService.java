@@ -19,6 +19,10 @@ public class UnidadeMedidaService {
         return unidadeMedidaRepository.findAll();
     }
 
+    public List<UnidadeMedida> findByAtivoTrue() {
+        return unidadeMedidaRepository.findByAtivoTrue();
+    }
+
     public UnidadeMedida findById(Long id) {
         return unidadeMedidaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Unidade de medida não encontrada com o ID: " + id));

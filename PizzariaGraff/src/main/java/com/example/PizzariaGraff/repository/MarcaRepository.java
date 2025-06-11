@@ -16,6 +16,29 @@ public class MarcaRepository {
 
     public MarcaRepository(DatabaseConnection databaseConnection) {
         this.databaseConnection = databaseConnection;
+        verificarEstruturaBanco();
+    }
+
+    private void verificarEstruturaBanco() {
+        try (Connection conn = databaseConnection.getConnection()) {
+            // Verificar se a coluna 'ativo' existe na tabela marca
+            DatabaseMetaData metaData = conn.getMetaData();
+            ResultSet columns = metaData.getColumns(null, null, "marca", "ativo");
+            
+            if (!columns.next()) {
+                // Coluna 'ativo' não existe, vamos criá-la
+                System.out.println("Adicionando coluna 'ativo' na tabela marca");
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("ALTER TABLE marca ADD COLUMN ativo BOOLEAN DEFAULT TRUE");
+                    // Atualizar registros existentes
+                    stmt.execute("UPDATE marca SET ativo = TRUE WHERE situacao IS NOT NULL");
+                    stmt.execute("UPDATE marca SET ativo = FALSE WHERE situacao IS NULL");
+                }
+            }
+            columns.close();
+        } catch (SQLException e) {
+            System.err.println("Erro ao verificar/criar estrutura do banco para marca: " + e.getMessage());
+        }
     }
 
     public List<Marca> findAll() {
@@ -32,6 +55,25 @@ public class MarcaRepository {
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar marcas", e);
+        }
+
+        return marcas;
+    }
+
+    public List<Marca> findByAtivoTrue() {
+        List<Marca> marcas = new ArrayList<>();
+        String sql = "SELECT * FROM marca WHERE ativo = TRUE ORDER BY marca";
+
+        try (Connection conn = databaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                marcas.add(mapResultSetToMarca(rs));
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar marcas ativas", e);
         }
 
         return marcas;
@@ -86,7 +128,7 @@ public class MarcaRepository {
     }
 
     private Marca insert(Marca marca) {
-        String sql = "INSERT INTO marca (marca, situacao, data_criacao, data_alteracao) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO marca (marca, situacao, ativo, data_criacao, data_alteracao) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -95,8 +137,9 @@ public class MarcaRepository {
 
             stmt.setString(1, marca.getMarca());
             stmt.setDate(2, marca.getSituacao() != null ? Date.valueOf(marca.getSituacao()) : null);
-            stmt.setTimestamp(3, marca.getDataCriacao() != null ? Timestamp.valueOf(marca.getDataCriacao()) : Timestamp.valueOf(now));
-            stmt.setTimestamp(4, marca.getDataAlteracao() != null ? Timestamp.valueOf(marca.getDataAlteracao()) : Timestamp.valueOf(now));
+            stmt.setBoolean(3, marca.getAtivo() != null ? marca.getAtivo() : true);
+            stmt.setTimestamp(4, marca.getDataCriacao() != null ? Timestamp.valueOf(marca.getDataCriacao()) : Timestamp.valueOf(now));
+            stmt.setTimestamp(5, marca.getDataAlteracao() != null ? Timestamp.valueOf(marca.getDataAlteracao()) : Timestamp.valueOf(now));
 
             stmt.executeUpdate();
 
@@ -121,7 +164,7 @@ public class MarcaRepository {
     }
 
     private Marca update(Marca marca) {
-        String sql = "UPDATE marca SET marca = ?, situacao = ?, data_alteracao = ? WHERE id = ?";
+        String sql = "UPDATE marca SET marca = ?, situacao = ?, ativo = ?, data_alteracao = ? WHERE id = ?";
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -130,8 +173,9 @@ public class MarcaRepository {
 
             stmt.setString(1, marca.getMarca());
             stmt.setDate(2, marca.getSituacao() != null ? Date.valueOf(marca.getSituacao()) : null);
-            stmt.setTimestamp(3, Timestamp.valueOf(now));
-            stmt.setLong(4, marca.getId());
+            stmt.setBoolean(3, marca.getAtivo() != null ? marca.getAtivo() : true);
+            stmt.setTimestamp(4, Timestamp.valueOf(now));
+            stmt.setLong(5, marca.getId());
 
             stmt.executeUpdate();
 
@@ -164,6 +208,14 @@ public class MarcaRepository {
         Date situacao = rs.getDate("situacao");
         if (situacao != null) {
             marca.setSituacao(situacao.toLocalDate());
+        }
+
+        // Carregar campo ativo do banco, com fallback para situacao se não existir
+        try {
+            marca.setAtivo(rs.getBoolean("ativo"));
+        } catch (SQLException e) {
+            // Se a coluna ativo não existir, usar fallback baseado na situacao
+            marca.setAtivo(situacao != null);
         }
 
         Timestamp dataCriacao = rs.getTimestamp("data_criacao");

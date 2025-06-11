@@ -45,6 +45,25 @@ public class ProdutoController {
         }
     }
 
+    @GetMapping("/ativos")
+    @Operation(summary = "Lista produtos ativos")
+    public ResponseEntity<?> listarAtivos() {
+        try {
+            List<Produto> produtos = produtoService.findByAtivoTrue();
+            List<ProdutoDTO> produtosDTO = produtos.stream()
+                    .map(ProdutoDTO::new)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(produtosDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, String> erro = new HashMap<>();
+            erro.put("erro", "Erro ao listar produtos ativos");
+            erro.put("mensagem", e.getMessage());
+            erro.put("causa", e.getCause() != null ? e.getCause().getMessage() : "Desconhecida");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(erro);
+        }
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Busca um produto por ID")
     public ResponseEntity<?> buscarPorId(@PathVariable Long id) {

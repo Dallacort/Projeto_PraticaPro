@@ -33,6 +33,16 @@ public class UnidadeMedidaController {
         return ResponseEntity.ok(unidadesMedidaDTO);
     }
 
+    @GetMapping("/ativos")
+    @Operation(summary = "Lista unidades de medida ativas")
+    public ResponseEntity<List<UnidadeMedidaDTO>> listarAtivos() {
+        List<UnidadeMedida> unidadesMedida = unidadeMedidaService.findByAtivoTrue();
+        List<UnidadeMedidaDTO> unidadesMedidaDTO = unidadesMedida.stream()
+                .map(UnidadeMedidaDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(unidadesMedidaDTO);
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Busca uma unidade de medida por ID")
     public ResponseEntity<UnidadeMedidaDTO> buscarPorId(@PathVariable Long id) {

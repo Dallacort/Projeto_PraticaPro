@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
 import { getUnidadesMedida, deleteUnidadeMedida } from '../../services/unidadeMedidaService';
-import { UnidadeMedida } from '../../types';
+import { Fornecedor, UnidadeMedida } from '../../types';
 
 const UnidadeMedidaList: React.FC = () => {
   const [unidadesMedida, setUnidadesMedida] = useState<UnidadeMedida[]>([]);
@@ -88,18 +88,18 @@ const UnidadeMedidaList: React.FC = () => {
       cell: (item: UnidadeMedida) => formatDate(item.situacao)
     },
     { 
-      header: 'Status', 
-      accessor: 'ativo',
-      cell: (item: UnidadeMedida) => (
-        <span className={item.ativo ? 'text-green-600' : 'text-red-600'}>
-          {item.ativo ? 'Ativo' : 'Inativo'}
-        </span>
-      )
-    },
-    { 
       header: 'Data Criação', 
       accessor: 'dataCriacao',
       cell: (item: UnidadeMedida) => formatDate(item.dataCriacao)
+    },
+    {
+      header: 'Status',
+      accessor: 'ativo',
+      cell: (item: UnidadeMedida) => (
+        <span className={`px-2 py-1 rounded text-xs ${item.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          {item.ativo ? 'Ativo' : 'Inativo'}
+        </span>
+      )
     }
   ];
 

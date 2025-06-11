@@ -60,6 +60,9 @@ public class ProdutoDTO {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate situacao;
 
+    @Schema(description = "Status ativo/inativo", example = "true")
+    private Boolean ativo;
+
     @Schema(description = "Data de criação do registro", example = "2024-01-15T10:30:00")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dataCriacao;
@@ -88,6 +91,9 @@ public class ProdutoDTO {
         this.situacao = produto.getSituacao();
         this.dataCriacao = produto.getDataCriacao();
         this.dataAlteracao = produto.getDataAlteracao();
+        
+        // Incluir o campo ativo
+        this.ativo = produto.getAtivo();
         
         // Usar os novos campos marcaNome e unidadeMedidaNome diretamente do modelo
         this.marcaNome = produto.getMarcaNome();
@@ -121,6 +127,7 @@ public class ProdutoDTO {
         produto.setSituacao(this.situacao);
         produto.setDataCriacao(this.dataCriacao);
         produto.setDataAlteracao(this.dataAlteracao);
+        produto.setAtivo(this.ativo);
         return produto;
     }
 
@@ -172,6 +179,9 @@ public class ProdutoDTO {
     
     public LocalDate getSituacao() { return situacao; }
     public void setSituacao(LocalDate situacao) { this.situacao = situacao; }
+    
+    public Boolean getAtivo() { return ativo; }
+    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
     
     public LocalDateTime getDataCriacao() { return dataCriacao; }
     public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }

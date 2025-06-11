@@ -16,6 +16,29 @@ public class UnidadeMedidaRepository {
 
     public UnidadeMedidaRepository(DatabaseConnection databaseConnection) {
         this.databaseConnection = databaseConnection;
+        verificarEstruturaBanco();
+    }
+
+    private void verificarEstruturaBanco() {
+        try (Connection conn = databaseConnection.getConnection()) {
+            // Verificar se a coluna 'ativo' existe na tabela unidade_medida
+            DatabaseMetaData metaData = conn.getMetaData();
+            ResultSet columns = metaData.getColumns(null, null, "unidade_medida", "ativo");
+            
+            if (!columns.next()) {
+                // Coluna 'ativo' não existe, vamos criá-la
+                System.out.println("Adicionando coluna 'ativo' na tabela unidade_medida");
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("ALTER TABLE unidade_medida ADD COLUMN ativo BOOLEAN DEFAULT TRUE");
+                    // Atualizar registros existentes
+                    stmt.execute("UPDATE unidade_medida SET ativo = TRUE WHERE situacao IS NOT NULL");
+                    stmt.execute("UPDATE unidade_medida SET ativo = FALSE WHERE situacao IS NULL");
+                }
+            }
+            columns.close();
+        } catch (SQLException e) {
+            System.err.println("Erro ao verificar/criar estrutura do banco para unidade_medida: " + e.getMessage());
+        }
     }
 
     public List<UnidadeMedida> findAll() {
@@ -32,6 +55,25 @@ public class UnidadeMedidaRepository {
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar unidades de medida", e);
+        }
+
+        return unidades;
+    }
+
+    public List<UnidadeMedida> findByAtivoTrue() {
+        List<UnidadeMedida> unidades = new ArrayList<>();
+        String sql = "SELECT * FROM unidade_medida WHERE ativo = TRUE ORDER BY unidade_medida";
+
+        try (Connection conn = databaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                unidades.add(mapResultSetToUnidadeMedida(rs));
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar unidades de medida ativas", e);
         }
 
         return unidades;
@@ -86,7 +128,7 @@ public class UnidadeMedidaRepository {
     }
 
     private UnidadeMedida insert(UnidadeMedida unidadeMedida) {
-        String sql = "INSERT INTO unidade_medida (unidade_medida, situacao, data_criacao, data_alteracao) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO unidade_medida (unidade_medida, situacao, ativo, data_criacao, data_alteracao) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -95,8 +137,9 @@ public class UnidadeMedidaRepository {
 
             stmt.setString(1, unidadeMedida.getUnidadeMedida());
             stmt.setDate(2, unidadeMedida.getSituacao() != null ? Date.valueOf(unidadeMedida.getSituacao()) : null);
-            stmt.setTimestamp(3, unidadeMedida.getDataCriacao() != null ? Timestamp.valueOf(unidadeMedida.getDataCriacao()) : Timestamp.valueOf(now));
-            stmt.setTimestamp(4, unidadeMedida.getDataAlteracao() != null ? Timestamp.valueOf(unidadeMedida.getDataAlteracao()) : Timestamp.valueOf(now));
+            stmt.setBoolean(3, unidadeMedida.getAtivo() != null ? unidadeMedida.getAtivo() : true);
+            stmt.setTimestamp(4, unidadeMedida.getDataCriacao() != null ? Timestamp.valueOf(unidadeMedida.getDataCriacao()) : Timestamp.valueOf(now));
+            stmt.setTimestamp(5, unidadeMedida.getDataAlteracao() != null ? Timestamp.valueOf(unidadeMedida.getDataAlteracao()) : Timestamp.valueOf(now));
 
             stmt.executeUpdate();
 
@@ -121,7 +164,7 @@ public class UnidadeMedidaRepository {
     }
 
     private UnidadeMedida update(UnidadeMedida unidadeMedida) {
-        String sql = "UPDATE unidade_medida SET unidade_medida = ?, situacao = ?, data_alteracao = ? WHERE id = ?";
+        String sql = "UPDATE unidade_medida SET unidade_medida = ?, situacao = ?, ativo = ?, data_alteracao = ? WHERE id = ?";
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -130,8 +173,9 @@ public class UnidadeMedidaRepository {
 
             stmt.setString(1, unidadeMedida.getUnidadeMedida());
             stmt.setDate(2, unidadeMedida.getSituacao() != null ? Date.valueOf(unidadeMedida.getSituacao()) : null);
-            stmt.setTimestamp(3, Timestamp.valueOf(now));
-            stmt.setLong(4, unidadeMedida.getId());
+            stmt.setBoolean(3, unidadeMedida.getAtivo() != null ? unidadeMedida.getAtivo() : true);
+            stmt.setTimestamp(4, Timestamp.valueOf(now));
+            stmt.setLong(5, unidadeMedida.getId());
 
             stmt.executeUpdate();
 
@@ -164,6 +208,14 @@ public class UnidadeMedidaRepository {
         Date situacao = rs.getDate("situacao");
         if (situacao != null) {
             unidadeMedida.setSituacao(situacao.toLocalDate());
+        }
+
+        // Carregar campo ativo do banco, com fallback para situacao se não existir
+        try {
+            unidadeMedida.setAtivo(rs.getBoolean("ativo"));
+        } catch (SQLException e) {
+            // Se a coluna ativo não existir, usar fallback baseado na situacao
+            unidadeMedida.setAtivo(situacao != null);
         }
 
         Timestamp dataCriacao = rs.getTimestamp("data_criacao");

@@ -38,6 +38,20 @@ public class MarcaController {
         }
     }
 
+    @GetMapping("/ativos")
+    @Operation(summary = "Listar marcas ativas", description = "Retorna uma lista com todas as marcas ativas")
+    public ResponseEntity<List<MarcaDTO>> listarAtivos() {
+        try {
+            List<Marca> marcas = marcaService.listarAtivos();
+            List<MarcaDTO> marcasDTO = marcas.stream()
+                    .map(MarcaDTO::new)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(marcasDTO);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Buscar marca por ID", description = "Retorna uma marca específica pelo seu ID")
     public ResponseEntity<MarcaDTO> buscarPorId(@PathVariable Long id) {

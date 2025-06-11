@@ -10,6 +10,9 @@ public class UnidadeMedida {
     private LocalDateTime dataCriacao;   // timestamp NOT NULL
     private LocalDateTime dataAlteracao; // timestamp NOT NULL
 
+    // Campo ativo para controle de status
+    private Boolean ativo;
+
     // Constructors
     public UnidadeMedida() {}
 
@@ -57,6 +60,19 @@ public class UnidadeMedida {
 
     public void setDataAlteracao(LocalDateTime dataAlteracao) {
         this.dataAlteracao = dataAlteracao;
+    }
+
+    public Boolean getAtivo() {
+        if (ativo != null) {
+            return ativo;
+        }
+        // Se ativo não foi definido, usa a situacao como referência
+        // situacao != null significa ativo
+        return situacao != null;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
     }
 
     @Override

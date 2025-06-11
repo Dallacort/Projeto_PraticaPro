@@ -18,8 +18,34 @@ const MarcaForm: React.FC = () => {
   const [formData, setFormData] = useState({
     marca: '',
     situacao: new Date().toISOString().split('T')[0],
-    ativo: true // Campo fictício para o frontend
+    ativo: true,
+    dataCriacao: null as string | null,
+    dataAlteracao: null as string | null,
+    dataCadastro: null as string | null,
+    ultimaModificacao: null as string | null
   });
+
+  // Função para formatar datas
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return '';
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Extrair datas para exibição
+  const dataCadastro = formData.dataCriacao || formData.dataCadastro;
+  const ultimaModificacao = formData.dataAlteracao || formData.ultimaModificacao;
 
   useEffect(() => {
     if (!isNew) {
@@ -39,7 +65,11 @@ const MarcaForm: React.FC = () => {
         setFormData({
           marca: marca.marca,
           situacao: marca.situacao || new Date().toISOString().split('T')[0],
-          ativo: marca.ativo
+          ativo: marca.ativo,
+          dataCriacao: marca.dataCriacao,
+          dataAlteracao: marca.dataAlteracao,
+          dataCadastro: marca.dataCadastro,
+          ultimaModificacao: marca.ultimaModificacao
         });
       }
     } catch (err) {
@@ -204,25 +234,46 @@ const MarcaForm: React.FC = () => {
           </div>
         </div>
         
-        {!isView && (
-          <div className="flex justify-end space-x-3 pt-6 border-t">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              disabled={submitting}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {submitting ? 'Salvando...' : (isNew ? 'Criar' : 'Atualizar')}
-            </button>
-          </div>
-        )}
+        {/* Rodapé do formulário com informações de registro e botões */}
+        <div className="flex justify-between items-end pt-6 border-t mt-6">
+          {/* Informações do Registro (sempre que existirem datas) */}
+          {(dataCadastro || ultimaModificacao) && (
+            <div className="text-sm text-gray-600">
+              <h3 className="font-semibold text-gray-700 mb-1">Informações do Registro:</h3>
+              {dataCadastro && (
+                <p>
+                  Cadastrado em: {formatDate(dataCadastro)}
+                </p>
+              )}
+              {ultimaModificacao && (
+                <p>
+                  Última modificação: {formatDate(ultimaModificacao)}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Botões de ação */}
+          {!isView && (
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                disabled={submitting}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              >
+                {submitting ? 'Salvando...' : (isNew ? 'Criar' : 'Atualizar')}
+              </button>
+            </div>
+          )}
+        </div>
       </form>
     </div>
   );

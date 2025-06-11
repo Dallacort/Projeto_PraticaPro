@@ -17,6 +17,29 @@ public class ProdutoRepository {
     
     public ProdutoRepository(DatabaseConnection databaseConnection) {
         this.databaseConnection = databaseConnection;
+        verificarEstruturaBanco();
+    }
+    
+    private void verificarEstruturaBanco() {
+        try (Connection conn = databaseConnection.getConnection()) {
+            // Verificar se a coluna 'ativo' existe na tabela produto
+            DatabaseMetaData metaData = conn.getMetaData();
+            ResultSet columns = metaData.getColumns(null, null, "produto", "ativo");
+            
+            if (!columns.next()) {
+                // Coluna 'ativo' não existe, vamos criá-la
+                System.out.println("Adicionando coluna 'ativo' na tabela produto");
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("ALTER TABLE produto ADD COLUMN ativo BOOLEAN DEFAULT TRUE");
+                    // Atualizar registros existentes
+                    stmt.execute("UPDATE produto SET ativo = TRUE WHERE situacao IS NOT NULL");
+                    stmt.execute("UPDATE produto SET ativo = FALSE WHERE situacao IS NULL");
+                }
+            }
+            columns.close();
+        } catch (SQLException e) {
+            System.err.println("Erro ao verificar/criar estrutura do banco para produto: " + e.getMessage());
+        }
     }
     
     public List<Produto> findAll() {
@@ -37,6 +60,30 @@ public class ProdutoRepository {
             
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar produtos", e);
+        }
+        
+        return produtos;
+    }
+    
+    public List<Produto> findByAtivoTrue() {
+        List<Produto> produtos = new ArrayList<>();
+        String sql = "SELECT p.*, m.marca as marca_nome, u.unidade_medida as unidade_nome " +
+                     "FROM produto p " +
+                     "LEFT JOIN marca m ON p.marca_id = m.id " +
+                     "LEFT JOIN unidade_medida u ON p.unidade_medida_id = u.id " +
+                     "WHERE p.ativo = TRUE " +
+                     "ORDER BY p.produto";
+        
+        try (Connection conn = databaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            while (rs.next()) {
+                produtos.add(mapResultSetToProdutoWithNames(rs));
+            }
+            
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar produtos ativos", e);
         }
         
         return produtos;
@@ -134,8 +181,8 @@ public class ProdutoRepository {
     private Produto insert(Produto produto) {
         String sql = "INSERT INTO produto (produto, unidade_medida_id, codigo_barras, referencia, marca_id, " +
                      "quantidade_minima, valor_compra, valor_venda, quantidade, percentual_lucro, descricao, " +
-                     "observacoes, situacao, data_criacao, ultima_modificacao) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "observacoes, situacao, ativo, data_criacao, ultima_modificacao) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -155,8 +202,9 @@ public class ProdutoRepository {
             stmt.setString(11, produto.getDescricao());
             stmt.setString(12, produto.getObservacoes());
             stmt.setDate(13, produto.getSituacao() != null ? Date.valueOf(produto.getSituacao()) : null);
-            stmt.setTimestamp(14, produto.getDataCriacao() != null ? Timestamp.valueOf(produto.getDataCriacao()) : Timestamp.valueOf(now));
-            stmt.setTimestamp(15, produto.getDataAlteracao() != null ? Timestamp.valueOf(produto.getDataAlteracao()) : Timestamp.valueOf(now));
+            stmt.setBoolean(14, produto.getAtivo() != null ? produto.getAtivo() : true);
+            stmt.setTimestamp(15, produto.getDataCriacao() != null ? Timestamp.valueOf(produto.getDataCriacao()) : Timestamp.valueOf(now));
+            stmt.setTimestamp(16, produto.getDataAlteracao() != null ? Timestamp.valueOf(produto.getDataAlteracao()) : Timestamp.valueOf(now));
             
             stmt.executeUpdate();
             
@@ -183,7 +231,7 @@ public class ProdutoRepository {
     private Produto update(Produto produto) {
         String sql = "UPDATE produto SET produto = ?, unidade_medida_id = ?, codigo_barras = ?, referencia = ?, " +
                      "marca_id = ?, quantidade_minima = ?, valor_compra = ?, valor_venda = ?, quantidade = ?, " +
-                     "percentual_lucro = ?, descricao = ?, observacoes = ?, situacao = ?, ultima_modificacao = ? " +
+                     "percentual_lucro = ?, descricao = ?, observacoes = ?, situacao = ?, ativo = ?, ultima_modificacao = ? " +
                      "WHERE id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
@@ -204,8 +252,9 @@ public class ProdutoRepository {
             stmt.setString(11, produto.getDescricao());
             stmt.setString(12, produto.getObservacoes());
             stmt.setDate(13, produto.getSituacao() != null ? Date.valueOf(produto.getSituacao()) : null);
-            stmt.setTimestamp(14, Timestamp.valueOf(now));
-            stmt.setLong(15, produto.getId());
+            stmt.setBoolean(14, produto.getAtivo() != null ? produto.getAtivo() : true);
+            stmt.setTimestamp(15, Timestamp.valueOf(now));
+            stmt.setLong(16, produto.getId());
             
             stmt.executeUpdate();
             
@@ -261,6 +310,14 @@ public class ProdutoRepository {
         if (situacao != null) {
             produto.setSituacao(situacao.toLocalDate());
         }
+
+        // Carregar campo ativo do banco, com fallback para situacao se não existir
+        try {
+            produto.setAtivo(rs.getBoolean("ativo"));
+        } catch (SQLException e) {
+            // Se a coluna ativo não existir, usar fallback baseado na situacao
+            produto.setAtivo(situacao != null);
+        }
         
         Timestamp dataCriacao = rs.getTimestamp("data_criacao");
         if (dataCriacao != null) {
@@ -305,6 +362,14 @@ public class ProdutoRepository {
         Date situacao = rs.getDate("situacao");
         if (situacao != null) {
             produto.setSituacao(situacao.toLocalDate());
+        }
+
+        // Carregar campo ativo do banco, com fallback para situacao se não existir
+        try {
+            produto.setAtivo(rs.getBoolean("ativo"));
+        } catch (SQLException e) {
+            // Se a coluna ativo não existir, usar fallback baseado na situacao
+            produto.setAtivo(situacao != null);
         }
         
         Timestamp dataCriacao = rs.getTimestamp("data_criacao");

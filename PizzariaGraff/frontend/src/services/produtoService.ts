@@ -21,7 +21,7 @@ const adaptProdutoFromApi = (produto: any): Produto => {
     marca: produto.marca ? {
       id: produto.marca.id || produto.marcaId,
       marca: produto.marca.marca || produto.marcaNome || '',
-      ativo: true,
+      ativo: produto.marca.ativo !== undefined ? produto.marca.ativo : true,
       situacao: produto.marca.situacao || null,
       dataCriacao: produto.marca.dataCriacao || null,
       dataAlteracao: produto.marca.dataAlteracao || null,
@@ -33,7 +33,7 @@ const adaptProdutoFromApi = (produto: any): Produto => {
     unidadeMedida: produto.unidadeMedida ? {
       id: produto.unidadeMedida.id || produto.unidadeMedidaId,
       unidadeMedida: produto.unidadeMedida.unidadeMedida || produto.unidadeMedidaNome || '',
-      ativo: true,
+      ativo: produto.unidadeMedida.ativo !== undefined ? produto.unidadeMedida.ativo : true,
       situacao: produto.unidadeMedida.situacao || null,
       dataCriacao: produto.unidadeMedida.dataCriacao || null,
       dataAlteracao: produto.unidadeMedida.dataAlteracao || null,
@@ -41,7 +41,7 @@ const adaptProdutoFromApi = (produto: any): Produto => {
       ultimaModificacao: produto.unidadeMedida.ultimaModificacao || null
     } : null,
     situacao: produto.situacao || null,
-    ativo: true, // Campo fictício para o frontend, sempre ativo
+    ativo: produto.ativo !== undefined ? produto.ativo : true, // Usar valor real da API
     dataCriacao: produto.dataCriacao || null,
     dataAlteracao: produto.dataAlteracao || null,
     dataCadastro: produto.dataCadastro || null,
@@ -93,7 +93,8 @@ const adaptProdutoToApi = (produto: Omit<Produto, 'id' | 'dataCriacao' | 'dataAl
     quantidadeMinima: produto.quantidadeMinima || produto.estoqueMinimo || 0,
     marcaId: marcaId,
     unidadeMedidaId: unidadeMedidaId,
-    situacao: situacao
+    situacao: situacao,
+    ativo: produto.ativo !== undefined ? produto.ativo : true
   };
   
   console.log('Dados convertidos para API:', dataPayload);
