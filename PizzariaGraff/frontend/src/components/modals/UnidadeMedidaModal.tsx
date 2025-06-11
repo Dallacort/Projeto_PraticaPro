@@ -151,7 +151,6 @@ const UnidadeMedidaModal: React.FC<UnidadeMedidaModalProps> = ({ isOpen, onClose
                         <tr>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidade de Medida</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -163,11 +162,6 @@ const UnidadeMedidaModal: React.FC<UnidadeMedidaModalProps> = ({ isOpen, onClose
                           >
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{unidade.id}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{unidade.unidadeMedida}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm">
-                              <span className={unidade.ativo ? 'text-green-600' : 'text-red-600'}>
-                                {unidade.ativo ? 'Ativo' : 'Inativo'}
-                              </span>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -180,6 +174,25 @@ const UnidadeMedidaModal: React.FC<UnidadeMedidaModalProps> = ({ isOpen, onClose
             </>
           ) : (
             <div className="space-y-4">
+              {/* Título da seção e Toggle Ativo */}
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Cadastrar Nova Unidade de Medida</h3>
+                <label className="flex items-center cursor-pointer">
+                  <span className="mr-2 text-sm font-medium text-gray-700">Ativo</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      name="ativo"
+                      id="ativoNovaUnidadeMedida"
+                      checked={novaUnidadeMedidaData.ativo}
+                      onChange={handleNovaUnidadeMedidaChange}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                  </div>
+                </label>
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   label="Nome da Unidade de Medida"
@@ -200,49 +213,44 @@ const UnidadeMedidaModal: React.FC<UnidadeMedidaModalProps> = ({ isOpen, onClose
                   required
                 />
               </div>
-              
-              <div className="flex items-center">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    name="ativo"
-                    checked={novaUnidadeMedidaData.ativo}
-                    onChange={handleNovaUnidadeMedidaChange}
-                    className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Unidade Ativa</span>
-                </label>
-              </div>
             </div>
           )}
         </div>
 
         {/* Rodapé do Modal */}
-        <div className="border-t px-6 py-4 bg-gray-50 rounded-b-lg">
-          <div className="flex justify-between">
-            <button
-              onClick={() => {
-                if (showForm) {
-                  setShowForm(false);
-                } else {
-                  onClose();
-                }
-              }}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
-            >
-              {showForm ? 'Voltar' : 'Cancelar'}
-            </button>
-            
-            {showForm ? (
+        <div className="flex justify-end space-x-3 border-t px-6 py-4 bg-gray-50">
+          {showForm ? (
+            <>
+              <button
+                onClick={() => setShowForm(false)}
+                disabled={saving}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+              >
+                Voltar
+              </button>
               <button
                 onClick={handleSaveNovaUnidadeMedida}
                 disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-1"
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
               >
-                {saving && <FaSpinner className="animate-spin" />}
-                <span>Salvar Unidade</span>
+                {saving ? (
+                  <span className="flex items-center">
+                    <FaSpinner className="animate-spin mr-2" />
+                    Salvando...
+                  </span>
+                ) : (
+                  'Salvar Unidade'
+                )}
               </button>
-            ) : (
+            </>
+          ) : (
+            <>
+              <button
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
               <button
                 onClick={handleConfirmSelection}
                 disabled={!selectedUnidadeMedida}
@@ -250,8 +258,8 @@ const UnidadeMedidaModal: React.FC<UnidadeMedidaModalProps> = ({ isOpen, onClose
               >
                 Selecionar
               </button>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>

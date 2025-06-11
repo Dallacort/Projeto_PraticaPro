@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getUnidadeMedida, createUnidadeMedida, updateUnidadeMedida } from '../../services/unidadeMedidaService';
 import { UnidadeMedida } from '../../types';
+import { FaSpinner } from 'react-icons/fa';
 
 const UnidadeMedidaForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -253,26 +254,33 @@ const UnidadeMedidaForm: React.FC = () => {
             </div>
           )}
 
-          {/* Botões de ação */}
-          {!isView && (
-            <div className="flex space-x-3">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                disabled={submitting}
-              >
-                Cancelar
-              </button>
+          {/* Botões de ação - Sempre à direita */}
+          <div className="flex gap-3 ml-auto">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none"
+              disabled={submitting}
+            >
+              {isView ? 'Voltar' : 'Cancelar'}
+            </button>
+            {!isView && (
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50"
               >
-                {submitting ? 'Salvando...' : (isNew ? 'Criar' : 'Atualizar')}
+                {submitting ? (
+                  <span className="inline-flex items-center">
+                    <FaSpinner className="animate-spin mr-2" />
+                    Salvando...
+                  </span>
+                ) : (
+                  'Salvar'
+                )}
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </form>
     </div>
