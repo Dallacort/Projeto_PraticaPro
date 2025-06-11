@@ -142,7 +142,7 @@ public class FuncionarioDTO {
         }
         
         if (funcionario.getFuncaoFuncionario() != null) {
-            this.funcaoFuncionarioNome = funcionario.getFuncaoFuncionario().getDescricao();
+            this.funcaoFuncionarioNome = funcionario.getFuncaoFuncionario().getFuncaoFuncionario();
         }
         
         if (funcionario.getNacionalidade() != null) {

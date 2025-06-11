@@ -21,10 +21,13 @@ const FuncaoFuncionarioModal: React.FC<FuncaoFuncionarioModalProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFuncao, setSelectedFuncao] = useState<FuncaoFuncionario | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       fetchFuncoes();
+      setSelectedFuncao(null);
+      setSearchTerm('');
     }
   }, [isOpen]);
 
@@ -51,16 +54,23 @@ const FuncaoFuncionarioModal: React.FC<FuncaoFuncionarioModalProps> = ({
 
     if (searchTerm) {
       filtered = filtered.filter(funcao =>
-        (funcao.funcaoFuncionario || funcao.descricao)?.toLowerCase().includes(searchTerm.toLowerCase())
+        funcao.funcaoFuncionario?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        funcao.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     setFilteredFuncoes(filtered);
   };
 
-  const handleSelect = (funcao: FuncaoFuncionario) => {
-    onSelect(funcao);
-    onClose();
+  const handleSelectFuncaoRow = (funcao: FuncaoFuncionario) => {
+    setSelectedFuncao(funcao);
+  };
+
+  const handleConfirmSelection = () => {
+    if (selectedFuncao) {
+      onSelect(selectedFuncao);
+      onClose();
+    }
   };
 
   if (!isOpen) return null;
@@ -113,8 +123,8 @@ const FuncaoFuncionarioModal: React.FC<FuncaoFuncionarioModalProps> = ({
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     CNH
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ação
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
                   </th>
                 </tr>
               </thead>
@@ -130,12 +140,12 @@ const FuncaoFuncionarioModal: React.FC<FuncaoFuncionarioModalProps> = ({
                     <tr 
                       key={funcao.id} 
                       className={`hover:bg-gray-50 cursor-pointer ${
-                        selectedFuncaoId === funcao.id ? 'bg-blue-50' : ''
+                        selectedFuncao?.id === funcao.id ? 'bg-blue-100 border-l-4 border-blue-500' : ''
                       }`}
-                      onClick={() => handleSelect(funcao)}
+                      onClick={() => handleSelectFuncaoRow(funcao)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {funcao.funcaoFuncionario || funcao.descricao || 'Nome não informado'}
+                        {funcao.funcaoFuncionario || 'Nome não informado'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {funcao.cargaHoraria ? `${funcao.cargaHoraria}h/sem` : '-'}
@@ -145,16 +155,10 @@ const FuncaoFuncionarioModal: React.FC<FuncaoFuncionarioModalProps> = ({
                           {funcao.requerCNH ? 'Sim' : 'Não'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelect(funcao);
-                          }}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          Selecionar
-                        </button>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className={`px-2 py-1 rounded text-xs ${funcao.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {funcao.ativo ? 'Ativo' : 'Inativo'}
+                        </span>
                       </td>
                     </tr>
                   ))
@@ -164,12 +168,19 @@ const FuncaoFuncionarioModal: React.FC<FuncaoFuncionarioModalProps> = ({
           </div>
         )}
 
-        <div className="flex justify-end mt-4">
+        <div className="flex justify-end space-x-3 mt-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
           >
             Cancelar
+          </button>
+          <button
+            onClick={handleConfirmSelection}
+            disabled={!selectedFuncao}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+          >
+            Selecionar
           </button>
         </div>
       </div>

@@ -5,7 +5,7 @@ import { FuncaoFuncionario } from '../types';
 const adaptFuncaoFromApi = (funcao: any): FuncaoFuncionario => {
   return {
     id: funcao.id,
-    funcaoFuncionario: funcao.funcaoFuncionario || '',
+    funcaoFuncionario: funcao.funcaoFuncionario || funcao.descricao || '',
     requerCNH: funcao.requerCNH || false,
     cargaHoraria: funcao.cargaHoraria || null,
     descricao: funcao.descricao || '',

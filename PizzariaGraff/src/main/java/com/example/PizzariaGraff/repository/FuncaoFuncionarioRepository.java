@@ -262,7 +262,8 @@ public class FuncaoFuncionarioRepository {
         try {
             funcao.setFuncaoFuncionario(rs.getString("funcao_funcionario"));
         } catch (SQLException e) {
-            // Campo não existe, usar descrição como fallback
+            // Campo não existe, usar descrição como fallback temporário
+            // TODO: Este é um fallback temporário - deve ser migrado para usar campo correto
             funcao.setFuncaoFuncionario(rs.getString("descricao"));
         }
         

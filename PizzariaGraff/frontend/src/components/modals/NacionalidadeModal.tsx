@@ -79,11 +79,12 @@ const NacionalidadeModal: React.FC<NacionalidadeModalProps> = ({ isOpen, onClose
       // Atualizar a lista de nacionalidades
       await fetchNacionalidades();
       
-      // Selecionar a nacionalidade recém-criada
-      onSelect(nacionalidadeCriada);
+      // Selecionar a nacionalidade recém-criada na lista
+      setSelectedNacionalidade(nacionalidadeCriada);
+      
       toast.success(`Nacionalidade "${nacionalidadeCriada.nacionalidade}" criada com sucesso!`);
       
-      onClose();
+      // Não fechar o modal, apenas voltar para a lista
     } catch (error) {
       console.error('Erro ao criar nacionalidade:', error);
       toast.error('Erro ao criar nacionalidade. Tente novamente.');
@@ -149,7 +150,6 @@ const NacionalidadeModal: React.FC<NacionalidadeModalProps> = ({ isOpen, onClose
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">País</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sigla</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -163,15 +163,6 @@ const NacionalidadeModal: React.FC<NacionalidadeModalProps> = ({ isOpen, onClose
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{nacionalidade.nome}</td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{nacionalidade.sigla}</td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{nacionalidade.codigo}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            nacionalidade.ativo 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {nacionalidade.ativo ? 'Ativo' : 'Inativo'}
-                          </span>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -206,6 +197,7 @@ const NacionalidadeModal: React.FC<NacionalidadeModalProps> = ({ isOpen, onClose
         isOpen={isPaisModalOpen}
         onClose={handleClosePaisModal}
         onSelect={handleSelectPais}
+        openDirectlyInForm={true}
       />
     </div>
   );

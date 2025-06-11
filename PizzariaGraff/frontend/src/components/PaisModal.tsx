@@ -9,12 +9,14 @@ interface PaisModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (pais: Pais) => void;
+  openDirectlyInForm?: boolean; // Novo parâmetro opcional
 }
 
 const PaisModal: React.FC<PaisModalProps> = ({
   isOpen,
   onClose,
   onSelect,
+  openDirectlyInForm = false, // Padrão é false
 }) => {
   const [paises, setPaises] = useState<Pais[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,7 +50,7 @@ const PaisModal: React.FC<PaisModalProps> = ({
     if (isOpen) {
       fetchPaises();
       setSelectedPais(null);
-      setShowForm(false);
+      setShowForm(openDirectlyInForm); // Se openDirectlyInForm for true, abre direto no formulário
       setSearchTerm('');
       setNovoPaisData({
         nome: '',
@@ -58,7 +60,7 @@ const PaisModal: React.FC<PaisModalProps> = ({
         ativo: true
       });
     }
-  }, [isOpen, fetchPaises]);
+  }, [isOpen, fetchPaises, openDirectlyInForm]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -255,10 +257,16 @@ const PaisModal: React.FC<PaisModalProps> = ({
 
           <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50 rounded-b-lg">
             <button
-              onClick={onClose}
+              onClick={() => {
+                if (showForm && !openDirectlyInForm) {
+                  setShowForm(false); // Volta para a lista se não abriu direto no formulário
+                } else {
+                  onClose(); // Fecha o modal
+                }
+              }}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md focus:outline-none"
             >
-              Cancelar
+              {showForm && !openDirectlyInForm ? 'Voltar' : 'Cancelar'}
             </button>
             {!showForm ? (
               <button

@@ -126,7 +126,7 @@ const FuncionarioForm: React.FC = () => {
             dataNascimento: funcionarioData.dataNascimento || '',
             dataAdmissao: funcionarioData.dataAdmissao || '',
             dataDemissao: funcionarioData.dataDemissao || '',
-            cidadeId: String(funcionarioData.cidadeId || ''),
+            cidadeId: String(funcionarioData.cidade?.id || funcionarioData.cidadeId || ''),
             funcaoFuncionarioId: String(funcionarioData.funcaoFuncionarioId || ''),
             ativo: funcionarioData.ativo !== undefined ? funcionarioData.ativo : true,
           });
@@ -361,26 +361,6 @@ const FuncionarioForm: React.FC = () => {
                 onChange={() => {}}
                 disabled={true}
               />
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Função</label>
-                <div 
-                  onClick={handleOpenFuncaoModal} 
-                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && handleOpenFuncaoModal()}
-                >
-                  <input
-                    type="text"
-                    readOnly
-                    value={funcaoSelecionada ? funcaoSelecionada.funcaoFuncionario : 'Selecione...'}
-                    className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
-                    placeholder="Selecione..."
-                  />
-                  <FaSearch className="text-gray-500" />
-                </div>
-              </div>
 
               <FormField
                 label="Funcionário *"
@@ -417,7 +397,27 @@ const FuncionarioForm: React.FC = () => {
                   <option value="5">União Estável</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Função</label>
+                <div 
+                  onClick={handleOpenFuncaoModal} 
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleOpenFuncaoModal()}
+                >
+                  <input
+                    type="text"
+                    readOnly
+                    value={funcaoSelecionada ? funcaoSelecionada.funcaoFuncionario : 'Selecione...'}
+                    className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
+                    placeholder="Selecione..."
+                  />
+                  <FaSearch className="text-gray-500" />
+                </div>
+              </div>
             </div>
+            
 
             {/* Segunda linha: Endereço, Número, Complemento, Bairro, CEP, Cidade */}
             <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '3fr 150px 1.5fr 1.5fr 120px 2fr' }}>
@@ -470,7 +470,7 @@ const FuncionarioForm: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
                 <div 
                   onClick={handleOpenCidadeModal} 
-                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"
+                  className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative"
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && handleOpenCidadeModal()}
@@ -478,7 +478,7 @@ const FuncionarioForm: React.FC = () => {
                   <input
                     type="text"
                     readOnly
-                    value={cidadeSelecionada ? cidadeSelecionada.nome : 'Selecione...'}
+                    value={cidadeSelecionada ? `${cidadeSelecionada.nome} - ${cidadeSelecionada.estado?.uf}` : 'Selecione...'}
                     className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
                     placeholder="Selecione..."
                   />
@@ -553,7 +553,7 @@ const FuncionarioForm: React.FC = () => {
             </div>
 
             {/* Quarta linha: RG, CPF, CNH, Data Validade CNH, Salário */}
-            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '150px 180px 150px 150px 150px' }}>
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '160px 190px 160px 160px 160px 160px 160px' }}>
               <FormField
                 label="RG"
                 name="rgInscricaoEstadual"
@@ -598,10 +598,6 @@ const FuncionarioForm: React.FC = () => {
                 onChange={handleChange}
                 placeholder="0.00"
               />
-            </div>
-
-            {/* Quinta linha: Data Admissão, Data Demissão */}
-            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '150px 150px 1fr' }}>
               <FormField
                 label="Data Admissão"
                 name="dataAdmissao"
@@ -617,11 +613,9 @@ const FuncionarioForm: React.FC = () => {
                 value={formData.dataDemissao}
                 onChange={handleChange}
               />
-
-              <div></div>
             </div>
 
-            {/* Sexta linha: Observação */}
+            {/* Quinta linha: Observação */}
             <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Observação</label>

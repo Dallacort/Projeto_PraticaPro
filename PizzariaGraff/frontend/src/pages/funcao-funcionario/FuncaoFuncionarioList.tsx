@@ -62,7 +62,7 @@ const FuncaoFuncionarioList: React.FC = () => {
       header: 'Função', 
       accessor: 'funcaoFuncionario',
       cell: (item: FuncaoFuncionario) => {
-        const displayName = item.funcaoFuncionario || item.descricao || 'Sem nome';
+        const displayName = item.funcaoFuncionario || 'Sem nome';
         return <span>{displayName}</span>;
       }
     },

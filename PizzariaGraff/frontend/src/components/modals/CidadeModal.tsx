@@ -203,7 +203,24 @@ const CidadeModal: React.FC<CidadeModalProps> = ({ isOpen, onClose, onSelect }) 
               </>
             ) : (
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold mb-4">Cadastrar Nova Cidade</h3>
+                {/* Título da seção e Toggle Ativo */}
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">Cadastrar Nova Cidade</h3>
+                  <label className="flex items-center cursor-pointer">
+                    <span className="mr-2 text-sm font-medium text-gray-700">Ativo</span>
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        name="ativo"
+                        id="ativoNovaCidade"
+                        checked={novaCidadeData.ativo}
+                        onChange={handleNovaCidadeChange}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                    </div>
+                  </label>
+                </div>
                 
                 <FormField
                   label="Nome da Cidade"
@@ -234,18 +251,7 @@ const CidadeModal: React.FC<CidadeModalProps> = ({ isOpen, onClose, onSelect }) 
                   </div>
                 </div>
 
-                <div className="flex items-center">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      name="ativo"
-                      checked={novaCidadeData.ativo}
-                      onChange={handleNovaCidadeChange}
-                      className="h-4 w-4 text-blue-600"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Cidade Ativa</span>
-                  </label>
-                </div>
+
               </div>
             )}
           </div>

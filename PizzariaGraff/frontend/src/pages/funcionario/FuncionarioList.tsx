@@ -69,16 +69,16 @@ const FuncionarioList: React.FC = () => {
       header: 'CPF/CNPJ', 
       accessor: 'cpfCpnj',
       cell: (item: Funcionario) => (
-        <span>{item.cpfCpnj || item.cpf || 'N/A'}</span>
+        <span>{item.cpfCpnj || 'N/A'}</span>
       )
     },
     { header: 'Telefone', accessor: 'telefone' },
     { header: 'E-mail', accessor: 'email' },
     { 
       header: 'Função', 
-      accessor: 'funcaoFuncionario.descricao',
+      accessor: 'funcaoFuncionario.funcaoFuncionario',
       cell: (item: Funcionario) => (
-        <span>{item.funcaoFuncionario?.descricao || item.cargo || 'N/A'}</span>
+        <span>{item.funcaoFuncionario?.funcaoFuncionario || item.cargo || 'N/A'}</span>
       )
     },
     { 

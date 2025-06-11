@@ -6,7 +6,33 @@ const adaptFuncionarioFromApi = (funcionario: any): Funcionario => {
   // Criar uma estrutura aninhada de cidade se necessário
   let cidade = null;
   if (funcionario.cidade) {
-    cidade = funcionario.cidade;
+    // Garantir que a estrutura esteja completa, mesmo se vier do backend
+    cidade = {
+      ...funcionario.cidade,
+      id: funcionario.cidade.id || funcionario.cidadeId,
+      nome: funcionario.cidade.nome || funcionario.cidadeNome,
+      estado: funcionario.cidade.estado || null
+    };
+    
+    // Se não tem estado na cidade mas temos dados de estado, construir
+    if (!cidade.estado && funcionario.estadoId && funcionario.estadoNome) {
+      cidade.estado = {
+        id: funcionario.estadoId,
+        nome: funcionario.estadoNome,
+        uf: funcionario.estadoUf || '',
+        pais: null
+      };
+      
+      // Se temos informações do país, adicionar
+      if (funcionario.paisId && funcionario.paisNome) {
+        cidade.estado.pais = {
+          id: funcionario.paisId,
+          nome: funcionario.paisNome,
+          codigo: funcionario.paisCodigo || '',
+          sigla: funcionario.paisSigla || ''
+        };
+      }
+    }
   } else if (funcionario.cidadeId && funcionario.cidadeNome) {
     cidade = {
       id: funcionario.cidadeId,
@@ -38,7 +64,11 @@ const adaptFuncionarioFromApi = (funcionario: any): Funcionario => {
   // Criar estrutura de função de funcionário se necessário
   let funcaoFuncionario = null;
   if (funcionario.funcaoFuncionario) {
-    funcaoFuncionario = funcionario.funcaoFuncionario;
+    // Aplicar a mesma lógica do adaptador de função
+    funcaoFuncionario = {
+      ...funcionario.funcaoFuncionario,
+      funcaoFuncionario: funcionario.funcaoFuncionario.funcaoFuncionario || funcionario.funcaoFuncionario.descricao || ''
+    };
   } else if (funcionario.funcaoFuncionarioId && funcionario.funcaoFuncionarioNome) {
     funcaoFuncionario = {
       id: funcionario.funcaoFuncionarioId,
