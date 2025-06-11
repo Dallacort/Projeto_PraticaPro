@@ -70,11 +70,50 @@ public class FuncaoFuncionarioController {
     @Operation(summary = "Atualiza uma função de funcionário")
     public ResponseEntity<FuncaoFuncionarioDTO> atualizar(@PathVariable Long id, @RequestBody FuncaoFuncionarioDTO funcaoDTO) {
         try {
+            System.out.println("=== CONTROLLER PUT ===");
+            System.out.println("ID: " + id);
+            System.out.println("DTO recebido:");
+            System.out.println("FuncaoFuncionario: " + funcaoDTO.getFuncaoFuncionario());
+            System.out.println("RequerCNH: " + funcaoDTO.getRequerCNH());
+            System.out.println("CargaHoraria: " + funcaoDTO.getCargaHoraria());
+            System.out.println("Descricao: " + funcaoDTO.getDescricao());
+            System.out.println("Observacao: " + funcaoDTO.getObservacao());
+            System.out.println("Situacao: " + funcaoDTO.getSituacao());
+            System.out.println("SalarioBase: " + funcaoDTO.getSalarioBase());
+            System.out.println("Ativo: " + funcaoDTO.getAtivo());
+            
             FuncaoFuncionario funcao = funcaoDTO.toEntity();
             funcao.setId(id);
+            
+            System.out.println("Entity antes de salvar:");
+            System.out.println("FuncaoFuncionario: " + funcao.getFuncaoFuncionario());
+            System.out.println("RequerCNH: " + funcao.getRequerCNH());
+            System.out.println("CargaHoraria: " + funcao.getCargaHoraria());
+            System.out.println("Descricao: " + funcao.getDescricao());
+            System.out.println("Observacao: " + funcao.getObservacao());
+            System.out.println("Situacao: " + funcao.getSituacao());
+            System.out.println("SalarioBase: " + funcao.getSalarioBase());
+            System.out.println("Ativo: " + funcao.getAtivo());
+            
             funcao = funcaoFuncionarioService.save(funcao);
-            return ResponseEntity.ok(FuncaoFuncionarioDTO.fromEntity(funcao));
+            
+            FuncaoFuncionarioDTO responseDTO = FuncaoFuncionarioDTO.fromEntity(funcao);
+            
+            System.out.println("DTO de resposta:");
+            System.out.println("FuncaoFuncionario: " + responseDTO.getFuncaoFuncionario());
+            System.out.println("RequerCNH: " + responseDTO.getRequerCNH());
+            System.out.println("CargaHoraria: " + responseDTO.getCargaHoraria());
+            System.out.println("Descricao: " + responseDTO.getDescricao());
+            System.out.println("Observacao: " + responseDTO.getObservacao());
+            System.out.println("Situacao: " + responseDTO.getSituacao());
+            System.out.println("SalarioBase: " + responseDTO.getSalarioBase());
+            System.out.println("Ativo: " + responseDTO.getAtivo());
+            System.out.println("=====================");
+            
+            return ResponseEntity.ok(responseDTO);
         } catch (RuntimeException e) {
+            System.err.println("Erro no controller: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().build();
         }
     }

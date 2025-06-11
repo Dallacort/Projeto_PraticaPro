@@ -1,0 +1,92 @@
+{
+  "info": {
+    "name": "Funcionário API Tests",
+    "description": "Testes para a API de funcionários com data_nascimento como DATE"
+  },
+  "requests": [
+    {
+      "name": "POST - Criar Funcionário",
+      "method": "POST",
+      "url": "http://localhost:8081/funcionarios",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "funcionario": "Ana Paula Tannouri de Oliveira",
+        "apelido": "Ana",
+        "telefone": "45991552217",
+        "email": "ana.tannouri@gmail.com",
+        "endereco": "Rua Índia",
+        "numero": "151",
+        "complemento": "Casa",
+        "bairro": "Campos do Iguaçu",
+        "cep": "85857520",
+        "cidadeId": 1,
+        "dataAdmissao": "2024-01-15",
+        "dataDemissao": null,
+        "rgInscricaoEstadual": "110089325",
+        "cnh": "12345678901",
+        "dataValidadeCnh": "2026-12-31",
+        "sexo": 2,
+        "observacao": "Nova funcionária",
+        "estadoCivil": 1,
+        "salario": 5000,
+        "nacionalidadeId": 1,
+        "dataNascimento": "1990-04-14",
+        "funcaoFuncionarioId": 1,
+        "cpfCpnj": "12345678901",
+        "ativo": true
+      }
+    },
+    {
+      "name": "PUT - Atualizar Funcionário (ID 1)",
+      "method": "PUT", 
+      "url": "http://localhost:8081/funcionarios/1",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "funcionario": "Ana Paula Tannouri de Oliveira - Atualizada",
+        "apelido": "Ana Paula",
+        "telefone": "45991552218",
+        "email": "ana.tannouri.updated@gmail.com",
+        "endereco": "Rua Índia Atualizada",
+        "numero": "152",
+        "complemento": "Casa A",
+        "bairro": "Campos do Iguaçu",
+        "cep": "85857521",
+        "cidadeId": 1,
+        "dataAdmissao": "2024-01-15",
+        "dataDemissao": null,
+        "rgInscricaoEstadual": "110089326",
+        "cnh": "98765432109",
+        "dataValidadeCnh": "2027-12-31",
+        "sexo": 2,
+        "observacao": "Funcionária atualizada com nova data de nascimento",
+        "estadoCivil": 2,
+        "salario": 5500,
+        "nacionalidadeId": 1,
+        "dataNascimento": "1985-08-22",
+        "funcaoFuncionarioId": 1,
+        "cpfCpnj": "98765432109",
+        "ativo": true
+      }
+    },
+    {
+      "name": "GET - Listar Funcionários",
+      "method": "GET",
+      "url": "http://localhost:8081/funcionarios",
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "name": "GET - Buscar Funcionário por ID",
+      "method": "GET",
+      "url": "http://localhost:8081/funcionarios/1",
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    }
+  ]
+} 

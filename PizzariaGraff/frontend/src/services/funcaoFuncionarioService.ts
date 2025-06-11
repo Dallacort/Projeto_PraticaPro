@@ -5,8 +5,17 @@ import { FuncaoFuncionario } from '../types';
 const adaptFuncaoFromApi = (funcao: any): FuncaoFuncionario => {
   return {
     id: funcao.id,
+    funcaoFuncionario: funcao.funcaoFuncionario || '',
+    requerCNH: funcao.requerCNH || false,
+    cargaHoraria: funcao.cargaHoraria || null,
     descricao: funcao.descricao || '',
-    salarioBase: funcao.salarioBase || 0,
+    observacao: funcao.observacao || '',
+    situacao: funcao.situacao || '',
+    dataCriacao: funcao.dataCriacao || null,
+    dataAlteracao: funcao.dataAlteracao || null,
+    
+    // Campos legados
+    salarioBase: funcao.salarioBase || null,
     ativo: funcao.ativo !== undefined ? funcao.ativo : true,
     dataCadastro: funcao.dataCadastro || null,
     ultimaModificacao: funcao.ultimaModificacao || null
@@ -14,12 +23,24 @@ const adaptFuncaoFromApi = (funcao: any): FuncaoFuncionario => {
 };
 
 // Adaptador para converter dados do frontend para a API
-const adaptFuncaoToApi = (funcao: Omit<FuncaoFuncionario, 'id' | 'dataCadastro' | 'ultimaModificacao'>): any => {
-  return {
-    descricao: funcao.descricao,
-    salarioBase: funcao.salarioBase || 0,
-    ativo: funcao.ativo !== undefined ? funcao.ativo : true
+const adaptFuncaoToApi = (funcao: Omit<FuncaoFuncionario, 'id' | 'dataCriacao' | 'dataAlteracao' | 'dataCadastro' | 'ultimaModificacao'>): any => {
+  console.log('Dados recebidos no adaptador:', funcao);
+  
+  const payload = {
+    funcaoFuncionario: funcao.funcaoFuncionario?.trim() || null,
+    requerCNH: Boolean(funcao.requerCNH),
+    cargaHoraria: funcao.cargaHoraria && funcao.cargaHoraria.toString().trim() ? Number(funcao.cargaHoraria) : null,
+    descricao: funcao.descricao?.trim() || null,
+    observacao: funcao.observacao?.trim() || null,
+    situacao: funcao.situacao?.trim() || null,
+    
+    // Campos legados
+    salarioBase: funcao.salarioBase && funcao.salarioBase.toString().trim() ? Number(funcao.salarioBase) : null,
+    ativo: Boolean(funcao.ativo)
   };
+  
+  console.log('Payload após conversão:', payload);
+  return payload;
 };
 
 // Busca todas as funções de funcionário
@@ -66,10 +87,11 @@ export const getFuncaoFuncionario = async (id: number): Promise<FuncaoFuncionari
 };
 
 // Cria uma nova função
-export const createFuncaoFuncionario = async (funcao: Omit<FuncaoFuncionario, 'id' | 'dataCadastro' | 'ultimaModificacao'>): Promise<FuncaoFuncionario> => {
+export const createFuncaoFuncionario = async (funcao: Omit<FuncaoFuncionario, 'id' | 'dataCriacao' | 'dataAlteracao' | 'dataCadastro' | 'ultimaModificacao'>): Promise<FuncaoFuncionario> => {
   try {
+    console.log('Dados ORIGINAIS recebidos na função create:', funcao);
     const dataToSend = adaptFuncaoToApi(funcao);
-    console.log('Dados enviados para API (função funcionário):', dataToSend);
+    console.log('Dados FINAIS enviados para API (função funcionário):', dataToSend);
     const response = await api.post('/funcoes-funcionario', dataToSend);
     
     if (response.data) {
@@ -84,19 +106,39 @@ export const createFuncaoFuncionario = async (funcao: Omit<FuncaoFuncionario, 'i
 };
 
 // Atualiza uma função existente
-export const updateFuncaoFuncionario = async (id: number, funcao: Omit<FuncaoFuncionario, 'id' | 'dataCadastro' | 'ultimaModificacao'>): Promise<FuncaoFuncionario> => {
+export const updateFuncaoFuncionario = async (id: number, funcao: Omit<FuncaoFuncionario, 'id' | 'dataCriacao' | 'dataAlteracao' | 'dataCadastro' | 'ultimaModificacao'>): Promise<FuncaoFuncionario> => {
   try {
-    const dataToSend = adaptFuncaoToApi(funcao);
-    console.log(`Dados enviados para API (função ${id}):`, dataToSend);
+    console.log(`Dados ORIGINAIS recebidos no update (ID ${id}):`, funcao);
+    
+    // TESTE: Enviando dados DIRETOS sem adaptador
+    const dataToSend = {
+      funcaoFuncionario: funcao.funcaoFuncionario,
+      requerCNH: funcao.requerCNH,
+      cargaHoraria: Number(funcao.cargaHoraria),
+      descricao: funcao.descricao,
+      observacao: funcao.observacao,
+      situacao: funcao.situacao,
+      salarioBase: Number(funcao.salarioBase),
+      ativo: funcao.ativo
+    };
+    
+    console.log(`Dados DIRETOS enviados para API (função ${id}):`, dataToSend);
+    
     const response = await api.put(`/funcoes-funcionario/${id}`, dataToSend);
+    
+    console.log(`Resposta da API (função ${id}):`, response.data);
     
     if (response.data) {
       return adaptFuncaoFromApi(response.data);
     }
     
     throw new Error(`Resposta inválida da API ao atualizar função ${id}`);
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Erro ao atualizar função ${id}:`, error);
+    if (error.response) {
+      console.error('Erro da API:', error.response.data);
+      console.error('Status:', error.response.status);
+    }
     throw error;
   }
 };
@@ -109,4 +151,4 @@ export const deleteFuncaoFuncionario = async (id: number): Promise<void> => {
     console.error(`Erro ao excluir função ${id}:`, error);
     throw error;
   }
-}; 
+};

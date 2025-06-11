@@ -29,12 +29,40 @@ public class FuncaoFuncionarioService {
     }
     
     public FuncaoFuncionario save(FuncaoFuncionario funcao) {
+        System.out.println("=== SERVICE SAVE ===");
+        System.out.println("Dados recebidos no service:");
+        System.out.println("ID: " + funcao.getId());
+        System.out.println("FuncaoFuncionario: " + funcao.getFuncaoFuncionario());
+        System.out.println("RequerCNH: " + funcao.getRequerCNH());
+        System.out.println("CargaHoraria: " + funcao.getCargaHoraria());
+        System.out.println("Descricao: " + funcao.getDescricao());
+        System.out.println("Observacao: " + funcao.getObservacao());
+        System.out.println("Situacao: " + funcao.getSituacao());
+        System.out.println("SalarioBase: " + funcao.getSalarioBase());
+        System.out.println("Ativo: " + funcao.getAtivo());
+        
         // Validações básicas antes de salvar
-        if (funcao.getDescricao() == null || funcao.getDescricao().trim().isEmpty()) {
-            throw new RuntimeException("Descrição da função é obrigatória");
+        // Pelo menos um dos campos principais deve estar preenchido
+        if ((funcao.getFuncaoFuncionario() == null || funcao.getFuncaoFuncionario().trim().isEmpty()) &&
+            (funcao.getDescricao() == null || funcao.getDescricao().trim().isEmpty())) {
+            throw new RuntimeException("Nome da função ou descrição é obrigatório");
         }
         
-        return funcaoFuncionarioRepository.save(funcao);
+        FuncaoFuncionario saved = funcaoFuncionarioRepository.save(funcao);
+        
+        System.out.println("=== DADOS SALVOS ===");
+        System.out.println("ID: " + saved.getId());
+        System.out.println("FuncaoFuncionario: " + saved.getFuncaoFuncionario());
+        System.out.println("RequerCNH: " + saved.getRequerCNH());
+        System.out.println("CargaHoraria: " + saved.getCargaHoraria());
+        System.out.println("Descricao: " + saved.getDescricao());
+        System.out.println("Observacao: " + saved.getObservacao());
+        System.out.println("Situacao: " + saved.getSituacao());
+        System.out.println("SalarioBase: " + saved.getSalarioBase());
+        System.out.println("Ativo: " + saved.getAtivo());
+        System.out.println("===================");
+        
+        return saved;
     }
     
     public void deleteById(Long id) {

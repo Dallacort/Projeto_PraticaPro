@@ -25,17 +25,17 @@ public class Funcionario {
     private Integer sexo;        // int(11) - (1=Masculino, 2=Feminino)
     private String observacao;   // varchar(255) - novo campo
     private Integer estadoCivil; // int(11) - mudou de String para Integer
-    private Integer idBrasileiro; // int(11) - novo campo
     private Integer salario;     // int(11) - novo campo
-    private LocalDate situacao;  // date - novo campo
-    private Integer nacionalidade; // int(11) - mudou de String para Integer
-    private Integer dataNascimento; // int(11) - mudou de LocalDate para Integer (ano)
+    private Long nacionalidadeId; // bigint(20) - FK para Pais (renomeado de nacionalidade)
+    private LocalDate dataNascimento; // date - campo de data de nascimento
     private Long funcaoFuncionarioId; // bigint(20) - FK para FuncaoFuncionario
     private String cpfCpnj;     // varchar(14)
+    private Boolean ativo;      // boolean - campo de controle
     
     // Relacionamentos
     private Cidade cidade;
     private FuncaoFuncionario funcaoFuncionario;
+    private Pais nacionalidade; // Relacionamento com Pais
 
     // Getters e Setters
     public Long getId() {
@@ -206,14 +206,6 @@ public class Funcionario {
         this.estadoCivil = estadoCivil;
     }
 
-    public Integer getIdBrasileiro() {
-        return idBrasileiro;
-    }
-
-    public void setIdBrasileiro(Integer idBrasileiro) {
-        this.idBrasileiro = idBrasileiro;
-    }
-
     public Integer getSalario() {
         return salario;
     }
@@ -222,27 +214,19 @@ public class Funcionario {
         this.salario = salario;
     }
 
-    public LocalDate getSituacao() {
-        return situacao;
+    public Long getNacionalidadeId() {
+        return nacionalidadeId;
     }
 
-    public void setSituacao(LocalDate situacao) {
-        this.situacao = situacao;
+    public void setNacionalidadeId(Long nacionalidadeId) {
+        this.nacionalidadeId = nacionalidadeId;
     }
 
-    public Integer getNacionalidade() {
-        return nacionalidade;
-    }
-
-    public void setNacionalidade(Integer nacionalidade) {
-        this.nacionalidade = nacionalidade;
-    }
-
-    public Integer getDataNascimento() {
+    public LocalDate getDataNascimento() {
         return dataNascimento;
     }
 
-    public void setDataNascimento(Integer dataNascimento) {
+    public void setDataNascimento(LocalDate dataNascimento) {
         this.dataNascimento = dataNascimento;
     }
 
@@ -262,6 +246,14 @@ public class Funcionario {
         this.cpfCpnj = cpfCpnj;
     }
 
+    public Boolean getAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
+    }
+
     public Cidade getCidade() {
         return cidade;
     }
@@ -278,6 +270,14 @@ public class Funcionario {
         this.funcaoFuncionario = funcaoFuncionario;
     }
 
+    public Pais getNacionalidade() {
+        return nacionalidade;
+    }
+
+    public void setNacionalidade(Pais nacionalidade) {
+        this.nacionalidade = nacionalidade;
+    }
+
     // Métodos auxiliares para compatibilidade com o repository
     public Integer getEstadoCivilInt() {
         return estadoCivil;
@@ -287,40 +287,11 @@ public class Funcionario {
         this.estadoCivil = estadoCivil;
     }
 
-    public Integer getNacionalidadeInt() {
-        return nacionalidade;
-    }
-
-    public void setNacionalidadeInt(Integer nacionalidade) {
-        this.nacionalidade = nacionalidade;
-    }
-
     public Integer getDataNascimentoAno() {
-        return dataNascimento;
+        return dataNascimento != null ? dataNascimento.getYear() : null;
     }
 
-    public void setDataNascimentoAno(Integer dataNascimento) {
-        this.dataNascimento = dataNascimento;
-    }
-
-    // Métodos auxiliares para compatibilidade com DTOs antigos
-    @Deprecated
-    public String getEstadoCivilString() {
-        return estadoCivil != null ? estadoCivil.toString() : null;
-    }
-
-    @Deprecated
-    public void setEstadoCivilString(String estadoCivil) {
-        this.estadoCivil = estadoCivil != null ? Integer.valueOf(estadoCivil) : null;
-    }
-
-    @Deprecated
-    public String getNacionalidadeString() {
-        return nacionalidade != null ? nacionalidade.toString() : null;
-    }
-
-    @Deprecated
-    public void setNacionalidadeString(String nacionalidade) {
-        this.nacionalidade = nacionalidade != null ? Integer.valueOf(nacionalidade) : null;
+    public void setDataNascimentoAno(Integer ano) {
+        this.dataNascimento = ano != null ? LocalDate.of(ano, 1, 1) : null;
     }
 } 

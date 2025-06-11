@@ -42,16 +42,37 @@ public class FuncionarioService {
     }
     
     public Funcionario save(Funcionario funcionario) {
+        System.out.println("=== SERVICE SAVE FUNCIONARIO ===");
+        System.out.println("Dados recebidos no service:");
+        System.out.println("ID: " + funcionario.getId());
+        System.out.println("Funcionario: " + funcionario.getFuncionario());
+        System.out.println("Email: " + funcionario.getEmail());
+        System.out.println("CidadeId: " + funcionario.getCidadeId());
+        System.out.println("NacionalidadeId: " + funcionario.getNacionalidadeId());
+        System.out.println("FuncaoFuncionarioId: " + funcionario.getFuncaoFuncionarioId());
+        System.out.println("Ativo: " + funcionario.getAtivo());
+        
         // Validações básicas antes de salvar
         if (funcionario.getFuncionario() == null || funcionario.getFuncionario().trim().isEmpty()) {
+            System.err.println("ERRO: Nome do funcionário é obrigatório");
             throw new RuntimeException("Nome do funcionário é obrigatório");
         }
         
         if (funcionario.getEmail() == null || funcionario.getEmail().trim().isEmpty()) {
+            System.err.println("ERRO: Email do funcionário é obrigatório");
             throw new RuntimeException("Email do funcionário é obrigatório");
         }
         
-        return funcionarioRepository.save(funcionario);
+        System.out.println("Validações OK, chamando repository...");
+        Funcionario saved = funcionarioRepository.save(funcionario);
+        
+        System.out.println("=== DADOS SALVOS NO SERVICE ===");
+        System.out.println("ID: " + saved.getId());
+        System.out.println("Funcionario: " + saved.getFuncionario());
+        System.out.println("Email: " + saved.getEmail());
+        System.out.println("DataAlteracao: " + saved.getDataAlteracao());
+        
+        return saved;
     }
     
     public void deleteById(Long id) {

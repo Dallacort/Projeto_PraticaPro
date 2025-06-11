@@ -51,7 +51,7 @@ const FuncaoFuncionarioModal: React.FC<FuncaoFuncionarioModalProps> = ({
 
     if (searchTerm) {
       filtered = filtered.filter(funcao =>
-        funcao.descricao.toLowerCase().includes(searchTerm.toLowerCase())
+        (funcao.funcaoFuncionario || funcao.descricao)?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -105,10 +105,13 @@ const FuncaoFuncionarioModal: React.FC<FuncaoFuncionarioModalProps> = ({
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Descrição
+                    Função
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Salário Base
+                    Carga Horária
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    CNH
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ação
@@ -118,7 +121,7 @@ const FuncaoFuncionarioModal: React.FC<FuncaoFuncionarioModalProps> = ({
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredFuncoes.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
                       Nenhuma função encontrada
                     </td>
                   </tr>
@@ -132,10 +135,15 @@ const FuncaoFuncionarioModal: React.FC<FuncaoFuncionarioModalProps> = ({
                       onClick={() => handleSelect(funcao)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {funcao.descricao}
+                        {funcao.funcaoFuncionario || funcao.descricao || 'Nome não informado'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {funcao.salarioBase ? `R$ ${funcao.salarioBase.toFixed(2)}` : '-'}
+                        {funcao.cargaHoraria ? `${funcao.cargaHoraria}h/sem` : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className={`px-2 py-1 rounded text-xs ${funcao.requerCNH ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-600'}`}>
+                          {funcao.requerCNH ? 'Sim' : 'Não'}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button

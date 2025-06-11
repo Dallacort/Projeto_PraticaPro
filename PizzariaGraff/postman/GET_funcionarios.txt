@@ -1,0 +1,13 @@
+### GET - Listar Todos os Funcionários
+URL: http://localhost:8081/funcionarios
+Method: GET
+Headers: Content-Type: application/json
+
+### GET - Buscar Funcionário por ID
+URL: http://localhost:8081/funcionarios/1
+Method: GET
+Headers: Content-Type: application/json
+
+IMPORTANTE: 
+- Use o ID retornado no POST para testar o GET individual
+- Exemplo: se POST criou ID 5, use: http://localhost:8081/funcionarios/5 

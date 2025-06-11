@@ -1,14 +1,34 @@
 package com.example.PizzariaGraff.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 public class FuncaoFuncionario {
     private Long id;
-    private String descricao;
+    private String funcaoFuncionario;    // Nome da função (campo principal)
+    private Boolean requerCNH;           // Se requer CNH
+    private BigDecimal cargaHoraria;     // Carga horária
+    private String descricao;            // Descrição da função
+    private String observacao;           // Observações
+    private LocalDate situacao;          // Data da situação
+    private LocalDateTime dataCriacao;   // Data de criação
+    private LocalDateTime dataAlteracao; // Data de alteração
+    
+    // Campos legados (manter compatibilidade)
     private Double salarioBase;
     private Boolean ativo = true;
     private LocalDateTime dataCadastro;
     private LocalDateTime ultimaModificacao;
+
+    // Construtores
+    public FuncaoFuncionario() {}
+
+    public FuncaoFuncionario(String funcaoFuncionario) {
+        this.funcaoFuncionario = funcaoFuncionario;
+        this.ativo = true;
+        this.requerCNH = false;
+    }
 
     // Getters e Setters
     public Long getId() {
@@ -19,6 +39,30 @@ public class FuncaoFuncionario {
         this.id = id;
     }
 
+    public String getFuncaoFuncionario() {
+        return funcaoFuncionario;
+    }
+
+    public void setFuncaoFuncionario(String funcaoFuncionario) {
+        this.funcaoFuncionario = funcaoFuncionario;
+    }
+
+    public Boolean getRequerCNH() {
+        return requerCNH;
+    }
+
+    public void setRequerCNH(Boolean requerCNH) {
+        this.requerCNH = requerCNH;
+    }
+
+    public BigDecimal getCargaHoraria() {
+        return cargaHoraria;
+    }
+
+    public void setCargaHoraria(BigDecimal cargaHoraria) {
+        this.cargaHoraria = cargaHoraria;
+    }
+
     public String getDescricao() {
         return descricao;
     }
@@ -27,6 +71,39 @@ public class FuncaoFuncionario {
         this.descricao = descricao;
     }
 
+    public String getObservacao() {
+        return observacao;
+    }
+
+    public void setObservacao(String observacao) {
+        this.observacao = observacao;
+    }
+
+    public LocalDate getSituacao() {
+        return situacao;
+    }
+
+    public void setSituacao(LocalDate situacao) {
+        this.situacao = situacao;
+    }
+
+    public LocalDateTime getDataCriacao() {
+        return dataCriacao;
+    }
+
+    public void setDataCriacao(LocalDateTime dataCriacao) {
+        this.dataCriacao = dataCriacao;
+    }
+
+    public LocalDateTime getDataAlteracao() {
+        return dataAlteracao;
+    }
+
+    public void setDataAlteracao(LocalDateTime dataAlteracao) {
+        this.dataAlteracao = dataAlteracao;
+    }
+
+    // Campos legados (manter compatibilidade)
     public Double getSalarioBase() {
         return salarioBase;
     }
@@ -36,7 +113,11 @@ public class FuncaoFuncionario {
     }
 
     public Boolean getAtivo() {
-        return ativo;
+        if (ativo != null) {
+            return ativo;
+        }
+        // Se ativo não foi definido, usa a situacao como referência
+        return situacao != null;
     }
 
     public void setAtivo(Boolean ativo) {
@@ -44,7 +125,7 @@ public class FuncaoFuncionario {
     }
 
     public LocalDateTime getDataCadastro() {
-        return dataCadastro;
+        return dataCadastro != null ? dataCadastro : dataCriacao;
     }
 
     public void setDataCadastro(LocalDateTime dataCadastro) {
@@ -52,10 +133,21 @@ public class FuncaoFuncionario {
     }
 
     public LocalDateTime getUltimaModificacao() {
-        return ultimaModificacao;
+        return ultimaModificacao != null ? ultimaModificacao : dataAlteracao;
     }
 
     public void setUltimaModificacao(LocalDateTime ultimaModificacao) {
         this.ultimaModificacao = ultimaModificacao;
+    }
+
+    @Override
+    public String toString() {
+        return "FuncaoFuncionario{" +
+                "id=" + id +
+                ", funcaoFuncionario='" + funcaoFuncionario + '\'' +
+                ", requerCNH=" + requerCNH +
+                ", cargaHoraria=" + cargaHoraria +
+                ", ativo=" + ativo +
+                '}';
     }
 } 

@@ -1,6 +1,7 @@
 package com.example.PizzariaGraff.dto;
 
 import com.example.PizzariaGraff.model.Funcionario;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
@@ -46,9 +47,11 @@ public class FuncionarioDTO {
     private String cidadeNome;
     
     @Schema(description = "Data de admissão", example = "2024-01-15")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dataAdmissao;
     
     @Schema(description = "Data de demissão", example = "2024-12-31")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dataDemissao;
     
     @Schema(description = "Data de criação do registro")
@@ -64,6 +67,7 @@ public class FuncionarioDTO {
     private String cnh;
     
     @Schema(description = "Data de validade da CNH", example = "2025-12-31")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dataValidadeCnh;
     
     @Schema(description = "Sexo (1-Masculino, 2-Feminino)", example = "2")
@@ -75,20 +79,18 @@ public class FuncionarioDTO {
     @Schema(description = "Estado civil (código)", example = "1")
     private Integer estadoCivil;
     
-    @Schema(description = "ID Brasileiro", example = "1")
-    private Integer idBrasileiro;
-    
     @Schema(description = "Salário", example = "5000")
     private Integer salario;
     
-    @Schema(description = "Situação", example = "2024-01-01")
-    private LocalDate situacao;
+    @Schema(description = "ID da nacionalidade (FK para Pais)", example = "1")
+    private Long nacionalidadeId;
     
-    @Schema(description = "Nacionalidade (código)", example = "1")
-    private Integer nacionalidade;
+    @Schema(description = "Nome da nacionalidade")
+    private String nacionalidadeNome;
     
-    @Schema(description = "Ano de nascimento", example = "1990")
-    private Integer dataNascimento;
+    @Schema(description = "Data de nascimento", example = "1990-05-15")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate dataNascimento;
     
     @Schema(description = "ID da função do funcionário", example = "1")
     private Long funcaoFuncionarioId;
@@ -98,6 +100,9 @@ public class FuncionarioDTO {
     
     @Schema(description = "CPF ou CNPJ", example = "98765432101")
     private String cpfCpnj;
+    
+    @Schema(description = "Status ativo/inativo", example = "true")
+    private Boolean ativo;
 
     // Constructors
     public FuncionarioDTO() {}
@@ -124,13 +129,12 @@ public class FuncionarioDTO {
         this.sexo = funcionario.getSexo();
         this.observacao = funcionario.getObservacao();
         this.estadoCivil = funcionario.getEstadoCivil();
-        this.idBrasileiro = funcionario.getIdBrasileiro();
         this.salario = funcionario.getSalario();
-        this.situacao = funcionario.getSituacao();
-        this.nacionalidade = funcionario.getNacionalidade();
+        this.nacionalidadeId = funcionario.getNacionalidadeId();
         this.dataNascimento = funcionario.getDataNascimento();
         this.funcaoFuncionarioId = funcionario.getFuncaoFuncionarioId();
         this.cpfCpnj = funcionario.getCpfCpnj();
+        this.ativo = funcionario.getAtivo();
         
         // Relacionamentos
         if (funcionario.getCidade() != null) {
@@ -139,6 +143,10 @@ public class FuncionarioDTO {
         
         if (funcionario.getFuncaoFuncionario() != null) {
             this.funcaoFuncionarioNome = funcionario.getFuncaoFuncionario().getDescricao();
+        }
+        
+        if (funcionario.getNacionalidade() != null) {
+            this.nacionalidadeNome = funcionario.getNacionalidade().getNome();
         }
     }
 
@@ -166,13 +174,12 @@ public class FuncionarioDTO {
         funcionario.setSexo(this.sexo);
         funcionario.setObservacao(this.observacao);
         funcionario.setEstadoCivil(this.estadoCivil);
-        funcionario.setIdBrasileiro(this.idBrasileiro);
         funcionario.setSalario(this.salario);
-        funcionario.setSituacao(this.situacao);
-        funcionario.setNacionalidade(this.nacionalidade);
+        funcionario.setNacionalidadeId(this.nacionalidadeId);
         funcionario.setDataNascimento(this.dataNascimento);
         funcionario.setFuncaoFuncionarioId(this.funcaoFuncionarioId);
         funcionario.setCpfCpnj(this.cpfCpnj);
+        funcionario.setAtivo(this.ativo);
         return funcionario;
     }
 
@@ -353,14 +360,6 @@ public class FuncionarioDTO {
         this.estadoCivil = estadoCivil;
     }
 
-    public Integer getIdBrasileiro() {
-        return idBrasileiro;
-    }
-
-    public void setIdBrasileiro(Integer idBrasileiro) {
-        this.idBrasileiro = idBrasileiro;
-    }
-
     public Integer getSalario() {
         return salario;
     }
@@ -369,27 +368,19 @@ public class FuncionarioDTO {
         this.salario = salario;
     }
 
-    public LocalDate getSituacao() {
-        return situacao;
+    public Long getNacionalidadeId() {
+        return nacionalidadeId;
     }
 
-    public void setSituacao(LocalDate situacao) {
-        this.situacao = situacao;
+    public void setNacionalidadeId(Long nacionalidadeId) {
+        this.nacionalidadeId = nacionalidadeId;
     }
 
-    public Integer getNacionalidade() {
-        return nacionalidade;
-    }
-
-    public void setNacionalidade(Integer nacionalidade) {
-        this.nacionalidade = nacionalidade;
-    }
-
-    public Integer getDataNascimento() {
+    public LocalDate getDataNascimento() {
         return dataNascimento;
     }
 
-    public void setDataNascimento(Integer dataNascimento) {
+    public void setDataNascimento(LocalDate dataNascimento) {
         this.dataNascimento = dataNascimento;
     }
 
@@ -415,5 +406,21 @@ public class FuncionarioDTO {
 
     public void setCpfCpnj(String cpfCpnj) {
         this.cpfCpnj = cpfCpnj;
+    }
+
+    public Boolean getAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
+    }
+
+    public String getNacionalidadeNome() {
+        return nacionalidadeNome;
+    }
+
+    public void setNacionalidadeNome(String nacionalidadeNome) {
+        this.nacionalidadeNome = nacionalidadeNome;
     }
 } 

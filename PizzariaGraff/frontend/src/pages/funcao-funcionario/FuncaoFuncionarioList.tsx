@@ -59,10 +59,18 @@ const FuncaoFuncionarioList: React.FC = () => {
   const columns = [
     { header: 'ID', accessor: 'id' },
     { 
-      header: 'Descrição', 
-      accessor: 'descricao',
+      header: 'Função', 
+      accessor: 'funcaoFuncionario',
+      cell: (item: FuncaoFuncionario) => {
+        const displayName = item.funcaoFuncionario || item.descricao || 'Sem nome';
+        return <span>{displayName}</span>;
+      }
+    },
+    { 
+      header: 'Carga Horária', 
+      accessor: 'cargaHoraria',
       cell: (item: FuncaoFuncionario) => (
-        <span>{item.descricao}</span>
+        <span>{item.cargaHoraria ? `${item.cargaHoraria}h/sem` : '-'}</span>
       )
     },
     { 
@@ -70,6 +78,15 @@ const FuncaoFuncionarioList: React.FC = () => {
       accessor: 'salarioBase',
       cell: (item: FuncaoFuncionario) => (
         <span>{item.salarioBase ? `R$ ${item.salarioBase.toFixed(2)}` : '-'}</span>
+      )
+    },
+    {
+      header: 'CNH',
+      accessor: 'requerCNH',
+      cell: (item: FuncaoFuncionario) => (
+        <span className={`px-2 py-1 rounded text-xs ${item.requerCNH ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-600'}`}>
+          {item.requerCNH ? 'Sim' : 'Não'}
+        </span>
       )
     },
     {

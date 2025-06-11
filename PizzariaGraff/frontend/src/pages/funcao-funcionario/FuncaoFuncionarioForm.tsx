@@ -6,9 +6,14 @@ import { FaSpinner } from 'react-icons/fa';
 import { formatDate } from '../../utils/formatters';
 
 interface FuncaoFuncionarioFormData {
-  descricao: string;
-  salarioBase: string;
-  ativo: boolean;
+  funcaoFuncionario: string;      // Nome principal da função
+  requerCNH: boolean;             // Se requer CNH
+  cargaHoraria: string;           // Carga horária (string para input)
+  descricao: string;              // Descrição detalhada
+  observacao: string;             // Observações
+  situacao: string;               // Data da situação
+  salarioBase: string;            // Salário base (legado)
+  ativo: boolean;                 // Status ativo
 }
 
 const FuncaoFuncionarioForm: React.FC = () => {
@@ -19,7 +24,12 @@ const FuncaoFuncionarioForm: React.FC = () => {
   const isNew = id === 'novo' || location.pathname === '/funcoes-funcionario/novo' || !id;
   
   const [formData, setFormData] = useState<FuncaoFuncionarioFormData>({
+    funcaoFuncionario: '',
+    requerCNH: false,
+    cargaHoraria: '',
     descricao: '',
+    observacao: '',
+    situacao: '',
     salarioBase: '',
     ativo: true,
   });
@@ -27,8 +37,8 @@ const FuncaoFuncionarioForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dataCadastro, setDataCadastro] = useState<string | undefined>(undefined);
-  const [ultimaModificacao, setUltimaModificacao] = useState<string | undefined>(undefined);
+  const [dataCriacao, setDataCriacao] = useState<string | undefined>(undefined);
+  const [dataAlteracao, setDataAlteracao] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,14 +52,21 @@ const FuncaoFuncionarioForm: React.FC = () => {
             throw new Error('Função não encontrada');
           }
           
+          console.log('Dados recebidos da API:', funcaoData);
+          
           setFormData({
+            funcaoFuncionario: funcaoData.funcaoFuncionario || '',
+            requerCNH: funcaoData.requerCNH !== undefined ? funcaoData.requerCNH : false,
+            cargaHoraria: funcaoData.cargaHoraria ? String(funcaoData.cargaHoraria) : '',
             descricao: funcaoData.descricao || '',
+            observacao: funcaoData.observacao || '',
+            situacao: funcaoData.situacao || '',
             salarioBase: funcaoData.salarioBase ? String(funcaoData.salarioBase) : '',
             ativo: funcaoData.ativo !== undefined ? funcaoData.ativo : true,
           });
           
-          setDataCadastro(funcaoData.dataCadastro);
-          setUltimaModificacao(funcaoData.ultimaModificacao);
+          setDataCriacao(funcaoData.dataCriacao);
+          setDataAlteracao(funcaoData.dataAlteracao);
         }
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
@@ -69,18 +86,29 @@ const FuncaoFuncionarioForm: React.FC = () => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     
+    const newValue = type === 'checkbox' ? checked : value;
+    console.log(`Campo ${name} alterado para:`, newValue);
+    
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: newValue,
     }));
   };
 
   const validateForm = () => {
     const errors: string[] = [];
-    if (!formData.descricao?.trim()) errors.push("Descrição é obrigatória");
+    
+    // Pelo menos um dos campos principais deve estar preenchido
+    if (!formData.funcaoFuncionario?.trim() && !formData.descricao?.trim()) {
+      errors.push("Nome da função ou descrição é obrigatório");
+    }
     
     if (formData.salarioBase && isNaN(Number(formData.salarioBase))) {
       errors.push("Salário base deve ser um número válido");
+    }
+    
+    if (formData.cargaHoraria && isNaN(Number(formData.cargaHoraria))) {
+      errors.push("Carga horária deve ser um número válido");
     }
     
     return errors;
@@ -99,10 +127,18 @@ const FuncaoFuncionarioForm: React.FC = () => {
       setError(null);
       
       const funcaoPayload = {
-        descricao: formData.descricao,
-        salarioBase: formData.salarioBase ? Number(formData.salarioBase) : 0,
+        funcaoFuncionario: formData.funcaoFuncionario.trim() || null,
+        requerCNH: formData.requerCNH,
+        cargaHoraria: formData.cargaHoraria.trim() ? Number(formData.cargaHoraria) : null,
+        descricao: formData.descricao.trim() || null,
+        observacao: formData.observacao.trim() || null,
+        situacao: formData.situacao.trim() || null,
+        salarioBase: formData.salarioBase.trim() ? Number(formData.salarioBase) : null,
         ativo: formData.ativo,
       };
+      
+      console.log('Dados do formulário antes do envio:', formData);
+      console.log('Payload sendo enviado para API:', funcaoPayload);
       
       if (isNew) {
         await createFuncaoFuncionario(funcaoPayload);
@@ -154,19 +190,23 @@ const FuncaoFuncionarioForm: React.FC = () => {
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm">
           {/* Dados Básicos */}
           <div className="p-6 border-b border-gray-200">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-medium text-gray-900">Dados Básicos</h2>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600">Habilitado</span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="ativo"
-                    checked={formData.ativo}
-                    onChange={handleChange}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+          <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Dados Básicos</h2>
+              <div className="flex items-center">
+                <label className="flex items-center cursor-pointer">
+                  <span className="mr-2 text-sm font-medium text-gray-700">Habilitado</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      name="ativo"
+                      checked={formData.ativo}
+                      onChange={handleChange}
+                      disabled={isNew}
+                      className="sr-only"
+                    />
+                    <div className={`block w-14 h-8 rounded-full ${formData.ativo ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform ${formData.ativo ? 'translate-x-6' : ''}`}></div>
+                  </div>
                 </label>
               </div>
             </div>
@@ -188,8 +228,8 @@ const FuncaoFuncionarioForm: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  name="descricao"
-                  value={formData.descricao}
+                  name="funcaoFuncionario"
+                  value={formData.funcaoFuncionario}
                   onChange={handleChange}
                   placeholder="Ex: Gerente, Vendedor, Cozinheiro..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -210,20 +250,93 @@ const FuncaoFuncionarioForm: React.FC = () => {
               </div>
             </div>
 
+            {/* Linha 2: Requer CNH, Carga Horária, Data Situação */}
+            <div className="grid grid-cols-12 gap-4 mb-4">
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Carga Horária (horas/semana)</label>
+                <input
+                  type="number"
+                  name="cargaHoraria"
+                  value={formData.cargaHoraria}
+                  onChange={handleChange}
+                  step="0.01"
+                  min="0"
+                  max="80"
+                  placeholder="40.00"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data Situação</label>
+                <input
+                  type="date"
+                  name="situacao"
+                  value={formData.situacao}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Requer CNH</label>
+                <div className="flex items-center h-10">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="requerCNH"
+                      checked={formData.requerCNH}
+                      onChange={handleChange}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Linha 3: Descrição Detalhada */}
+            <div className="grid grid-cols-1 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descrição Detalhada</label>
+                <textarea
+                  name="descricao"
+                  value={formData.descricao}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Descreva as responsabilidades e atividades da função..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Linha 4: Observações */}
+            <div className="grid grid-cols-1 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                <textarea
+                  name="observacao"
+                  value={formData.observacao}
+                  onChange={handleChange}
+                  rows={2}
+                  placeholder="Observações adicionais sobre a função..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
              {/* Rodapé do formulário com informações de registro e botões */}
         <div className="flex justify-between items-end pt-6 border-t mt-6">
           {/* Informações do Registro (sempre que existirem datas) */}
-          {(dataCadastro || ultimaModificacao) && (
+          {(dataCriacao || dataAlteracao) && (
             <div className="text-sm text-gray-600">
               <h3 className="font-semibold text-gray-700 mb-1">Informações do Registro:</h3>
-              {dataCadastro && (
+              {dataCriacao && (
                 <p>
-                  Cadastrado em: {formatDate(dataCadastro)}
+                  Cadastrado em: {formatDate(dataCriacao)}
                 </p>
               )}
-              {ultimaModificacao && (
+              {dataAlteracao && (
                 <p>
-                  Última modificação: {formatDate(ultimaModificacao)}
+                  Última modificação: {formatDate(dataAlteracao)}
                 </p>
               )}
             </div>

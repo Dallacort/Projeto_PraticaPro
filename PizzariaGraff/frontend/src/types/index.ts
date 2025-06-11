@@ -34,7 +34,16 @@ export interface Cidade {
 
 export interface FuncaoFuncionario {
   id: number;
-  descricao: string;
+  funcaoFuncionario?: string;        // Nome principal da função
+  requerCNH?: boolean;               // Se requer CNH
+  cargaHoraria?: number;             // Carga horária semanal
+  descricao?: string;                // Descrição detalhada
+  observacao?: string;               // Observações
+  situacao?: string;                 // Data da situação
+  dataCriacao?: string;              // Data de criação
+  dataAlteracao?: string;            // Data de alteração
+  
+  // Campos legados (compatibilidade)
   salarioBase?: number;
   ativo?: boolean;
   dataCadastro?: string;
@@ -330,11 +339,10 @@ export interface Funcionario {
   sexo?: number;
   observacao?: string;
   estadoCivil?: number;
-  idBrasileiro?: number;
   salario?: number;
-  situacao?: string;
-  nacionalidade?: number;
-  dataNascimento?: number;
+  nacionalidadeId?: number;        // FK para Pais (renomeado de nacionalidade)
+  nacionalidadeNome?: string;      // Nome da nacionalidade
+  dataNascimento?: string;
   dataAdmissao?: string;
   dataDemissao?: string;
   cidade?: Cidade;

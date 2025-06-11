@@ -157,9 +157,9 @@ public class FuncionarioRepository {
         String sql = "INSERT INTO funcionario (funcionario, apelido, telefone, email, endereco, numero, " +
                      "complemento, bairro, cep, cidade_id, data_admissao, data_demissao, " +
                      "rg_inscricao_estadual, cnh, data_validade_cnh, sexo, observacao, estado_civil, " +
-                     "id_brasileiro, salario, situacao, nacionalidade, data_nascimento, " +
-                     "funcao_funcionario_id, cpf_cpnj, data_criacao, data_alteracao) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "salario, nacionalidade_id, data_nascimento, " +
+                     "funcao_funcionario_id, cpf_cpnj, ativo, data_criacao, data_alteracao) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -184,15 +184,14 @@ public class FuncionarioRepository {
             stmt.setObject(16, funcionario.getSexo());
             stmt.setString(17, funcionario.getObservacao());
             stmt.setObject(18, funcionario.getEstadoCivil());
-            stmt.setObject(19, funcionario.getIdBrasileiro());
-            stmt.setObject(20, funcionario.getSalario());
-            stmt.setDate(21, funcionario.getSituacao() != null ? Date.valueOf(funcionario.getSituacao()) : null);
-            stmt.setObject(22, funcionario.getNacionalidade());
-            stmt.setObject(23, funcionario.getDataNascimento());
-            stmt.setObject(24, funcionario.getFuncaoFuncionarioId());
-            stmt.setString(25, funcionario.getCpfCpnj());
-            stmt.setTimestamp(26, funcionario.getDataCriacao() != null ? Timestamp.valueOf(funcionario.getDataCriacao()) : Timestamp.valueOf(now));
-            stmt.setTimestamp(27, funcionario.getDataAlteracao() != null ? Timestamp.valueOf(funcionario.getDataAlteracao()) : Timestamp.valueOf(now));
+            stmt.setObject(19, funcionario.getSalario());
+            stmt.setObject(20, funcionario.getNacionalidadeId());
+            stmt.setDate(21, funcionario.getDataNascimento() != null ? Date.valueOf(funcionario.getDataNascimento()) : null);
+            stmt.setObject(22, funcionario.getFuncaoFuncionarioId());
+            stmt.setString(23, funcionario.getCpfCpnj());
+            stmt.setBoolean(24, funcionario.getAtivo() != null ? funcionario.getAtivo() : true);
+            stmt.setTimestamp(25, funcionario.getDataCriacao() != null ? Timestamp.valueOf(funcionario.getDataCriacao()) : Timestamp.valueOf(now));
+            stmt.setTimestamp(26, funcionario.getDataAlteracao() != null ? Timestamp.valueOf(funcionario.getDataAlteracao()) : Timestamp.valueOf(now));
             
             stmt.executeUpdate();
             
@@ -217,17 +216,25 @@ public class FuncionarioRepository {
     }
 
     private Funcionario update(Funcionario funcionario) {
+        System.out.println("=== REPOSITORY UPDATE FUNCIONARIO ===");
+        System.out.println("ID do funcionário: " + funcionario.getId());
+        System.out.println("Nome: " + funcionario.getFuncionario());
+        System.out.println("Email: " + funcionario.getEmail());
+        
         String sql = "UPDATE funcionario SET funcionario = ?, apelido = ?, telefone = ?, email = ?, endereco = ?, " +
                      "numero = ?, complemento = ?, bairro = ?, cep = ?, cidade_id = ?, data_admissao = ?, " +
                      "data_demissao = ?, rg_inscricao_estadual = ?, cnh = ?, data_validade_cnh = ?, sexo = ?, " +
-                     "observacao = ?, estado_civil = ?, id_brasileiro = ?, salario = ?, situacao = ?, " +
-                     "nacionalidade = ?, data_nascimento = ?, funcao_funcionario_id = ?, cpf_cpnj = ?, " +
+                     "observacao = ?, estado_civil = ?, salario = ?, nacionalidade_id = ?, " +
+                     "data_nascimento = ?, funcao_funcionario_id = ?, cpf_cpnj = ?, ativo = ?, " +
                      "data_alteracao = ? WHERE id = ?";
+
+        System.out.println("SQL: " + sql);
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             LocalDateTime now = LocalDateTime.now();
+            System.out.println("Conexão obtida, preparando statement...");
             
             stmt.setString(1, funcionario.getFuncionario());
             stmt.setString(2, funcionario.getApelido());
@@ -247,23 +254,38 @@ public class FuncionarioRepository {
             stmt.setObject(16, funcionario.getSexo());
             stmt.setString(17, funcionario.getObservacao());
             stmt.setObject(18, funcionario.getEstadoCivil());
-            stmt.setObject(19, funcionario.getIdBrasileiro());
-            stmt.setObject(20, funcionario.getSalario());
-            stmt.setDate(21, funcionario.getSituacao() != null ? Date.valueOf(funcionario.getSituacao()) : null);
-            stmt.setObject(22, funcionario.getNacionalidade());
-            stmt.setObject(23, funcionario.getDataNascimento());
-            stmt.setObject(24, funcionario.getFuncaoFuncionarioId());
-            stmt.setString(25, funcionario.getCpfCpnj());
-            stmt.setTimestamp(26, Timestamp.valueOf(now));
-            stmt.setLong(27, funcionario.getId());
+            stmt.setObject(19, funcionario.getSalario());
+            stmt.setObject(20, funcionario.getNacionalidadeId());
+            stmt.setDate(21, funcionario.getDataNascimento() != null ? Date.valueOf(funcionario.getDataNascimento()) : null);
+            stmt.setObject(22, funcionario.getFuncaoFuncionarioId());
+            stmt.setString(23, funcionario.getCpfCpnj());
+            stmt.setBoolean(24, funcionario.getAtivo() != null ? funcionario.getAtivo() : true);
+            stmt.setTimestamp(25, Timestamp.valueOf(now));
+            stmt.setLong(26, funcionario.getId());
             
-            stmt.executeUpdate();
+            System.out.println("Parâmetros definidos, executando update...");
+            int rowsAffected = stmt.executeUpdate();
+            System.out.println("UPDATE executado! Linhas afetadas: " + rowsAffected);
+            
+            if (rowsAffected == 0) {
+                System.err.println("AVISO: Nenhuma linha foi afetada pelo UPDATE!");
+                System.err.println("Isso pode indicar que o ID " + funcionario.getId() + " não existe na base");
+            } else {
+                System.out.println("Funcionário atualizado com sucesso!");
+            }
             
             funcionario.setDataAlteracao(now);
+            System.out.println("DataAlteracao definida: " + funcionario.getDataAlteracao());
+            
         } catch (SQLException e) {
+            System.err.println("ERRO SQL no update: " + e.getMessage());
+            System.err.println("SQLState: " + e.getSQLState());
+            System.err.println("ErrorCode: " + e.getErrorCode());
+            e.printStackTrace();
             throw new RuntimeException("Erro ao atualizar funcionário", e);
         }
         
+        System.out.println("=== REPOSITORY UPDATE CONCLUÍDO ===");
         return funcionario;
     }
 
@@ -298,12 +320,15 @@ public class FuncionarioRepository {
         funcionario.setSexo(rs.getObject("sexo", Integer.class));
         funcionario.setObservacao(rs.getString("observacao"));
         funcionario.setEstadoCivil(rs.getObject("estado_civil", Integer.class));
-        funcionario.setIdBrasileiro(rs.getObject("id_brasileiro", Integer.class));
         funcionario.setSalario(rs.getObject("salario", Integer.class));
-        funcionario.setNacionalidade(rs.getObject("nacionalidade", Integer.class));
-        funcionario.setDataNascimento(rs.getObject("data_nascimento", Integer.class));
+        funcionario.setNacionalidadeId(rs.getObject("nacionalidade_id", Long.class));
+        Date dataNascimento = rs.getDate("data_nascimento");
+        if (dataNascimento != null) {
+            funcionario.setDataNascimento(dataNascimento.toLocalDate());
+        }
         funcionario.setFuncaoFuncionarioId(rs.getObject("funcao_funcionario_id", Long.class));
         funcionario.setCpfCpnj(rs.getString("cpf_cpnj"));
+        funcionario.setAtivo(rs.getObject("ativo", Boolean.class));
         
         Date dataAdmissao = rs.getDate("data_admissao");
         if (dataAdmissao != null) {
@@ -318,11 +343,6 @@ public class FuncionarioRepository {
         Date dataValidadeCnh = rs.getDate("data_validade_cnh");
         if (dataValidadeCnh != null) {
             funcionario.setDataValidadeCnh(dataValidadeCnh.toLocalDate());
-        }
-        
-        Date situacao = rs.getDate("situacao");
-        if (situacao != null) {
-            funcionario.setSituacao(situacao.toLocalDate());
         }
         
         Timestamp dataCriacao = rs.getTimestamp("data_criacao");

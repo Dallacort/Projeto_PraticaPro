@@ -42,7 +42,7 @@ const adaptFuncionarioFromApi = (funcionario: any): Funcionario => {
   } else if (funcionario.funcaoFuncionarioId && funcionario.funcaoFuncionarioNome) {
     funcaoFuncionario = {
       id: funcionario.funcaoFuncionarioId,
-      descricao: funcionario.funcaoFuncionarioNome,
+      funcaoFuncionario: funcionario.funcaoFuncionarioNome,
       ativo: true
     };
   }
@@ -70,30 +70,27 @@ const adaptFuncionarioFromApi = (funcionario: any): Funcionario => {
     sexo: funcionario.sexo,
     observacao: funcionario.observacao || '',
     estadoCivil: funcionario.estadoCivil,
-    idBrasileiro: funcionario.idBrasileiro,
     salario: funcionario.salario,
-    situacao: funcionario.situacao || '',
-    nacionalidade: funcionario.nacionalidade,
+    nacionalidadeId: funcionario.nacionalidadeId,
     dataNascimento: funcionario.dataNascimento,
     funcaoFuncionarioId: funcionario.funcaoFuncionarioId,
     cidade: cidade,
     funcaoFuncionario: funcaoFuncionario,
-    // Campo 'ativo' é apenas para o frontend (backend não tem este campo)
-    ativo: true,
+    ativo: funcionario.ativo !== undefined ? funcionario.ativo : true,
     dataCadastro: funcionario.dataCadastro || funcionario.dataCriacao,
     ultimaModificacao: funcionario.ultimaModificacao || funcionario.dataAlteracao,
     
     // Campos para compatibilidade com versão anterior
     nome: funcionario.funcionario || funcionario.nome || '',
-    cargo: funcionario.funcaoFuncionario?.descricao || funcionario.cargo || ''
+    cargo: funcionario.funcaoFuncionario?.funcaoFuncionario || funcionario.cargo || ''
   };
 };
 
 // Adaptador para converter dados do frontend para a API
 const adaptFuncionarioToApi = (funcionario: any): any => {
-  // Remove campos que não existem no backend (ativo, dataCadastro, ultimaModificacao)
-  // e ajusta os tipos conforme o modelo Java
-  return {
+  console.log('Funcionário recebido no adaptador:', funcionario);
+  
+  const payload = {
     funcionario: funcionario.funcionario,
     apelido: funcionario.apelido || '',
     cpfCpnj: funcionario.cpfCpnj || '',
@@ -113,14 +110,15 @@ const adaptFuncionarioToApi = (funcionario: any): any => {
     sexo: funcionario.sexo || null,
     observacao: funcionario.observacao || '',
     estadoCivil: funcionario.estadoCivil || null,
-    idBrasileiro: funcionario.idBrasileiro || null,
     salario: funcionario.salario || null,
-    situacao: funcionario.situacao || null, // LocalDate no backend
-    nacionalidade: funcionario.nacionalidade || null,
-    dataNascimento: funcionario.dataNascimento || null, // Integer no backend (ano)
-    funcaoFuncionarioId: funcionario.funcaoFuncionarioId || null
-    // Campo 'ativo' NÃO enviado para o backend pois não existe no modelo
+    nacionalidadeId: funcionario.nacionalidadeId || null,
+    dataNascimento: funcionario.dataNascimento || null,
+    funcaoFuncionarioId: funcionario.funcaoFuncionarioId || null,
+    ativo: funcionario.ativo !== undefined ? funcionario.ativo : true
   };
+  
+  console.log('Payload enviado para API:', payload);
+  return payload;
 };
 
 // Lista todos os funcionários

@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import FormField from '../../components/FormField';
 import { getFuncionario, createFuncionario, updateFuncionario } from '../../services/funcionarioService';
+import { getNacionalidades, NacionalidadeResponse } from '../../services/nacionalidadeService';
 import { Funcionario, Cidade, FuncaoFuncionario } from '../../types';
 import { FaSpinner, FaSearch } from 'react-icons/fa';
 import CidadeModal from '../../components/modals/CidadeModal';
 import FuncaoFuncionarioModal from '../../components/modals/FuncaoFuncionarioModal';
+import NacionalidadeModal from '../../components/modals/NacionalidadeModal';
 import { formatDate } from '../../utils/formatters';
 
 interface FuncionarioFormData {
@@ -24,10 +27,8 @@ interface FuncionarioFormData {
   sexo: string;
   observacao: string;
   estadoCivil: string;
-  idBrasileiro: string;
   salario: string;
-  situacao: string;
-  nacionalidade: string;
+  nacionalidadeId: string;
   dataNascimento: string;
   dataAdmissao: string;
   dataDemissao: string;
@@ -43,6 +44,8 @@ const FuncionarioForm: React.FC = () => {
   
   const isNew = id === 'novo' || location.pathname === '/funcionarios/novo' || !id;
   
+  console.log('FuncionarioForm - ID:', id, 'isNew:', isNew, 'pathname:', location.pathname);
+
   const [formData, setFormData] = useState<FuncionarioFormData>({
     funcionario: '',
     apelido: '',
@@ -60,10 +63,8 @@ const FuncionarioForm: React.FC = () => {
     sexo: '',
     observacao: '',
     estadoCivil: '',
-    idBrasileiro: '',
     salario: '',
-    situacao: '',
-    nacionalidade: '',
+    nacionalidadeId: '',
     dataNascimento: '',
     dataAdmissao: '',
     dataDemissao: '',
@@ -79,8 +80,11 @@ const FuncionarioForm: React.FC = () => {
   const [dataCadastro, setDataCadastro] = useState<string | undefined>(undefined);
   const [cidadeSelecionada, setCidadeSelecionada] = useState<Cidade | null>(null);
   const [funcaoSelecionada, setFuncaoSelecionada] = useState<FuncaoFuncionario | null>(null);
+  const [nacionalidades, setNacionalidades] = useState<NacionalidadeResponse[]>([]);
+  const [nacionalidadeSelecionada, setNacionalidadeSelecionada] = useState<NacionalidadeResponse | null>(null);
   const [isCidadeModalOpen, setIsCidadeModalOpen] = useState(false);
   const [isFuncaoModalOpen, setIsFuncaoModalOpen] = useState(false);
+  const [isNacionalidadeModalOpen, setIsNacionalidadeModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -88,11 +92,17 @@ const FuncionarioForm: React.FC = () => {
         setLoading(true);
         setError(null);
         
+        // Carregar nacionalidades
+        const nacionalidadesData = await getNacionalidades();
+        setNacionalidades(nacionalidadesData);
+        
         if (!isNew && id) {
           const funcionarioData = await getFuncionario(Number(id));
           if (!funcionarioData) {
             throw new Error('Funcionário não encontrado');
           }
+          
+          console.log('Dados do funcionário carregados:', funcionarioData);
           
           setFormData({
             funcionario: funcionarioData.funcionario || '',
@@ -111,35 +121,40 @@ const FuncionarioForm: React.FC = () => {
             sexo: funcionarioData.sexo ? String(funcionarioData.sexo) : '',
             observacao: funcionarioData.observacao || '',
             estadoCivil: funcionarioData.estadoCivil ? String(funcionarioData.estadoCivil) : '',
-            idBrasileiro: funcionarioData.idBrasileiro ? String(funcionarioData.idBrasileiro) : '',
             salario: funcionarioData.salario ? String(funcionarioData.salario) : '',
-            situacao: funcionarioData.situacao || '',
-            nacionalidade: funcionarioData.nacionalidade ? String(funcionarioData.nacionalidade) : '',
-            dataNascimento: funcionarioData.dataNascimento ? String(funcionarioData.dataNascimento) : '',
+            nacionalidadeId: String(funcionarioData.nacionalidadeId || ''),
+            dataNascimento: funcionarioData.dataNascimento || '',
             dataAdmissao: funcionarioData.dataAdmissao || '',
             dataDemissao: funcionarioData.dataDemissao || '',
-            cidadeId: funcionarioData.cidadeId ? String(funcionarioData.cidadeId) : '',
-            funcaoFuncionarioId: funcionarioData.funcaoFuncionarioId ? String(funcionarioData.funcaoFuncionarioId) : '',
+            cidadeId: String(funcionarioData.cidadeId || ''),
+            funcaoFuncionarioId: String(funcionarioData.funcaoFuncionarioId || ''),
             ativo: funcionarioData.ativo !== undefined ? funcionarioData.ativo : true,
           });
           
+          // Configurar cidade selecionada
           if (funcionarioData.cidade) {
             setCidadeSelecionada(funcionarioData.cidade);
           }
           
+          // Configurar função selecionada
           if (funcionarioData.funcaoFuncionario) {
             setFuncaoSelecionada(funcionarioData.funcaoFuncionario);
           }
           
-          setUltimaModificacao(funcionarioData.ultimaModificacao || funcionarioData.dataAlteracao);
-          setDataCadastro(funcionarioData.dataCadastro || funcionarioData.dataCriacao);
+          // Configurar nacionalidade selecionada
+          if (funcionarioData.nacionalidadeId) {
+            const nacionalidade = nacionalidadesData.find(n => n.id === funcionarioData.nacionalidadeId);
+            if (nacionalidade) {
+              setNacionalidadeSelecionada(nacionalidade);
+            }
+          }
+          
+          setUltimaModificacao(funcionarioData.dataAlteracao);
+          setDataCadastro(funcionarioData.dataCriacao);
         }
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
         setError('Erro ao carregar os dados do funcionário.');
-        setTimeout(() => {
-          navigate('/funcionarios');
-        }, 3000);
       } finally {
         setLoading(false);
       }
@@ -162,7 +177,7 @@ const FuncionarioForm: React.FC = () => {
     const errors: string[] = [];
     if (!formData.funcionario?.trim()) errors.push("Nome do funcionário é obrigatório");
     if (!formData.email?.trim()) errors.push("Email é obrigatório");
-    if (!formData.cidadeId) errors.push("Cidade é obrigatória");
+    if (!cidadeSelecionada || !formData.cidadeId) errors.push("Cidade é obrigatória");
     
     if (formData.email && !formData.email.includes('@')) {
       errors.push("Email deve ter formato válido");
@@ -184,58 +199,76 @@ const FuncionarioForm: React.FC = () => {
       setError(null);
       
       if (!cidadeSelecionada || !formData.cidadeId) {
-        throw new Error('Cidade deve ser selecionada.');
+        throw new Error('Cidade não selecionada ou inválida.');
       }
+      
+      console.log('=== DEBUG FUNCIONÁRIO ===');
+      console.log('ID da URL:', id);
+      console.log('isNew:', isNew);
+      console.log('pathname:', location.pathname);
+      console.log('FormData original:', formData);
+      console.log('Cidade selecionada:', cidadeSelecionada);
+      console.log('Função selecionada:', funcaoSelecionada);
+      console.log('Nacionalidade selecionada:', nacionalidadeSelecionada);
       
       const funcionarioPayload: any = {
         funcionario: formData.funcionario,
-        apelido: formData.apelido,
-        cpfCpnj: formData.cpfCpnj,
-        rgInscricaoEstadual: formData.rgInscricaoEstadual,
+        apelido: formData.apelido || null,
+        cpfCpnj: formData.cpfCpnj || null,
+        rgInscricaoEstadual: formData.rgInscricaoEstadual || null,
         email: formData.email,
-        telefone: formData.telefone,
-        endereco: formData.endereco,
-        numero: formData.numero,
-        complemento: formData.complemento,
-        bairro: formData.bairro,
-        cep: formData.cep,
-        cnh: formData.cnh,
-        dataValidadeCnh: formData.dataValidadeCnh,
+        telefone: formData.telefone || null,
+        endereco: formData.endereco || null,
+        numero: formData.numero || null,
+        complemento: formData.complemento || null,
+        bairro: formData.bairro || null,
+        cep: formData.cep || null,
+        cnh: formData.cnh || null,
+        dataValidadeCnh: formData.dataValidadeCnh || null,
         sexo: formData.sexo ? Number(formData.sexo) : null,
-        observacao: formData.observacao,
+        observacao: formData.observacao || null,
         estadoCivil: formData.estadoCivil ? Number(formData.estadoCivil) : null,
-        idBrasileiro: formData.idBrasileiro ? Number(formData.idBrasileiro) : null,
         salario: formData.salario ? Number(formData.salario) : null,
-        situacao: formData.situacao,
-        nacionalidade: formData.nacionalidade ? Number(formData.nacionalidade) : null,
-        dataNascimento: formData.dataNascimento ? Number(formData.dataNascimento) : null,
-        dataAdmissao: formData.dataAdmissao,
-        dataDemissao: formData.dataDemissao,
+        nacionalidadeId: formData.nacionalidadeId ? Number(formData.nacionalidadeId) : null,
+        dataNascimento: formData.dataNascimento || null,
+        dataAdmissao: formData.dataAdmissao || null,
+        dataDemissao: formData.dataDemissao || null,
         cidadeId: Number(formData.cidadeId),
         funcaoFuncionarioId: formData.funcaoFuncionarioId ? Number(formData.funcaoFuncionarioId) : null,
+        ativo: Boolean(formData.ativo),
       };
       
+      console.log('Payload final enviado:', funcionarioPayload);
+
       if (isNew) {
-        await createFuncionario(funcionarioPayload);
+        console.log('Executando POST (criar novo funcionário)');
+        const resultado = await createFuncionario(funcionarioPayload);
+        console.log('Resultado criação:', resultado);
         alert('Funcionário cadastrado com sucesso!');
       } else if (id) {
-        await updateFuncionario(Number(id), funcionarioPayload);
+        console.log('Executando PUT (atualizar funcionário) para ID:', id);
+        const resultado = await updateFuncionario(Number(id), funcionarioPayload);
+        console.log('Resultado atualização:', resultado);
         alert('Funcionário atualizado com sucesso!');
       }
       navigate('/funcionarios');
     } catch (err: any) {
-      console.error('Erro ao salvar funcionário:', err);
-      const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao salvar funcionário. Verifique os dados e tente novamente.';
-      setError(errorMessage);
+      console.error('=== ERRO DETALHADO ===');
+      console.error('Erro completo:', err);
+      console.error('Resposta do servidor:', err?.response?.data);
+      console.error('Status:', err?.response?.status);
+      console.error('Headers:', err?.response?.headers);
+      console.error('URL tentada:', err?.config?.url);
+      console.error('Método:', err?.config?.method);
+      
+      const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao salvar funcionário. Tente novamente.';
+      setError(`Erro ${err?.response?.status || 'desconhecido'}: ${errorMessage}`);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCancel = () => {
-    navigate('/funcionarios');
-  };
-
+  // Handlers para modais
   const handleOpenCidadeModal = () => setIsCidadeModalOpen(true);
   const handleCloseCidadeModal = () => setIsCidadeModalOpen(false);
 
@@ -245,6 +278,7 @@ const FuncionarioForm: React.FC = () => {
       ...prev,
       cidadeId: String(cidade.id),
     }));
+    setIsCidadeModalOpen(false);
   };
 
   const handleOpenFuncaoModal = () => setIsFuncaoModalOpen(true);
@@ -256,6 +290,19 @@ const FuncionarioForm: React.FC = () => {
       ...prev,
       funcaoFuncionarioId: String(funcao.id),
     }));
+    setIsFuncaoModalOpen(false);
+  };
+
+  const handleOpenNacionalidadeModal = () => setIsNacionalidadeModalOpen(true);
+  const handleCloseNacionalidadeModal = () => setIsNacionalidadeModalOpen(false);
+
+  const handleSelectNacionalidade = (nacionalidade: NacionalidadeResponse) => {
+    setNacionalidadeSelecionada(nacionalidade);
+    setFormData(prev => ({
+      ...prev,
+      nacionalidadeId: String(nacionalidade.id),
+    }));
+    setIsNacionalidadeModalOpen(false);
   };
 
   if (loading) {
@@ -269,356 +316,329 @@ const FuncionarioForm: React.FC = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            {isNew ? 'Novo Funcionário' : 'Editar Funcionário'}
-          </h1>
-        </div>
+    <div className="flex flex-col bg-white shadow-md rounded-lg overflow-hidden max-w-7xl w-full mx-auto my-4">
+      <div className="flex justify-between items-center bg-gray-50 p-4 border-b">
+        <h1 className="text-xl font-bold text-gray-800">
+          {isNew ? 'Novo Funcionário' : 'Editar Funcionário'}
+        </h1>
+      </div>
 
+      <form onSubmit={handleSubmit} className="p-4 space-y-6">
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-            <p>{error}</p>
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm">
-          {/* Dados Básicos */}
-          <div className="p-6 border-b border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+          <div className="border-b pb-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-medium text-gray-900">Dados Básicos</h2>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600">Habilitado</span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="ativo"
-                    checked={formData.ativo}
-                    onChange={handleChange}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+              <h2 className="text-lg font-semibold">Dados Básicos</h2>
+              <div className="flex items-center">
+                <label className="flex items-center cursor-pointer">
+                  <span className="mr-2 text-sm font-medium text-gray-700">Habilitado</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      name="ativo"
+                      checked={formData.ativo}
+                      onChange={handleChange}
+                      className="sr-only"
+                    />
+                    <div className={`block w-14 h-8 rounded-full ${formData.ativo ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform ${formData.ativo ? 'translate-x-6' : ''}`}></div>
+                  </div>
                 </label>
               </div>
             </div>
             
-            {/* Linha 1: Código, Sexo, Nome, Apelido */}
-            <div className="grid grid-cols-12 gap-4 mb-4">
-              <div className="col-span-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Código</label>
-                <input
-                  type="text"
-                  value={isNew ? "Novo" : id || ""}
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
-                <select
-                  name="sexo"
-                  value={formData.sexo}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Selecione...</option>
-                  <option value="1">Masculino</option>
-                  <option value="2">Feminino</option>
-                </select>
-              </div>
-              <div className="col-span-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Funcionário <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="funcionario"
-                  value={formData.funcionario}
-                  onChange={handleChange}
-                  placeholder="Ex: João Silva"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Apelido</label>
-                <input
-                  type="text"
-                  name="apelido"
-                  value={formData.apelido}
-                  onChange={handleChange}
-                  placeholder="Ex: João"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Linha 2: Endereço, Número, Complemento, Bairro, CEP, Cidade */}
-            <div className="grid grid-cols-12 gap-4 mb-4">
-              <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
-                <input
-                  type="text"
-                  name="endereco"
-                  value={formData.endereco}
-                  onChange={handleChange}
-                  placeholder="Ex: Rua das Indústrias"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="col-span-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Número</label>
-                <input
-                  type="text"
-                  name="numero"
-                  value={formData.numero}
-                  onChange={handleChange}
-                  placeholder="1500"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Complemento</label>
-                <input
-                  type="text"
-                  name="complemento"
-                  value={formData.complemento}
-                  onChange={handleChange}
-                  placeholder="Ex: Apto 101"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bairro</label>
-                <input
-                  type="text"
-                  name="bairro"
-                  value={formData.bairro}
-                  onChange={handleChange}
-                  placeholder="Ex: Vila Industrial"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="col-span-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">CEP</label>
-                <input
-                  type="text"
-                  name="cep"
-                  value={formData.cep}
-                  onChange={handleChange}
-                  placeholder="00000-000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
-                <div className="flex">
-                  <input
-                    type="text"
-                    value={cidadeSelecionada ? cidadeSelecionada.nome : ''}
-                    readOnly
-                    placeholder="Selecione..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleOpenCidadeModal}
-                    className="px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 hover:bg-gray-100"
-                  >
-                    <FaSearch className="text-gray-400" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Linha 3: Telefone, Email, CNH, Data Validade CNH */}
-            <div className="grid grid-cols-12 gap-4 mb-4">
-              <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Telefone <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="telefone"
-                  value={formData.telefone}
-                  onChange={handleChange}
-                  placeholder="(41) 99999-9999"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="col-span-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="funcionario@empresa.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">CNH</label>
-                <input
-                  type="text"
-                  name="cnh"
-                  value={formData.cnh}
-                  onChange={handleChange}
-                  placeholder="00000000000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Data Validade CNH</label>
-                <input
-                  type="date"
-                  name="dataValidadeCnh"
-                  value={formData.dataValidadeCnh}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Linha 4: RG/I.E., CPF/CNPJ, Salário, Função */}
-            <div className="grid grid-cols-12 gap-4 mb-4">
-              <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">RG/I.E.</label>
-                <input
-                  type="text"
-                  name="rgInscricaoEstadual"
-                  value={formData.rgInscricaoEstadual}
-                  onChange={handleChange}
-                  placeholder="Ex: 12345678901"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  CPF/CNPJ <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="cpfCpnj"
-                  value={formData.cpfCpnj}
-                  onChange={handleChange}
-                  placeholder="000.000.000/0000-00"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Salário</label>
-                <input
-                  type="number"
-                  name="salario"
-                  value={formData.salario}
-                  onChange={handleChange}
-                  step="0.01"
-                  placeholder="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="col-span-4">
+            {/* Primeira linha: Código, Função, Funcionário, Apelido, Estado Civil */}
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '100px 200px 2fr 1.5fr 1.5fr' }}>
+              <FormField
+                label="Código"
+                name="id"
+                value={id && !isNew ? id : 'Novo'}
+                onChange={() => {}}
+                disabled={true}
+              />
+              
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Função</label>
-                <div className="flex">
+                <div 
+                  onClick={handleOpenFuncaoModal} 
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleOpenFuncaoModal()}
+                >
                   <input
                     type="text"
-                    value={funcaoSelecionada ? funcaoSelecionada.descricao : ''}
                     readOnly
+                    value={funcaoSelecionada ? funcaoSelecionada.funcaoFuncionario : 'Selecione...'}
+                    className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
                     placeholder="Selecione..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
                   />
-                  <button
-                    type="button"
-                    onClick={handleOpenFuncaoModal}
-                    className="px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 hover:bg-gray-100"
-                  >
-                    <FaSearch className="text-gray-400" />
-                  </button>
+                  <FaSearch className="text-gray-500" />
                 </div>
               </div>
-            </div>
 
-            {/* Linha 5: Data Nascimento, Estado Civil, Data Admissão, Data Demissão */}
-            <div className="grid grid-cols-12 gap-4 mb-4">
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ano Nascimento</label>
-                <input
-                  type="number"
-                  name="dataNascimento"
-                  value={formData.dataNascimento}
-                  onChange={handleChange}
-                  placeholder="1990"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="col-span-2">
+              <FormField
+                label="Funcionário *"
+                name="funcionario"
+                value={formData.funcionario}
+                onChange={handleChange}
+                required
+                maxLength={50}
+                placeholder="Nome completo do funcionário"
+              />
+
+              <FormField
+                label="Apelido"
+                name="apelido"
+                value={formData.apelido}
+                onChange={handleChange}
+                maxLength={50}
+                placeholder="Como é conhecido"
+              />
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Estado Civil</label>
                 <select
                   name="estadoCivil"
                   value={formData.estadoCivil}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10"
                 >
-                  <option value="">Selecione...</option>
-                  <option value="1">Solteiro(a)</option>
-                  <option value="2">Casado(a)</option>
-                  <option value="3">Divorciado(a)</option>
-                  <option value="4">Viúvo(a)</option>
+                  <option value="">Selecionar...</option>
+                  <option value="1">Solteiro</option>
+                  <option value="2">Casado</option>
+                  <option value="3">Divorciado</option>
+                  <option value="4">Viúvo</option>
                   <option value="5">União Estável</option>
                 </select>
               </div>
-              <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Data Admissão</label>
-                <input
-                  type="date"
-                  name="dataAdmissao"
-                  value={formData.dataAdmissao}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Data Demissão</label>
-                <input
-                  type="date"
-                  name="dataDemissao"
-                  value={formData.dataDemissao}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Data Situação</label>
-                <input
-                  type="date"
-                  name="situacao"
-                  value={formData.situacao}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
+            </div>
+
+            {/* Segunda linha: Endereço, Número, Complemento, Bairro, CEP, Cidade */}
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '3fr 150px 1.5fr 1.5fr 120px 2fr' }}>
+              <FormField
+                label="Endereço"
+                name="endereco"
+                value={formData.endereco}
+                onChange={handleChange}
+                maxLength={50}
+                placeholder="Rua, Avenida, etc."
+              />
+
+              <FormField
+                label="Número"
+                name="numero"
+                value={formData.numero}
+                onChange={handleChange}
+                maxLength={10}
+                placeholder="123A"
+              />
+
+              <FormField
+                label="Complemento"
+                name="complemento"
+                value={formData.complemento}
+                onChange={handleChange}
+                maxLength={50}
+                placeholder="Apto, Bloco, etc."
+              />
+
+              <FormField
+                label="Bairro"
+                name="bairro"
+                value={formData.bairro}
+                onChange={handleChange}
+                maxLength={50}
+                placeholder="Nome do bairro"
+              />
+
+              <FormField
+                label="CEP"
+                name="cep"
+                value={formData.cep}
+                onChange={handleChange}
+                maxLength={8}
+                placeholder="00000000"
+              />
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                <div 
+                  onClick={handleOpenCidadeModal} 
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleOpenCidadeModal()}
+                >
+                  <input
+                    type="text"
+                    readOnly
+                    value={cidadeSelecionada ? cidadeSelecionada.nome : 'Selecione...'}
+                    className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
+                    placeholder="Selecione..."
+                  />
+                  <FaSearch className="text-gray-500" />
+                </div>
               </div>
             </div>
 
-            {/* Observações */}
-            <div className="mt-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
-              <textarea
-                name="observacao"
-                value={formData.observacao}
+            {/* Terceira linha: Telefone, Email, Sexo, Data Nascimento, Nacionalidade */}
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '150px 2fr 120px 150px 1.5fr' }}>
+              <FormField
+                label="Telefone"
+                name="telefone"
+                value={formData.telefone}
                 onChange={handleChange}
-                rows={4}
-                placeholder="Observações gerais sobre o funcionário"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                maxLength={11}
+                placeholder="11999999999"
+              />
+
+              <FormField
+                label="Email *"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                maxLength={50}
+                placeholder="funcionario@email.com"
+              />
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
+                <select
+                  name="sexo"
+                  value={formData.sexo}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10"
+                >
+                  <option value="">Selecionar...</option>
+                  <option value="1">Masculino</option>
+                  <option value="2">Feminino</option>
+                </select>
+              </div>
+
+              <FormField
+                label="Data Nascimento"
+                name="dataNascimento"
+                type="date"
+                value={formData.dataNascimento}
+                onChange={handleChange}
+              />
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nacionalidade</label>
+                <div 
+                  onClick={handleOpenNacionalidadeModal} 
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleOpenNacionalidadeModal()}
+                >
+                  <input
+                    type="text"
+                    readOnly
+                    value={nacionalidadeSelecionada ? nacionalidadeSelecionada.nacionalidade : 'Selecione...'}
+                    className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
+                    placeholder="Selecione..."
+                  />
+                  <FaSearch className="text-gray-500" />
+                </div>
+              </div>
+            </div>
+
+            {/* Quarta linha: RG, CPF, CNH, Data Validade CNH, Salário */}
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '150px 180px 150px 150px 150px' }}>
+              <FormField
+                label="RG"
+                name="rgInscricaoEstadual"
+                value={formData.rgInscricaoEstadual}
+                onChange={handleChange}
+                maxLength={12}
+                placeholder="000000000"
+              />
+
+              <FormField
+                label="CPF"
+                name="cpfCpnj"
+                value={formData.cpfCpnj}
+                onChange={handleChange}
+                maxLength={14}
+                placeholder="000.000.000-00"
+              />
+
+              <FormField
+                label="CNH"
+                name="cnh"
+                value={formData.cnh}
+                onChange={handleChange}
+                maxLength={11}
+                placeholder="00000000000"
+              />
+
+              <FormField
+                label="Validade CNH"
+                name="dataValidadeCnh"
+                type="date"
+                value={formData.dataValidadeCnh}
+                onChange={handleChange}
+              />
+
+              <FormField
+                label="Salário"
+                name="salario"
+                type="number"
+                step="0.01"
+                value={formData.salario}
+                onChange={handleChange}
+                placeholder="0.00"
               />
             </div>
 
-             {/* Rodapé do formulário com informações de registro e botões */}
+            {/* Quinta linha: Data Admissão, Data Demissão */}
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '150px 150px 1fr' }}>
+              <FormField
+                label="Data Admissão"
+                name="dataAdmissao"
+                type="date"
+                value={formData.dataAdmissao}
+                onChange={handleChange}
+              />
+
+              <FormField
+                label="Data Demissão"
+                name="dataDemissao"
+                type="date"
+                value={formData.dataDemissao}
+                onChange={handleChange}
+              />
+
+              <div></div>
+            </div>
+
+            {/* Sexta linha: Observação */}
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Observação</label>
+                <textarea
+                  name="observacao"
+                  value={formData.observacao}
+                  onChange={handleChange}
+                  maxLength={250}
+                  placeholder="Observações gerais sobre o funcionário"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  rows={3}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="flex justify-between items-end pt-6 border-t mt-6">
           {/* Informações do Registro (sempre que existirem datas) */}
           {(dataCadastro || ultimaModificacao) && (
@@ -637,36 +657,33 @@ const FuncionarioForm: React.FC = () => {
             </div>
           )}
 
-              {/* Botões */}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? (
-                    <>
-                      <FaSpinner className="animate-spin mr-2 inline" />
-                      Salvando...
-                    </>
-                  ) : (
-                    'Salvar'
-                  )}
-                </button>
-              </div>
-            </div>
+          {/* Botões de Ação - Sempre à direita */}
+          <div className="flex gap-3 ml-auto">
+            <button
+              type="button"
+              onClick={() => navigate('/funcionarios')}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50`}
+            >
+              {saving ? (
+                <span className="inline-flex items-center">
+                  <FaSpinner className="animate-spin mr-2" />
+                  Salvando...
+                </span>
+              ) : (
+                'Salvar'
+              )}
+            </button>
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
 
-      {/* Modais */}
       <CidadeModal
         isOpen={isCidadeModalOpen}
         onClose={handleCloseCidadeModal}
@@ -677,7 +694,12 @@ const FuncionarioForm: React.FC = () => {
         isOpen={isFuncaoModalOpen}
         onClose={handleCloseFuncaoModal}
         onSelect={handleSelectFuncao}
-        selectedFuncaoId={funcaoSelecionada?.id}
+      />
+
+      <NacionalidadeModal
+        isOpen={isNacionalidadeModalOpen}
+        onClose={handleCloseNacionalidadeModal}
+        onSelect={handleSelectNacionalidade}
       />
     </div>
   );

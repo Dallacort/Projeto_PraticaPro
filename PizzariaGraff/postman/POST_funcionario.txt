@@ -1,0 +1,32 @@
+### POST - Criar Funcionário
+URL: http://localhost:8081/funcionarios
+Method: POST
+Headers: Content-Type: application/json
+
+Body (raw JSON):
+{
+  "funcionario": "Ana Paula Tannouri de Oliveira",
+  "apelido": "Ana",
+  "telefone": "45991552217",
+  "email": "ana.tannouri@gmail.com",
+  "endereco": "Rua Índia",
+  "numero": "151",
+  "complemento": "Casa",
+  "bairro": "Campos do Iguaçu",
+  "cep": "85857520",
+  "cidadeId": 1,
+  "dataAdmissao": "2024-01-15",
+  "dataDemissao": null,
+  "rgInscricaoEstadual": "110089325",
+  "cnh": "12345678901",
+  "dataValidadeCnh": "2026-12-31",
+  "sexo": 2,
+  "observacao": "Nova funcionária com data de nascimento",
+  "estadoCivil": 1,
+  "salario": 5000,
+  "nacionalidadeId": 1,
+  "dataNascimento": "1990-04-14",
+  "funcaoFuncionarioId": 1,
+  "cpfCpnj": "12345678901",
+  "ativo": true
+} 

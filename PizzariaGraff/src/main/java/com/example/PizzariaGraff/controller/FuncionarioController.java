@@ -107,16 +107,78 @@ public class FuncionarioController {
     @Operation(summary = "Atualiza um funcionário")
     public ResponseEntity<FuncionarioDTO> atualizar(@PathVariable Long id, @RequestBody FuncionarioDTO funcionarioDTO) {
         try {
-            // Verificar se o funcionário existe
-            funcionarioService.findById(id);
+            System.out.println("=== CONTROLLER PUT FUNCIONARIO DEBUG ===");
+            System.out.println("ID recebido: " + id);
+            System.out.println("DTO recebido:");
+            System.out.println("Funcionario: " + funcionarioDTO.getFuncionario());
+            System.out.println("Apelido: " + funcionarioDTO.getApelido());
+            System.out.println("Email: " + funcionarioDTO.getEmail());
+            System.out.println("Telefone: " + funcionarioDTO.getTelefone());
+            System.out.println("CidadeId: " + funcionarioDTO.getCidadeId());
+            System.out.println("DataAdmissao: " + funcionarioDTO.getDataAdmissao());
+            System.out.println("DataNascimento: " + funcionarioDTO.getDataNascimento());
+            System.out.println("NacionalidadeId: " + funcionarioDTO.getNacionalidadeId());
+            System.out.println("FuncaoFuncionarioId: " + funcionarioDTO.getFuncaoFuncionarioId());
+            System.out.println("Ativo: " + funcionarioDTO.getAtivo());
             
+            // Verificar se o funcionário existe
+            System.out.println("=== VERIFICANDO SE FUNCIONARIO EXISTE ===");
+            Funcionario funcionarioExistente;
+            try {
+                funcionarioExistente = funcionarioService.findById(id);
+                System.out.println("Funcionário existente encontrado: " + funcionarioExistente.getId());
+                System.out.println("Nome atual: " + funcionarioExistente.getFuncionario());
+            } catch (RuntimeException e) {
+                System.err.println("ERRO: Funcionário não encontrado com ID: " + id);
+                System.err.println("Mensagem: " + e.getMessage());
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Converter DTO para Entity
+            System.out.println("=== CONVERTENDO DTO PARA ENTITY ===");
             Funcionario funcionario = funcionarioDTO.toEntity();
             funcionario.setId(id);
             
+            System.out.println("Entity criada:");
+            System.out.println("ID: " + funcionario.getId());
+            System.out.println("Funcionario: " + funcionario.getFuncionario());
+            System.out.println("Email: " + funcionario.getEmail());
+            System.out.println("CidadeId: " + funcionario.getCidadeId());
+            System.out.println("DataAdmissao: " + funcionario.getDataAdmissao());
+            System.out.println("DataNascimento: " + funcionario.getDataNascimento());
+            System.out.println("NacionalidadeId: " + funcionario.getNacionalidadeId());
+            System.out.println("FuncaoFuncionarioId: " + funcionario.getFuncaoFuncionarioId());
+            System.out.println("Ativo: " + funcionario.getAtivo());
+            
+            // Salvar
+            System.out.println("=== SALVANDO FUNCIONARIO ===");
             Funcionario funcionarioAtualizado = funcionarioService.save(funcionario);
-            return ResponseEntity.ok(new FuncionarioDTO(funcionarioAtualizado));
+            System.out.println("Funcionário salvo com sucesso!");
+            System.out.println("ID salvo: " + funcionarioAtualizado.getId());
+            System.out.println("Nome salvo: " + funcionarioAtualizado.getFuncionario());
+            System.out.println("DataAlteracao: " + funcionarioAtualizado.getDataAlteracao());
+            
+            // Criar resposta
+            System.out.println("=== CRIANDO RESPOSTA ===");
+            FuncionarioDTO responseDTO = new FuncionarioDTO(funcionarioAtualizado);
+            System.out.println("DTO resposta criado: " + responseDTO.getFuncionario());
+            
+            return ResponseEntity.ok(responseDTO);
+            
+        } catch (IllegalArgumentException e) {
+            System.err.println("ERRO DE VALIDAÇÃO no PUT: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            System.err.println("ERRO RUNTIME no PUT: " + e.getMessage());
+            System.err.println("Tipo do erro: " + e.getClass().getSimpleName());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        } catch (Exception e) {
+            System.err.println("ERRO GERAL no PUT: " + e.getMessage());
+            System.err.println("Tipo do erro: " + e.getClass().getSimpleName());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
         }
     }
 
