@@ -166,25 +166,162 @@ const FuncionarioForm: React.FC = () => {
     fetchData();
   }, [id, isNew, navigate]);
 
+  const [forceRender, setForceRender] = useState(0);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     
-    setFormData(prev => ({
-      ...prev,
+    let newData = {
+      ...formData,
       [name]: type === 'checkbox' ? checked : value,
-    }));
+    };
+
+    // Tratamento especial para select "tipo" - limpar campos quando mudar
+    if (name === 'tipo') {
+      // Limpar campos CPF/CNPJ e RG/Inscrição Estadual quando tipo mudar
+      newData.cpfCpnj = '';
+      newData.rgInscricaoEstadual = '';
+      // Forçar re-renderização
+      setForceRender(prev => prev + 1);
+    }
+
+    // Tratamento especial para CPF/CNPJ
+    if (name === 'cpfCpnj') {
+      const cleanValue = value.replace(/[^\d]/g, '');
+      const maxLength = newData.tipo === '1' ? 11 : 14;
+      
+      if (cleanValue.length <= maxLength) {
+        newData.cpfCpnj = cleanValue;
+      } else {
+        newData.cpfCpnj = cleanValue.substring(0, maxLength);
+      }
+    }
+
+    // Tratamento especial para RG/Inscrição Estadual
+    if (name === 'rgInscricaoEstadual') {
+      const cleanValue = value.replace(/[^\d]/g, '');
+      const maxLength = newData.tipo === '1' ? 12 : 14;
+      
+      if (cleanValue.length <= maxLength) {
+        newData.rgInscricaoEstadual = cleanValue;
+      } else {
+        newData.rgInscricaoEstadual = cleanValue.substring(0, maxLength);
+      }
+    }
+    
+    setFormData(newData);
+  };
+
+  // Funções para determinar labels e placeholders dinâmicos
+  const getCpfCnpjLabel = () => {
+    const isBrasileiro = nacionalidadeSelecionada?.id === 1;
+    const asterisco = isBrasileiro ? ' ' : '';
+    return formData.tipo === '1' ? `CPF${asterisco}` : `CNPJ${asterisco}`;
+  };
+
+  const getCpfCnpjPlaceholder = () => {
+    return formData.tipo === '1' ? '000.000.000-00' : '00.000.000/0000-00';
+  };
+
+  const getCpfCnpjMaxLength = () => {
+    return formData.tipo === '1' ? 11 : 14;
+  };
+
+  const getRgInscricaoLabel = () => {
+    return formData.tipo === '1' ? 'RG' : 'Inscrição Estadual';
+  };
+
+  const getRgInscricaoPlaceholder = () => {
+    return formData.tipo === '1' ? '000000000' : '000000000000';
+  };
+
+  const getRgInscricaoMaxLength = () => {
+    return formData.tipo === '1' ? 12 : 14;
   };
 
   const validateForm = () => {
     const errors: string[] = [];
-    if (!formData.funcionario?.trim()) errors.push("Nome do funcionário é obrigatório");
-    if (!formData.email?.trim()) errors.push("Email é obrigatório");
-    if (!cidadeSelecionada || !formData.cidadeId) errors.push("Cidade é obrigatória");
     
+    // Campos obrigatórios
+    if (!formData.funcionario?.trim()) {
+      errors.push("Nome do funcionário é obrigatório");
+    }
+    if (!formData.email?.trim()) {
+      errors.push("Email é obrigatório");
+    }
+    if (!formData.telefone?.trim()) {
+      errors.push("Telefone é obrigatório");
+    }
+    if (!formData.endereco?.trim()) {
+      errors.push("Endereço é obrigatório");
+    }
+    if (!formData.numero?.trim()) {
+      errors.push("Número é obrigatório");
+    }
+    if (!formData.bairro?.trim()) {
+      errors.push("Bairro é obrigatório");
+    }
+    if (!formData.cep?.trim()) {
+      errors.push("CEP é obrigatório");
+    }
+    if (!formData.sexo?.trim()) {
+      errors.push("Sexo é obrigatório");
+    }
+    if (!formData.estadoCivil?.trim()) {
+      errors.push("Estado civil é obrigatório");
+    }
+    if (!formData.salario?.trim()) {
+      errors.push("Salário é obrigatório");
+    }
+    if (!formData.dataNascimento?.trim()) {
+      errors.push("Data de nascimento é obrigatória");
+    }
+    if (!formData.dataAdmissao?.trim()) {
+      errors.push("Data de admissão é obrigatória");
+    }
+    if (!cidadeSelecionada || !formData.cidadeId) {
+      errors.push("Cidade é obrigatória");
+    }
+    if (!funcaoSelecionada || !formData.funcaoFuncionarioId) {
+      errors.push("Função é obrigatória");
+    }
+    if (!nacionalidadeSelecionada || !formData.nacionalidadeId) {
+      errors.push("Nacionalidade é obrigatória");
+    }
+    if (!formData.tipo?.trim()) {
+      errors.push("Tipo (Pessoa Física/Jurídica) é obrigatório");
+    }
+    if (!formData.rgInscricaoEstadual?.trim()) {
+      const campo = formData.tipo === '1' ? "RG" : "Inscrição Estadual";
+      errors.push(`${campo} é obrigatório`);
+    }
+    
+    // CPF/CNPJ é obrigatório apenas para brasileiros (nacionalidadeId = 1)
+    const isBrasileiro = nacionalidadeSelecionada?.id === 1;
+    if (isBrasileiro && !formData.cpfCpnj?.trim()) {
+      const documento = formData.tipo === '1' ? "CPF" : "CNPJ";
+      errors.push(`${documento} é obrigatório para funcionários brasileiros`);
+    }
+    
+    // Validação condicional CNH: obrigatório se a função requer CNH
+    const funcaoRequerCNH = funcaoSelecionada?.requerCNH === true;
+    if (funcaoRequerCNH) {
+      if (!formData.cnh?.trim()) {
+        errors.push("CNH é obrigatória para esta função");
+      }
+      if (!formData.dataValidadeCnh?.trim()) {
+        errors.push("Validade da CNH é obrigatória para esta função");
+      }
+    }
+    
+    // Validação de formato de email
     if (formData.email && !formData.email.includes('@')) {
       errors.push("Email deve ter formato válido");
     }
+    
+    // Campos opcionais: apelido, complemento, dataDemissao
+    // CNH e dataValidadeCnh são condicionalmente obrigatórios baseado na função
     
     return errors;
   };
@@ -205,6 +342,14 @@ const FuncionarioForm: React.FC = () => {
         throw new Error('Cidade não selecionada ou inválida.');
       }
       
+      if (!funcaoSelecionada || !formData.funcaoFuncionarioId) {
+        throw new Error('Função não selecionada ou inválida.');
+      }
+      
+      if (!nacionalidadeSelecionada || !formData.nacionalidadeId) {
+        throw new Error('Nacionalidade não selecionada ou inválida.');
+      }
+      
       console.log('=== DEBUG FUNCIONÁRIO ===');
       console.log('ID da URL:', id);
       console.log('isNew:', isNew);
@@ -214,30 +359,35 @@ const FuncionarioForm: React.FC = () => {
       console.log('Função selecionada:', funcaoSelecionada);
       console.log('Nacionalidade selecionada:', nacionalidadeSelecionada);
       
+      // Para não brasileiros, enviar CPF/CNPJ como null se estiver vazio
+      const isBrasileiro = nacionalidadeSelecionada?.id === 1;
+      const cpfCnpjValue = formData.cpfCpnj?.trim() ? formData.cpfCpnj : (isBrasileiro ? formData.cpfCpnj : null);
+
       const funcionarioPayload: any = {
         funcionario: formData.funcionario,
-        apelido: formData.apelido || null,
-        cpfCpnj: formData.cpfCpnj || null,
-        rgInscricaoEstadual: formData.rgInscricaoEstadual || null,
+        apelido: formData.apelido?.trim() || null, // OPCIONAL
+        cpfCpnj: cpfCnpjValue,
+        rgInscricaoEstadual: formData.rgInscricaoEstadual,
         email: formData.email,
-        telefone: formData.telefone || null,
-        endereco: formData.endereco || null,
-        numero: formData.numero || null,
-        complemento: formData.complemento || null,
-        bairro: formData.bairro || null,
-        cep: formData.cep || null,
-        cnh: formData.cnh || null,
-        dataValidadeCnh: formData.dataValidadeCnh || null,
+        telefone: formData.telefone,
+        endereco: formData.endereco,
+        numero: formData.numero,
+        complemento: formData.complemento?.trim() || null, // OPCIONAL
+        bairro: formData.bairro,
+        cep: formData.cep,
+        cnh: formData.cnh?.trim() || null, // OPCIONAL
+        dataValidadeCnh: formData.dataValidadeCnh?.trim() || null, // OPCIONAL
         sexo: formData.sexo ? Number(formData.sexo) : null,
-        observacao: formData.observacao || null,
+        observacao: formData.observacao,
         estadoCivil: formData.estadoCivil ? Number(formData.estadoCivil) : null,
         salario: formData.salario ? Number(formData.salario) : null,
         nacionalidadeId: formData.nacionalidadeId ? Number(formData.nacionalidadeId) : null,
-        dataNascimento: formData.dataNascimento || null,
-        dataAdmissao: formData.dataAdmissao || null,
-        dataDemissao: formData.dataDemissao || null,
+        dataNascimento: formData.dataNascimento,
+        dataAdmissao: formData.dataAdmissao,
+        dataDemissao: formData.dataDemissao?.trim() || null, // OPCIONAL
         cidadeId: Number(formData.cidadeId),
         funcaoFuncionarioId: formData.funcaoFuncionarioId ? Number(formData.funcaoFuncionarioId) : null,
+        tipo: formData.tipo ? Number(formData.tipo) : 1,
         ativo: Boolean(formData.ativo),
       };
       
@@ -366,19 +516,22 @@ const FuncionarioForm: React.FC = () => {
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo <span className="text-red-500">*</span>
+                </label>
                 <select
                   name="tipo"
                   value={formData.tipo}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10"
+                  required
                 >
                   <option value="1">Pessoa Física</option>
                   <option value="2">Pessoa Jurídica</option>
                 </select>
               </div>
               <FormField
-                label="Funcionário *"
+                label="Funcionário"
                 name="funcionario"
                 value={formData.funcionario}
                 onChange={handleChange}
@@ -397,12 +550,15 @@ const FuncionarioForm: React.FC = () => {
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Estado Civil</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Estado Civil <span className="text-red-500">*</span>
+                </label>
                 <select
                   name="estadoCivil"
                   value={formData.estadoCivil}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10"
+                  required
                 >
                   <option value="">Selecionar...</option>
                   <option value="1">Solteiro</option>
@@ -413,7 +569,9 @@ const FuncionarioForm: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Função</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Função <span className="text-red-500">*</span>
+                </label>
                 <div 
                   onClick={handleOpenFuncaoModal} 
                   className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"
@@ -441,6 +599,7 @@ const FuncionarioForm: React.FC = () => {
                 name="endereco"
                 value={formData.endereco}
                 onChange={handleChange}
+                required
                 maxLength={50}
                 placeholder="Rua, Avenida, etc."
               />
@@ -450,6 +609,7 @@ const FuncionarioForm: React.FC = () => {
                 name="numero"
                 value={formData.numero}
                 onChange={handleChange}
+                required
                 maxLength={10}
                 placeholder="123A"
               />
@@ -468,6 +628,7 @@ const FuncionarioForm: React.FC = () => {
                 name="bairro"
                 value={formData.bairro}
                 onChange={handleChange}
+                required
                 maxLength={50}
                 placeholder="Nome do bairro"
               />
@@ -477,12 +638,15 @@ const FuncionarioForm: React.FC = () => {
                 name="cep"
                 value={formData.cep}
                 onChange={handleChange}
+                required
                 maxLength={8}
                 placeholder="00000000"
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cidade <span className="text-red-500">*</span>
+                </label>
                 <div 
                   onClick={handleOpenCidadeModal} 
                   className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative"
@@ -509,12 +673,13 @@ const FuncionarioForm: React.FC = () => {
                 name="telefone"
                 value={formData.telefone}
                 onChange={handleChange}
+                required
                 maxLength={11}
                 placeholder="11999999999"
               />
 
               <FormField
-                label="Email *"
+                label="Email"
                 name="email"
                 type="email"
                 value={formData.email}
@@ -525,12 +690,15 @@ const FuncionarioForm: React.FC = () => {
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sexo <span className="text-red-500">*</span>
+                </label>
                 <select
                   name="sexo"
                   value={formData.sexo}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10"
+                  required
                 >
                   <option value="">Selecionar...</option>
                   <option value="1">Masculino</option>
@@ -544,10 +712,13 @@ const FuncionarioForm: React.FC = () => {
                 type="date"
                 value={formData.dataNascimento}
                 onChange={handleChange}
+                required
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nacionalidade</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nacionalidade <span className="text-red-500">*</span>
+                </label>
                 <div 
                   onClick={handleOpenNacionalidadeModal} 
                   className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"
@@ -570,38 +741,44 @@ const FuncionarioForm: React.FC = () => {
             {/* Quarta linha: RG, CPF, CNH, Data Validade CNH, Salário */}
             <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '160px 190px 160px 160px 160px 160px 160px' }}>
               <FormField
-                label="RG"
+                key={`rgInscricao-${formData.tipo}-${forceRender}`}
+                label={getRgInscricaoLabel()}
                 name="rgInscricaoEstadual"
                 value={formData.rgInscricaoEstadual}
                 onChange={handleChange}
-                maxLength={12}
-                placeholder="000000000"
+                required
+                maxLength={getRgInscricaoMaxLength()}
+                placeholder={getRgInscricaoPlaceholder()}
               />
 
               <FormField
-                label="CPF"
+                key={`cpfCnpj-${formData.tipo}-${forceRender}`}
+                label={getCpfCnpjLabel()}
                 name="cpfCpnj"
                 value={formData.cpfCpnj}
                 onChange={handleChange}
-                maxLength={14}
-                placeholder="000.000.000-00"
+                required={nacionalidadeSelecionada?.id === 1}
+                maxLength={getCpfCnpjMaxLength()}
+                placeholder={getCpfCnpjPlaceholder()}
               />
 
               <FormField
-                label="CNH"
+                label={`CNH${funcaoSelecionada?.requerCNH ? ' *' : ''}`}
                 name="cnh"
                 value={formData.cnh}
                 onChange={handleChange}
                 maxLength={11}
                 placeholder="00000000000"
+                required={funcaoSelecionada?.requerCNH === true}
               />
 
               <FormField
-                label="Validade CNH"
+                label={`Validade CNH${funcaoSelecionada?.requerCNH ? ' *' : ''}`}
                 name="dataValidadeCnh"
                 type="date"
                 value={formData.dataValidadeCnh}
                 onChange={handleChange}
+                required={funcaoSelecionada?.requerCNH === true}
               />
 
               <FormField
@@ -611,6 +788,7 @@ const FuncionarioForm: React.FC = () => {
                 step="0.01"
                 value={formData.salario}
                 onChange={handleChange}
+                required
                 placeholder="0.00"
               />
               <FormField
@@ -619,6 +797,7 @@ const FuncionarioForm: React.FC = () => {
                 type="date"
                 value={formData.dataAdmissao}
                 onChange={handleChange}
+                required
               />
 
               <FormField
@@ -633,11 +812,14 @@ const FuncionarioForm: React.FC = () => {
             {/* Quinta linha: Observação */}
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Observação</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Observação <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   name="observacao"
                   value={formData.observacao}
                   onChange={handleChange}
+                  required
                   maxLength={250}
                   placeholder="Observações gerais sobre o funcionário"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"

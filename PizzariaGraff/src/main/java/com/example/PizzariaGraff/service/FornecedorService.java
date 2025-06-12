@@ -45,24 +45,180 @@ public class FornecedorService {
             fornecedor.setCpfCnpj(cpfCnpjLimpo);
         }
         
-        if (fornecedor.getEmail() != null) {
+        if (fornecedor.getEmail() != null && !fornecedor.getEmail().trim().isEmpty()) {
             String emailNormalizado = fornecedor.getEmail().trim().toLowerCase();
             fornecedor.setEmail(emailNormalizado);
         }
         
-        // Validação básica
+        // Validações obrigatórias
+        validarCamposObrigatorios(fornecedor);
+        
+        // Validação e verificação de duplicatas de CPF/CNPJ
+        if (fornecedor.getCpfCnpj() != null && !fornecedor.getCpfCnpj().trim().isEmpty()) {
+            validarCpfCnpj(fornecedor.getCpfCnpj(), fornecedor.getTipo());
+            verificarCpfCnpjDuplicado(fornecedor.getCpfCnpj(), fornecedor.getId());
+        }
+        
+        return fornecedorRepository.save(fornecedor);
+    }
+    
+    private void validarCamposObrigatorios(Fornecedor fornecedor) {
         if (fornecedor.getFornecedor() == null || fornecedor.getFornecedor().trim().isEmpty()) {
             throw new RuntimeException("O nome do fornecedor é obrigatório");
+        }
+        
+        if (fornecedor.getTelefone() == null || fornecedor.getTelefone().trim().isEmpty()) {
+            throw new RuntimeException("O telefone é obrigatório");
+        }
+        
+        if (fornecedor.getCidadeId() == null) {
+            throw new RuntimeException("A cidade é obrigatória");
+        }
+        
+        if (fornecedor.getTipo() == null) {
+            throw new RuntimeException("O tipo (Pessoa Física/Jurídica) é obrigatório");
+        }
+        
+        if (fornecedor.getEndereco() == null || fornecedor.getEndereco().trim().isEmpty()) {
+            throw new RuntimeException("O endereço é obrigatório");
+        }
+        
+        if (fornecedor.getNumero() == null || fornecedor.getNumero().trim().isEmpty()) {
+            throw new RuntimeException("O número do endereço é obrigatório");
+        }
+        
+        if (fornecedor.getBairro() == null || fornecedor.getBairro().trim().isEmpty()) {
+            throw new RuntimeException("O bairro é obrigatório");
+        }
+        
+        if (fornecedor.getCep() == null || fornecedor.getCep().trim().isEmpty()) {
+            throw new RuntimeException("O CEP é obrigatório");
+        }
+        
+        if (fornecedor.getCondicaoPagamentoId() == null) {
+            throw new RuntimeException("A condição de pagamento é obrigatória");
+        }
+        
+        if (fornecedor.getNacionalidadeId() == null) {
+            throw new RuntimeException("A nacionalidade é obrigatória");
+        }
+        
+        if (fornecedor.getRgInscricaoEstadual() == null || fornecedor.getRgInscricaoEstadual().trim().isEmpty()) {
+            String campo = fornecedor.getTipo() == 1 ? "RG" : "Inscrição Estadual";
+            throw new RuntimeException("O " + campo + " é obrigatório");
         }
         
         // CPF/CNPJ é obrigatório apenas para brasileiros (nacionalidadeId = 1)
         if (fornecedor.getNacionalidadeId() != null && fornecedor.getNacionalidadeId() == 1) {
             if (fornecedor.getCpfCnpj() == null || fornecedor.getCpfCnpj().trim().isEmpty()) {
-                throw new RuntimeException("O CPF/CNPJ é obrigatório para fornecedores brasileiros");
+                String documento = fornecedor.getTipo() == 1 ? "CPF" : "CNPJ";
+                throw new RuntimeException("O " + documento + " é obrigatório para fornecedores brasileiros");
             }
         }
+    }
+    
+    private void validarCpfCnpj(String cpfCnpj, Integer tipo) {
+        if (cpfCnpj == null || cpfCnpj.trim().isEmpty()) {
+            return; // Já validado na função anterior se obrigatório
+        }
         
-        return fornecedorRepository.save(fornecedor);
+        String documento = cpfCnpj.replaceAll("[^0-9]", "");
+        
+        if (tipo == 1) { // Pessoa Física - CPF
+            if (documento.length() != 11) {
+                throw new RuntimeException("CPF deve conter exatamente 11 dígitos");
+            }
+            if (!validarCPF(documento)) {
+                throw new RuntimeException("CPF inválido");
+            }
+        } else if (tipo == 2) { // Pessoa Jurídica - CNPJ
+            if (documento.length() != 14) {
+                throw new RuntimeException("CNPJ deve conter exatamente 14 dígitos");
+            }
+            if (!validarCNPJ(documento)) {
+                throw new RuntimeException("CNPJ inválido");
+            }
+        }
+    }
+    
+    private void verificarCpfCnpjDuplicado(String cpfCnpj, Long fornecedorId) {
+        if (cpfCnpj == null || cpfCnpj.trim().isEmpty()) {
+            return;
+        }
+        
+        List<Fornecedor> fornecedoresExistentes = fornecedorRepository.findByCpfCnpj(cpfCnpj);
+        
+        for (Fornecedor existente : fornecedoresExistentes) {
+            // Se é um fornecedor diferente (não é uma atualização do mesmo)
+            if (fornecedorId == null || !existente.getId().equals(fornecedorId)) {
+                String documento = existente.getTipo() == 1 ? "CPF" : "CNPJ";
+                throw new RuntimeException("Já existe um fornecedor cadastrado com este " + documento);
+            }
+        }
+    }
+    
+    private boolean validarCPF(String cpf) {
+        // Remove caracteres não numéricos
+        cpf = cpf.replaceAll("[^0-9]", "");
+        
+        // Verifica se tem 11 dígitos
+        if (cpf.length() != 11) return false;
+        
+        // Verifica se todos os dígitos são iguais
+        if (cpf.matches("(\\d)\\1{10}")) return false;
+        
+        // Calcula o primeiro dígito verificador
+        int soma = 0;
+        for (int i = 0; i < 9; i++) {
+            soma += Character.getNumericValue(cpf.charAt(i)) * (10 - i);
+        }
+        int primeiroDigito = 11 - (soma % 11);
+        if (primeiroDigito >= 10) primeiroDigito = 0;
+        
+        // Calcula o segundo dígito verificador
+        soma = 0;
+        for (int i = 0; i < 10; i++) {
+            soma += Character.getNumericValue(cpf.charAt(i)) * (11 - i);
+        }
+        int segundoDigito = 11 - (soma % 11);
+        if (segundoDigito >= 10) segundoDigito = 0;
+        
+        // Verifica se os dígitos calculados conferem com os informados
+        return Character.getNumericValue(cpf.charAt(9)) == primeiroDigito &&
+               Character.getNumericValue(cpf.charAt(10)) == segundoDigito;
+    }
+    
+    private boolean validarCNPJ(String cnpj) {
+        // Remove caracteres não numéricos
+        cnpj = cnpj.replaceAll("[^0-9]", "");
+        
+        // Verifica se tem 14 dígitos
+        if (cnpj.length() != 14) return false;
+        
+        // Verifica se todos os dígitos são iguais
+        if (cnpj.matches("(\\d)\\1{13}")) return false;
+        
+        // Calcula o primeiro dígito verificador
+        int[] peso1 = {5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2};
+        int soma = 0;
+        for (int i = 0; i < 12; i++) {
+            soma += Character.getNumericValue(cnpj.charAt(i)) * peso1[i];
+        }
+        int primeiroDigito = 11 - (soma % 11);
+        if (primeiroDigito >= 10) primeiroDigito = 0;
+        
+        // Calcula o segundo dígito verificador
+        int[] peso2 = {6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2};
+        soma = 0;
+        for (int i = 0; i < 13; i++) {
+            soma += Character.getNumericValue(cnpj.charAt(i)) * peso2[i];
+        }
+        int segundoDigito = 11 - (soma % 11);
+        if (segundoDigito >= 10) segundoDigito = 0;
+        
+        // Verifica se os dígitos calculados conferem com os informados
+        return Character.getNumericValue(cnpj.charAt(12)) == primeiroDigito &&
+               Character.getNumericValue(cnpj.charAt(13)) == segundoDigito;
     }
     
     public void deleteById(Long id) {

@@ -168,13 +168,35 @@ const ProdutoForm: React.FC = () => {
 
   const validateForm = () => {
     const errors: string[] = [];
-    if (!formData.produto?.trim() && !formData.nome?.trim()) errors.push("Nome do produto é obrigatório");
-    if (!formData.codigoBarras?.trim()) errors.push("Código de barras é obrigatório");
-    if (!formData.referencia?.trim()) errors.push("Referência é obrigatória");
-    if (!formData.descricao?.trim()) errors.push("Descrição é obrigatória");
-    if (!formData.observacoes?.trim()) errors.push("Observações são obrigatórias");
-    if (!formData.marcaId || formData.marcaId === '') errors.push("Marca é obrigatória");
-    if (!formData.unidadeMedidaId || formData.unidadeMedidaId === '') errors.push("Unidade de medida é obrigatória");
+    
+    // Campos obrigatórios
+    if (!formData.produto?.trim() && !formData.nome?.trim()) {
+      errors.push("Nome do produto é obrigatório");
+    }
+    if (!formData.marcaId || formData.marcaId === '') {
+      errors.push("Marca é obrigatória");
+    }
+    if (!formData.unidadeMedidaId || formData.unidadeMedidaId === '') {
+      errors.push("Unidade de medida é obrigatória");
+    }
+    if (formData.valorCompra <= 0) {
+      errors.push("Valor de compra deve ser maior que zero");
+    }
+    if (formData.valorVenda <= 0) {
+      errors.push("Valor de venda deve ser maior que zero");
+    }
+    if (formData.percentualLucro < 0) {
+      errors.push("Percentual de lucro não pode ser negativo");
+    }
+    if (formData.quantidade < 0) {
+      errors.push("Quantidade não pode ser negativa");
+    }
+    if (formData.quantidadeMinima < 0) {
+      errors.push("Quantidade mínima não pode ser negativa");
+    }
+    
+    // Campos opcionais: codigoBarras, referencia, descricao, observacoes
+    // Não precisam de validação de obrigatoriedade
     
     return errors;
   };
@@ -196,10 +218,10 @@ const ProdutoForm: React.FC = () => {
       
       const produtoDataPayload = {
         produto: formData.produto || formData.nome,
-        codigoBarras: formData.codigoBarras,
-        referencia: formData.referencia,
-        descricao: formData.descricao,
-        observacoes: formData.observacoes,
+        codigoBarras: formData.codigoBarras?.trim() || null,
+        referencia: formData.referencia?.trim() || null,
+        descricao: formData.descricao?.trim() || null,
+        observacoes: formData.observacoes?.trim() || null,
         valorCompra: formData.valorCompra,
         valorVenda: formData.valorVenda,
         percentualLucro: formData.percentualLucro,
@@ -313,7 +335,6 @@ const ProdutoForm: React.FC = () => {
                 name="codigoBarras"
                 value={formData.codigoBarras}
                 onChange={handleChange}
-                required
                 disabled={isView}
                 maxLength={50}
                 placeholder="Ex: 7891000100103"
@@ -324,7 +345,6 @@ const ProdutoForm: React.FC = () => {
                 name="referencia"
                 value={formData.referencia}
                 onChange={handleChange}
-                required
                 disabled={isView}
                 maxLength={50}
                 placeholder="Ex: REF001"
@@ -334,7 +354,9 @@ const ProdutoForm: React.FC = () => {
             {/* Segunda linha: Marca, Unidade de Medida, Descrição */}
             <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '1fr 1fr 3fr' }}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Marca <span className="text-red-500">*</span>
+                </label>
                 <div 
                   onClick={!isView ? handleOpenMarcaModal : undefined}
                   className={`flex items-center gap-2 p-2 border border-gray-300 rounded-md ${!isView ? 'bg-gray-100 cursor-pointer hover:bg-gray-200' : 'bg-gray-50'} relative`}
@@ -354,7 +376,9 @@ const ProdutoForm: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Unidade de Medida</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Unidade de Medida <span className="text-red-500">*</span>
+                </label>
                 <div 
                   onClick={!isView ? handleOpenUnidadeMedidaModal : undefined}
                   className={`flex items-center gap-2 p-2 border border-gray-300 rounded-md ${!isView ? 'bg-gray-100 cursor-pointer hover:bg-gray-200' : 'bg-gray-50'} relative`}
@@ -378,7 +402,6 @@ const ProdutoForm: React.FC = () => {
                 name="descricao"
                 value={formData.descricao}
                 onChange={handleChange}
-                required
                 disabled={isView}
                 maxLength={255}
                 placeholder="Descrição do produto"
@@ -394,6 +417,7 @@ const ProdutoForm: React.FC = () => {
                 step="0.01"
                 value={formData.valorCompra}
                 onChange={handleChange}
+                required
                 disabled={isView}
                 placeholder="0,00"
               />
@@ -405,6 +429,7 @@ const ProdutoForm: React.FC = () => {
                 step="0.01"
                 value={formData.valorVenda}
                 onChange={handleChange}
+                required
                 disabled={isView}
                 placeholder="0,00"
               />
@@ -416,6 +441,7 @@ const ProdutoForm: React.FC = () => {
                 step="0.01"
                 value={formData.percentualLucro}
                 onChange={handleChange}
+                required
                 disabled={isView}
                 placeholder="0,00"
               />
@@ -426,6 +452,7 @@ const ProdutoForm: React.FC = () => {
                 type="number"
                 value={formData.quantidade}
                 onChange={handleChange}
+                required
                 disabled={isView}
                 placeholder="0"
               />
@@ -436,6 +463,7 @@ const ProdutoForm: React.FC = () => {
                 type="number"
                 value={formData.quantidadeMinima}
                 onChange={handleChange}
+                required
                 disabled={isView}
                 placeholder="0"
               />
@@ -449,7 +477,6 @@ const ProdutoForm: React.FC = () => {
                   name="observacoes"
                   value={formData.observacoes}
                   onChange={handleChange}
-                  required
                   disabled={isView}
                   maxLength={500}
                   placeholder="Observações sobre o produto..."

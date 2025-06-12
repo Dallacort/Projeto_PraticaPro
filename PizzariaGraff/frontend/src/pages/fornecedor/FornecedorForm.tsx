@@ -187,6 +187,8 @@ const FornecedorForm: React.FC = () => {
     fetchData();
   }, [id, isNew, navigate]);
 
+  const [forceRender, setForceRender] = useState(0);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -199,6 +201,11 @@ const FornecedorForm: React.FC = () => {
     // Tratamento especial para select "tipo" - converter para número
     if (name === 'tipo') {
       newData.tipo = Number(value);
+      // Limpar campos CPF/CNPJ e RG/Inscrição Estadual quando tipo mudar
+      newData.cpfCnpj = '';
+      newData.rgInscricaoEstadual = '';
+      // Forçar re-renderização
+      setForceRender(prev => prev + 1);
     }
 
     // Tratamento especial para CPF/CNPJ
@@ -210,6 +217,18 @@ const FornecedorForm: React.FC = () => {
         newData.cpfCnpj = cleanValue;
       } else {
         newData.cpfCnpj = cleanValue.substring(0, maxLength);
+      }
+    }
+
+    // Tratamento especial para RG/Inscrição Estadual
+    if (name === 'rgInscricaoEstadual') {
+      const cleanValue = value.replace(/[^\d]/g, '');
+      const maxLength = newData.tipo === 1 ? 12 : 14;
+      
+      if (cleanValue.length <= maxLength) {
+        newData.rgInscricaoEstadual = cleanValue;
+      } else {
+        newData.rgInscricaoEstadual = cleanValue.substring(0, maxLength);
       }
     }
     
@@ -260,12 +279,20 @@ const FornecedorForm: React.FC = () => {
     
     // Usar a classe Validators para validações robustas
     const validations = [
+      // Campos obrigatórios
       () => Validators.validateRequired(formData.fornecedor, "Nome do fornecedor"),
-      () => Validators.validateRequired(formData.apelido, "Apelido"),
-      () => Validators.validateRequired(formData.email, "Email"),
       () => Validators.validateRequired(formData.telefone, "Telefone"),
       () => Validators.validateRequired(formData.cidadeId, "Cidade"),
-      () => Validators.validateRequired(formData.limiteCredito, "Limite de crédito"),
+      () => Validators.validateRequired(formData.tipo.toString(), "Tipo"),
+      () => Validators.validateRequired(formData.endereco, "Endereço"),
+      () => Validators.validateRequired(formData.numero, "Número"),
+      () => Validators.validateRequired(formData.bairro, "Bairro"),
+      () => Validators.validateRequired(formData.cep, "CEP"),
+      () => Validators.validateRequired(formData.condicaoPagamentoId, "Condição de Pagamento"),
+      () => Validators.validateRequired(formData.nacionalidadeId, "Nacionalidade"),
+      
+      // RG/Inscrição Estadual é obrigatório
+      () => Validators.validateRequired(formData.rgInscricaoEstadual, formData.tipo === 1 ? "RG" : "Inscrição Estadual"),
       
       // CPF/CNPJ é obrigatório apenas para brasileiros
       () => {
@@ -279,22 +306,27 @@ const FornecedorForm: React.FC = () => {
         return { isValid: true };
       },
       
-      // Validar email
-      () => Validators.validateEmail(formData.email),
+      // Validar email se preenchido (opcional)
+      () => {
+        if (formData.email?.trim()) {
+          return Validators.validateEmail(formData.email);
+        }
+        return { isValid: true };
+      },
       
       // Validar telefone
       () => Validators.validateTelefone(formData.telefone),
       
-      // Validar CEP se preenchido
-      () => {
-        if (formData.cep?.trim()) {
-          return Validators.validateCEP(formData.cep);
-        }
-        return { isValid: true }; // Campo opcional
-      },
+      // Validar CEP
+      () => Validators.validateCEP(formData.cep),
       
-      // Validar limite de crédito (deve ser positivo)
-      () => Validators.validatePositiveNumber(formData.limiteCredito, "Limite de crédito"),
+      // Validar limite de crédito se preenchido (opcional, mas deve ser positivo)
+      () => {
+        if (formData.limiteCredito > 0) {
+          return Validators.validatePositiveNumber(formData.limiteCredito, "Limite de crédito");
+        }
+        return { isValid: true };
+      },
       
       // Validar emails adicionais se fornecidos
       () => {
@@ -344,6 +376,14 @@ const FornecedorForm: React.FC = () => {
       
       if (!cidadeSelecionada && !formData.cidadeId) {
         throw new Error('Cidade deve ser selecionada.');
+      }
+      
+      if (!condicaoPagamentoSelecionada || !formData.condicaoPagamentoId) {
+        throw new Error('Condição de Pagamento não selecionada ou inválida.');
+      }
+      
+      if (!nacionalidadeSelecionada || !formData.nacionalidadeId) {
+        throw new Error('Nacionalidade não selecionada ou inválida.');
       }
       
       // Para não brasileiros, enviar CPF/CNPJ como null se estiver vazio
@@ -438,7 +478,7 @@ const FornecedorForm: React.FC = () => {
 
   const getCpfCnpjLabel = () => {
     const isBrasileiro = nacionalidadeSelecionada?.id === 1;
-    const asterisco = isBrasileiro ? ' *' : '';
+    const asterisco = isBrasileiro ? ' ' : '';
     console.log('getCpfCnpjLabel - formData.tipo:', formData.tipo, 'type of:', typeof formData.tipo);
     return formData.tipo === 1 ? `CPF${asterisco}` : `CNPJ${asterisco}`;
   };
@@ -448,7 +488,20 @@ const FornecedorForm: React.FC = () => {
   };
 
   const getCpfCnpjMaxLength = () => {
-    return formData.tipo === 1 ? 14 : 18;
+    return formData.tipo === 1 ? 11 : 14;
+  };
+
+  // Função para determinar o label do campo RG/Inscrição Estadual baseado no tipo
+  const getRgInscricaoLabel = () => {
+    return formData.tipo === 1 ? 'RG' : 'Inscrição Estadual';
+  };
+
+  const getRgInscricaoPlaceholder = () => {
+    return formData.tipo === 1 ? '000000000' : '000000000000';
+  };
+
+  const getRgInscricaoMaxLength = () => {
+    return formData.tipo === 1 ? 12 : 14;
   };
 
   if (loading) {
@@ -509,12 +562,15 @@ const FornecedorForm: React.FC = () => {
               />
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo <span className="text-red-500">*</span>
+                </label>
                 <select
                   name="tipo"
                   value={formData.tipo}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  required
                 >
                   <option value={1}>Pessoa Física</option>
                   <option value={2}>Pessoa Jurídica</option>
@@ -536,7 +592,6 @@ const FornecedorForm: React.FC = () => {
                 name="apelido"
                 value={formData.apelido}
                 onChange={handleChange}
-                required
                 maxLength={50}
                 placeholder="Ex: ABC"
               />
@@ -549,6 +604,7 @@ const FornecedorForm: React.FC = () => {
                 name="endereco"
                 value={formData.endereco}
                 onChange={handleChange}
+                required
                 maxLength={50}
                 placeholder="Ex: Rua das Indústrias"
               />
@@ -558,6 +614,7 @@ const FornecedorForm: React.FC = () => {
                 name="numero"
                 value={formData.numero}
                 onChange={handleChange}
+                required
                 maxLength={10}
                 placeholder="Ex: 1500"
               />
@@ -576,6 +633,7 @@ const FornecedorForm: React.FC = () => {
                 name="bairro"
                 value={formData.bairro}
                 onChange={handleChange}
+                required
                 maxLength={50}
                 placeholder="Ex: Vila Industrial"
               />
@@ -585,12 +643,15 @@ const FornecedorForm: React.FC = () => {
                 name="cep"
                 value={formData.cep}
                 onChange={handleChange}
+                required
                 maxLength={9}
                 placeholder="00000-000"
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cidade <span className="text-red-500">*</span>
+                </label>
                 <div 
                   onClick={handleOpenCidadeModal} 
                   className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative"
@@ -650,7 +711,6 @@ const FornecedorForm: React.FC = () => {
                     className="w-full px-3 py-2 pr-16 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     placeholder="contato@fornecedor.com"
                     maxLength={50}
-                    required
                   />
                   <button
                     type="button"
@@ -668,19 +728,23 @@ const FornecedorForm: React.FC = () => {
             {/* Quarta linha: RG, CPF/CNPJ, Nacionalidade, Transportadora */}
             <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '150px 180px 1fr 1fr' }}>
               <FormField
-                label="RG/I.E."
+                key={`rgInscricao-${formData.tipo}-${forceRender}`}
+                label={getRgInscricaoLabel()}
                 name="rgInscricaoEstadual"
                 value={formData.rgInscricaoEstadual}
                 onChange={handleChange}
-                maxLength={20}
-                placeholder="Ex: 123456789012"
+                required
+                maxLength={getRgInscricaoMaxLength()}
+                placeholder={getRgInscricaoPlaceholder()}
               />
 
               <FormField
+                key={`cpfCnpj-${formData.tipo}-${forceRender}`}
                 label={getCpfCnpjLabel()}
                 name="cpfCnpj"
                 value={formData.cpfCnpj}
                 onChange={handleChange}
+                required={nacionalidadeSelecionada?.id === 1}
                 maxLength={getCpfCnpjMaxLength()}
                 placeholder={getCpfCnpjPlaceholder()}
               />
@@ -688,7 +752,9 @@ const FornecedorForm: React.FC = () => {
 
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nacionalidade</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nacionalidade <span className="text-red-500">*</span>
+                </label>
                 <div 
                   onClick={handleOpenNacionalidadeModal} 
                   className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative"
@@ -741,7 +807,9 @@ const FornecedorForm: React.FC = () => {
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Condição de Pagamento</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Condição de Pagamento <span className="text-red-500">*</span>
+                </label>
                 <div 
                   onClick={handleOpenCondicaoPagamentoModal} 
                   className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative"

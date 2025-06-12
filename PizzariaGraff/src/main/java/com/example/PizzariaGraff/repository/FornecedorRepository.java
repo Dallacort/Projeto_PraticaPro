@@ -77,6 +77,26 @@ public class FornecedorRepository {
         return fornecedores;
     }
 
+    public List<Fornecedor> findByCpfCnpj(String cpfCnpj) {
+        List<Fornecedor> fornecedores = new ArrayList<>();
+        String sql = "SELECT * FROM fornecedor WHERE cpf_cnpj = ?";
+
+        try (Connection conn = databaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, cpfCnpj);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                fornecedores.add(mapResultSetToFornecedor(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar fornecedores por CPF/CNPJ", e);
+        }
+
+        return fornecedores;
+    }
+
     public Fornecedor save(Fornecedor fornecedor) {
         if (fornecedor.getId() == null) {
             return insert(fornecedor);

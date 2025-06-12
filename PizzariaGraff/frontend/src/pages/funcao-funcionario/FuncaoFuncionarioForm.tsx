@@ -95,11 +95,16 @@ const FuncaoFuncionarioForm: React.FC = () => {
   const validateForm = () => {
     const errors: string[] = [];
     
-    // Pelo menos um dos campos principais deve estar preenchido
-    if (!formData.funcaoFuncionario?.trim() && !formData.descricao?.trim()) {
-      errors.push("Nome da função ou descrição é obrigatório");
+    // Apenas função e carga horária são obrigatórios
+    if (!formData.funcaoFuncionario?.trim()) {
+      errors.push("Nome da função é obrigatório");
     }
     
+    if (!formData.cargaHoraria?.trim()) {
+      errors.push("Carga horária é obrigatória");
+    }
+    
+    // Validações de formato (se preenchidos)
     if (formData.salarioBase && isNaN(Number(formData.salarioBase))) {
       errors.push("Salário base deve ser um número válido");
     }
@@ -248,7 +253,9 @@ const FuncaoFuncionarioForm: React.FC = () => {
             {/* Linha 2: Requer CNH, Carga Horária */}
             <div className="grid grid-cols-12 gap-4 mb-4">
               <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Carga Horária (horas/semana)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Carga Horária (horas/semana) <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="number"
                   name="cargaHoraria"
@@ -259,6 +266,7 @@ const FuncaoFuncionarioForm: React.FC = () => {
                   max="80"
                   placeholder="40.00"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  required
                 />
               </div>
               
