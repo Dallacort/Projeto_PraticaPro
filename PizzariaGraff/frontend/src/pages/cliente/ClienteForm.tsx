@@ -211,6 +211,18 @@ const ClienteForm: React.FC = () => {
         }
       }
       
+      // Se é o campo RG/Inscrição Estadual, limitar o tamanho
+      if (name === 'rgInscricaoEstadual') {
+        const maxLength = newData.tipo === 1 ? 12 : 14;
+        const cleanValue = value.replace(/[^\d]/g, '');
+        if (cleanValue.length <= maxLength) {
+          newData.rgInscricaoEstadual = cleanValue;
+        } else {
+          // Se exceder o limite, cortar o valor
+          newData.rgInscricaoEstadual = cleanValue.substring(0, maxLength);
+        }
+      }
+      
       return newData;
     });
   };
@@ -218,7 +230,7 @@ const ClienteForm: React.FC = () => {
   // Função para determinar o label do campo CPF/CNPJ baseado no tipo
   const getCpfCnpjLabel = () => {
     const isBrasileiro = nacionalidadeSelecionada?.id === 1;
-    const asterisco = isBrasileiro ? ' *' : '';
+    const asterisco = isBrasileiro ? ' ' : '';
     return formData.tipo === 1 ? `CPF${asterisco}` : `CNPJ${asterisco}`;
   };
 
@@ -232,7 +244,7 @@ const ClienteForm: React.FC = () => {
 
   // Função para determinar o label do campo RG/Inscrição Estadual baseado no tipo
   const getRgInscricaoLabel = () => {
-    return formData.tipo === 1 ? 'RG *' : 'Inscrição Estadual *';
+    return formData.tipo === 1 ? 'RG' : 'Inscrição Estadual';
   };
 
   const getRgInscricaoPlaceholder = () => {
@@ -441,7 +453,9 @@ const ClienteForm: React.FC = () => {
               />
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo <span className="text-red-500">*</span>
+                </label>
                 <select
                   name="tipo"
                   value={formData.tipo}
@@ -455,7 +469,7 @@ const ClienteForm: React.FC = () => {
               </div>
 
               <FormField
-                label="Cliente *"
+                label="Cliente"
                 name="cliente"
                 value={formData.cliente}
                 onChange={handleChange}
@@ -539,7 +553,9 @@ const ClienteForm: React.FC = () => {
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cidade <span className="text-red-500">*</span>
+                </label>
                 <div 
                   onClick={handleOpenCidadeModal} 
                   className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative"
@@ -648,7 +664,7 @@ const ClienteForm: React.FC = () => {
               />
 
               <FormField
-                label="Limite de Crédito *"
+                label="Limite de Crédito"
                 name="limiteCredito"
                 type="number"
                 step="0.01"
@@ -659,7 +675,9 @@ const ClienteForm: React.FC = () => {
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Condição de Pagamento *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Condição de Pagamento <span className="text-red-500">*</span>
+                </label>
                 <div 
                   onClick={handleOpenCondicaoPagamentoModal} 
                   className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"
