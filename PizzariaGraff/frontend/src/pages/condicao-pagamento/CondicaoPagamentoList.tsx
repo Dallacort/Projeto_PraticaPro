@@ -126,13 +126,6 @@ const CondicaoPagamentoList: React.FC = () => {
           {item.ativo ? 'Ativo' : 'Inativo'}
         </span>
       )
-    },
-    {
-      header: 'Data de Cadastro',
-      accessor: 'dataCadastro',
-      cell: (item: CondicaoPagamento) => (
-        item.dataCadastro ? formatDate(item.dataCadastro) : '-'
-      )
     }
   ];
 

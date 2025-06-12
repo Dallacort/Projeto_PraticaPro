@@ -148,15 +148,29 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     
-    const newValue = type === 'checkbox' 
-      ? checked 
-      : type === 'number' || name.includes('percentual')
-        ? parseFloat(value) || 0
-        : name === 'formaPagamentoPadraoId' && value === ''
-          ? null
-          : name === 'formaPagamentoPadraoId'
-            ? parseInt(value, 10)
-            : value;
+    let newValue: any;
+    
+    if (type === 'checkbox') {
+      newValue = checked;
+    } else if (type === 'number') {
+      // Tratamento específico para cada campo numérico
+      if (name === 'numeroParcelas') {
+        const intValue = parseInt(value) || 0;
+        newValue = Math.max(0, Math.min(999, intValue)); // Limitar entre 0 e 999
+      } else if (name === 'diasPrimeiraParcela' || name === 'diasEntreParcelas') {
+        const intValue = parseInt(value) || 0;
+        newValue = Math.max(0, Math.min(9999, intValue)); // Limitar entre 0 e 9999
+      } else if (name.includes('percentual')) {
+        const floatValue = parseFloat(value) || 0;
+        newValue = Math.max(0, Math.min(100, floatValue)); // Limitar entre 0 e 100
+      } else {
+        newValue = parseFloat(value) || 0;
+      }
+    } else if (name === 'formaPagamentoPadraoId') {
+      newValue = value === '' ? null : parseInt(value, 10);
+    } else {
+      newValue = value;
+    }
     
     // Atualizar o estado com o novo valor
     setFormData(prev => {
@@ -224,9 +238,23 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
         return { ...updatedData, parcelas: novasParcelas };
       }
     
-    // Limpar erro ao editar campo
+    // Limpar erros relacionados ao campo editado
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        
+        // Se for campo que afeta parcelas, limpar erros de parcelas também
+        if (['numeroParcelas', 'diasPrimeiraParcela', 'diasEntreParcelas'].includes(name)) {
+          Object.keys(newErrors).forEach(key => {
+            if (key === 'parcelas' || key.startsWith('parcelas[')) {
+              delete newErrors[key];
+            }
+          });
+        }
+        
+        return newErrors;
+      });
     }
       
       return updatedData;
@@ -238,11 +266,16 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
       const updatedParcelas = [...prev.parcelas];
       const parcela = { ...updatedParcelas[index] };
       
-      // Processar o valor conforme o tipo do campo
-      if (field === 'dias' || field === 'numero') {
-        parcela[field] = parseInt(value, 10) || 0;
+      // Processar o valor conforme o tipo do campo com validações
+      if (field === 'numero') {
+        const intValue = parseInt(value, 10) || 0;
+        parcela[field] = Math.max(1, Math.min(999, intValue)); // Limitar entre 1 e 999
+      } else if (field === 'dias') {
+        const intValue = parseInt(value, 10) || 0;
+        parcela[field] = Math.max(0, Math.min(9999, intValue)); // Limitar entre 0 e 9999
       } else if (field === 'percentual') {
-        parcela[field] = parseFloat(value) || 0;
+        const floatValue = parseFloat(value) || 0;
+        parcela[field] = Math.max(0, Math.min(100, floatValue)); // Limitar entre 0 e 100
       } else if (field === 'formaPagamentoId') {
         if (value === '') {
           parcela[field] = null;
@@ -261,6 +294,16 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
       }
       
       updatedParcelas[index] = parcela;
+      
+      // Limpar erros relacionados a esta parcela
+      const newErrors = { ...errors };
+      Object.keys(newErrors).forEach(key => {
+        if (key.startsWith(`parcelas[${index}]`)) {
+          delete newErrors[key];
+        }
+      });
+      setErrors(newErrors);
+      
       return { ...prev, parcelas: updatedParcelas };
     });
   };
@@ -332,38 +375,120 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
   const validateForm = () => {
     const errors: Record<string, string> = {};
     
+    // Validação do nome da condição
     if (!formData.condicaoPagamento?.trim()) {
       errors.condicaoPagamento = "Condição de pagamento é obrigatória";
+    } else if (formData.condicaoPagamento.trim().length < 3) {
+      errors.condicaoPagamento = "Condição de pagamento deve ter pelo menos 3 caracteres";
+    } else if (formData.condicaoPagamento.trim().length > 100) {
+      errors.condicaoPagamento = "Condição de pagamento deve ter no máximo 100 caracteres";
     }
     
+    // Validação do número de parcelas
     if (!formData.numeroParcelas || formData.numeroParcelas <= 0) {
       errors.numeroParcelas = "Número de parcelas deve ser maior que zero";
+    } else if (formData.numeroParcelas > 999) {
+      errors.numeroParcelas = "Número de parcelas não pode ser maior que 999";
+    } else if (!Number.isInteger(formData.numeroParcelas)) {
+      errors.numeroParcelas = "Número de parcelas deve ser um número inteiro";
     }
     
+    // Validação dos dias para primeira parcela
     if (formData.diasPrimeiraParcela < 0) {
       errors.diasPrimeiraParcela = "Dias para primeira parcela não pode ser negativo";
+    } else if (formData.diasPrimeiraParcela > 9999) {
+      errors.diasPrimeiraParcela = "Dias para primeira parcela não pode ser maior que 9999";
+    } else if (!Number.isInteger(formData.diasPrimeiraParcela)) {
+      errors.diasPrimeiraParcela = "Dias para primeira parcela deve ser um número inteiro";
     }
     
+    // Validação dos dias entre parcelas
     if (formData.diasEntreParcelas < 0) {
       errors.diasEntreParcelas = "Dias entre parcelas não pode ser negativo";
+    } else if (formData.diasEntreParcelas > 9999) {
+      errors.diasEntreParcelas = "Dias entre parcelas não pode ser maior que 9999";
+    } else if (!Number.isInteger(formData.diasEntreParcelas)) {
+      errors.diasEntreParcelas = "Dias entre parcelas deve ser um número inteiro";
     }
     
-    // Verificar parcelas
+    // Validação do percentual de juros
+    if (formData.percentualJuros < 0) {
+      errors.percentualJuros = "Percentual de juros não pode ser negativo";
+    } else if (formData.percentualJuros > 100) {
+      errors.percentualJuros = "Percentual de juros não pode ser maior que 100%";
+    }
+    
+    // Validação do percentual de multa
+    if (formData.percentualMulta < 0) {
+      errors.percentualMulta = "Percentual de multa não pode ser negativo";
+    } else if (formData.percentualMulta > 100) {
+      errors.percentualMulta = "Percentual de multa não pode ser maior que 100%";
+    }
+    
+    // Validação do percentual de desconto
+    if (formData.percentualDesconto < 0) {
+      errors.percentualDesconto = "Percentual de desconto não pode ser negativo";
+    } else if (formData.percentualDesconto > 100) {
+      errors.percentualDesconto = "Percentual de desconto não pode ser maior que 100%";
+    }
+    
+    // Validação das parcelas
     if (!formData.parcelas || formData.parcelas.length === 0) {
       errors.parcelas = "É necessário pelo menos uma parcela";
     } else {
       let totalPercent = 0;
+      const numerosUtilizados = new Set<number>();
+      
       formData.parcelas.forEach((parcela, index) => {
-        totalPercent += parcela.percentual;
+        // Validar número da parcela
         if (!parcela.numero || parcela.numero <= 0) {
-          errors[`parcelas[${index}].numero`] = "Número da parcela deve ser maior que zero";
+          errors[`parcelas[${index}].numero`] = `Parcela ${index + 1}: Número deve ser maior que zero`;
+        } else if (!Number.isInteger(parcela.numero)) {
+          errors[`parcelas[${index}].numero`] = `Parcela ${index + 1}: Número deve ser um inteiro`;
+        } else if (numerosUtilizados.has(parcela.numero)) {
+          errors[`parcelas[${index}].numero`] = `Parcela ${index + 1}: Número ${parcela.numero} já está sendo usado`;
+        } else {
+          numerosUtilizados.add(parcela.numero);
         }
+        
+        // Validar dias da parcela
+        if (parcela.dias < 0) {
+          errors[`parcelas[${index}].dias`] = `Parcela ${index + 1}: Dias não pode ser negativo`;
+        } else if (parcela.dias > 9999) {
+          errors[`parcelas[${index}].dias`] = `Parcela ${index + 1}: Dias não pode ser maior que 9999`;
+        } else if (!Number.isInteger(parcela.dias)) {
+          errors[`parcelas[${index}].dias`] = `Parcela ${index + 1}: Dias deve ser um número inteiro`;
+        }
+        
+        // Validar percentual da parcela
+        if (parcela.percentual <= 0) {
+          errors[`parcelas[${index}].percentual`] = `Parcela ${index + 1}: Percentual deve ser maior que zero`;
+        } else if (parcela.percentual > 100) {
+          errors[`parcelas[${index}].percentual`] = `Parcela ${index + 1}: Percentual não pode ser maior que 100%`;
+        }
+        
+        // Validar forma de pagamento da parcela (obrigatório)
+        if (!parcela.formaPagamentoId) {
+          errors[`parcelas[${index}].formaPagamentoId`] = `Parcela ${index + 1}: Forma de pagamento é obrigatória`;
+        }
+        
+        totalPercent += parcela.percentual || 0;
       });
       
-      // Verificar se o total é próximo de 100%
+      // Verificar se o total é exatamente 100%
       if (Math.abs(totalPercent - 100) > 0.01) {
         errors.parcelas = `A soma dos percentuais das parcelas deve ser 100%. Atual: ${totalPercent.toFixed(2)}%`;
       }
+      
+      // Verificar se o número de parcelas configuradas bate com o número informado
+      if (formData.parcelas.length !== formData.numeroParcelas) {
+        errors.parcelas = `Número de parcelas configuradas (${formData.parcelas.length}) não confere com o número informado (${formData.numeroParcelas})`;
+      }
+    }
+    
+    // Validação lógica: se há mais de uma parcela, deve ter dias entre parcelas
+    if (formData.numeroParcelas > 1 && formData.diasEntreParcelas === 0) {
+      errors.diasEntreParcelas = "Para múltiplas parcelas, deve haver dias entre elas";
     }
     
     return errors;
@@ -375,8 +500,19 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      
+      // Mostrar o primeiro erro encontrado
       const firstError = Object.values(validationErrors)[0];
       toast.error(`Erro de validação: ${firstError}`);
+      
+      // Focar no primeiro campo com erro
+      const firstErrorField = Object.keys(validationErrors)[0];
+      const element = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
+      if (element) {
+        element.focus();
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      
       return;
     }
     
@@ -581,6 +717,8 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   required
                   error={errors.numeroParcelas}
                   disabled={isViewMode}
+                  step="1"
+                  maxLength={3}
                 />
 
                 <FormField
@@ -591,6 +729,8 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   onChange={handleChange}
                   error={errors.diasPrimeiraParcela}
                   disabled={isViewMode}
+                  step="1"
+                  maxLength={4}
                 />
                 
                 <FormField
@@ -601,6 +741,8 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   onChange={handleChange}
                   disabled={formData.numeroParcelas <= 1 || isViewMode}
                   error={errors.diasEntreParcelas}
+                  step="1"
+                  maxLength={4}
                 />
                 
                 <div></div> {/* Espaço vazio para manter o grid */}
@@ -714,7 +856,7 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                           Percentual (%)
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Forma de Pagamento
+                          Forma de Pagamento <span className="text-red-500">*</span>
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Ações
@@ -757,26 +899,35 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                             />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {!isViewMode ? (
-                              <div 
-                                className="flex-1 border border-gray-300 rounded-md p-2 bg-gray-50 max-w-xs truncate cursor-pointer hover:bg-gray-100 transition"
-                                onClick={() => handleOpenParcelaFormaPagamentoModal(index)}
-                              >
-                                {parcela.formaPagamentoId ? 
-                                  (formasPagamento.find(f => f.id === parcela.formaPagamentoId)?.descricao || 'Forma não encontrada')
-                                  : 
-                                  <span className="text-gray-500">Clique para selecionar</span>
-                                }
-                              </div>
-                            ) : (
-                              <div className="flex-1 border border-gray-300 rounded-md p-2 bg-gray-50 max-w-xs truncate">
-                                {parcela.formaPagamentoId ? 
-                                  (formasPagamento.find(f => f.id === parcela.formaPagamentoId)?.descricao || 'Forma não encontrada')
-                                  : 
-                                  <span className="text-gray-500">Nenhuma forma selecionada</span>
-                                }
-                              </div>
-                            )}
+                            <div className="flex flex-col">
+                              {!isViewMode ? (
+                                <div 
+                                  className={`flex-1 border rounded-md p-2 bg-gray-50 max-w-xs truncate cursor-pointer hover:bg-gray-100 transition ${
+                                    errors[`parcelas[${index}].formaPagamentoId`] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                                  }`}
+                                  onClick={() => handleOpenParcelaFormaPagamentoModal(index)}
+                                >
+                                  {parcela.formaPagamentoId ? 
+                                    (formasPagamento.find(f => f.id === parcela.formaPagamentoId)?.descricao || 'Forma não encontrada')
+                                    : 
+                                    <span className="text-gray-500">Clique para selecionar *</span>
+                                  }
+                                </div>
+                              ) : (
+                                <div className="flex-1 border border-gray-300 rounded-md p-2 bg-gray-50 max-w-xs truncate">
+                                  {parcela.formaPagamentoId ? 
+                                    (formasPagamento.find(f => f.id === parcela.formaPagamentoId)?.descricao || 'Forma não encontrada')
+                                    : 
+                                    <span className="text-gray-500">Nenhuma forma selecionada</span>
+                                  }
+                                </div>
+                              )}
+                              {errors[`parcelas[${index}].formaPagamentoId`] && (
+                                <p className="mt-1 text-xs text-red-600">
+                                  {errors[`parcelas[${index}].formaPagamentoId`]}
+                                </p>
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {!isViewMode && (

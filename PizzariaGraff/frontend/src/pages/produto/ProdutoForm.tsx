@@ -418,6 +418,7 @@ const ProdutoForm: React.FC = () => {
                 value={formData.valorCompra}
                 onChange={handleChange}
                 required
+                maxLength={8}
                 disabled={isView}
                 placeholder="0,00"
               />
@@ -430,6 +431,7 @@ const ProdutoForm: React.FC = () => {
                 value={formData.valorVenda}
                 onChange={handleChange}
                 required
+                maxLength={8}
                 disabled={isView}
                 placeholder="0,00"
               />
@@ -453,6 +455,7 @@ const ProdutoForm: React.FC = () => {
                 value={formData.quantidade}
                 onChange={handleChange}
                 required
+                maxLength={8}
                 disabled={isView}
                 placeholder="0"
               />
@@ -464,6 +467,7 @@ const ProdutoForm: React.FC = () => {
                 value={formData.quantidadeMinima}
                 onChange={handleChange}
                 required
+                maxLength={8}
                 disabled={isView}
                 placeholder="0"
               />

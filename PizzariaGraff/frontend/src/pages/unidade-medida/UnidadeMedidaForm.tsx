@@ -19,7 +19,33 @@ const UnidadeMedidaForm: React.FC = () => {
   const [formData, setFormData] = useState({
     unidadeMedida: '',
     ativo: true,
+    dataCriacao: null as string | null,
+    dataAlteracao: null as string | null,
+    dataCadastro: null as string | null,
+    ultimaModificacao: null as string | null
   });
+
+  // Função para formatar datas
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return '';
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Extrair datas para exibição
+  const dataCadastro = formData.dataCriacao || formData.dataCadastro;
+  const ultimaModificacao = formData.dataAlteracao || formData.ultimaModificacao;
 
   useEffect(() => {
     if (!isNew) {
@@ -39,6 +65,10 @@ const UnidadeMedidaForm: React.FC = () => {
         setFormData({
           unidadeMedida: unidadeMedida.unidadeMedida,
           ativo: unidadeMedida.ativo,
+          dataCriacao: unidadeMedida.dataCriacao,
+          dataAlteracao: unidadeMedida.dataAlteracao,
+          dataCadastro: unidadeMedida.dataCadastro,
+          ultimaModificacao: unidadeMedida.ultimaModificacao
         });
       }
     } catch (err) {
@@ -97,26 +127,6 @@ const UnidadeMedidaForm: React.FC = () => {
     if (isNew) return 'Nova Unidade de Medida';
     return 'Editar Unidade de Medida';
   };
-
-  // Função para formatar datas
-  const formatDate = (dateString: string | null): string => {
-    if (!dateString) return '';
-    
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return dateString;
-    }
-  };
-
-  // Extrair datas para exibição - removidas do formData
 
   if (loading) {
     return (
@@ -200,6 +210,7 @@ const UnidadeMedidaForm: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   placeholder="Digite o nome da unidade de medida"
                   required
+                  maxLength={50}
                   disabled={isView}
                 />
               </div>
@@ -209,7 +220,22 @@ const UnidadeMedidaForm: React.FC = () => {
         
         {/* Rodapé do formulário com informações de registro e botões */}
         <div className="flex justify-between items-end pt-6 border-t mt-6">
-          {/* Informações do Registro removidas */}
+          {/* Informações do Registro (sempre que existirem datas) */}
+          {(dataCadastro || ultimaModificacao) && (
+            <div className="text-sm text-gray-600">
+              <h3 className="font-semibold text-gray-700 mb-1">Informações do Registro:</h3>
+              {dataCadastro && (
+                <p>
+                  Cadastrado em: {formatDate(dataCadastro)}
+                </p>
+              )}
+              {ultimaModificacao && (
+                <p>
+                  Última modificação: {formatDate(ultimaModificacao)}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Botões de ação - Sempre à direita */}
           <div className="flex gap-3 ml-auto">

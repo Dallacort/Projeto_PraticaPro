@@ -234,6 +234,7 @@ const FuncaoFuncionarioForm: React.FC = () => {
                   placeholder="Ex: Gerente, Vendedor, Cozinheiro..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   required
+                  maxLength={50}
                 />
               </div>
               <div className="col-span-3">
@@ -295,6 +296,7 @@ const FuncaoFuncionarioForm: React.FC = () => {
                   name="descricao"
                   value={formData.descricao}
                   onChange={handleChange}
+                  maxLength={500}
                   rows={3}
                   placeholder="Descreva as responsabilidades e atividades da função..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -310,6 +312,7 @@ const FuncaoFuncionarioForm: React.FC = () => {
                   name="observacao"
                   value={formData.observacao}
                   onChange={handleChange}
+                  maxLength={255}
                   rows={2}
                   placeholder="Observações adicionais sobre a função..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"

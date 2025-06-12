@@ -245,11 +245,11 @@ const CidadeForm: React.FC = () => {
             </div>
           )}
 
-          {/* Botões de Ação */}
-          <div className="flex gap-3">
+          {/* Botões de Ação - Sempre à direita */}
+          <div className="flex gap-3 ml-auto">
             <button
               type="button"
-              onClick={() => navigate('/cidades')}
+              onClick={() => navigate('/fornecedores')}
               className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none"
             >
               Cancelar

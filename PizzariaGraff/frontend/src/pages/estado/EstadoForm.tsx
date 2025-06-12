@@ -339,11 +339,11 @@ const EstadoForm: React.FC = () => {
             </div>
           )}
 
-          {/* Botões de Ação */}
-          <div className="flex gap-3">
+          {/* Botões de Ação - Sempre à direita */}
+          <div className="flex gap-3 ml-auto">
             <button
               type="button"
-              onClick={() => navigate('/estados')}
+              onClick={() => navigate('/fornecedores')}
               className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none"
             >
               Cancelar
@@ -351,7 +351,7 @@ const EstadoForm: React.FC = () => {
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md focus:outline-none disabled:opacity-50"
+              className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50`}
             >
               {saving ? (
                 <span className="inline-flex items-center">

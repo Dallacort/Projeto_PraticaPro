@@ -107,6 +107,10 @@ const FormaPagamentoList: React.FC = () => {
       className: 'w-20'
     },
     {
+      header: 'Nome',
+      accessor: 'nome'
+    },
+    {
       header: 'Descrição',
       accessor: 'descricao'
     },
