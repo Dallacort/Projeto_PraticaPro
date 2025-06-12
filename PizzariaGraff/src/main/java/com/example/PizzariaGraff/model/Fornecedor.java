@@ -23,7 +23,6 @@ public class Fornecedor {
     private String observacoes;          // varchar(255)
     private Long condicaoPagamentoId;    // bigint(20) - FK
     private BigDecimal limiteCredito;    // decimal(15,2) NOT NULL
-    private LocalDate situacao;          // date NOT NULL
     private LocalDateTime dataCriacao;   // timestamp NOT NULL
     private LocalDateTime dataAlteracao; // timestamp NOT NULL
     private Boolean ativo;               // tinyint(1) NOT NULL DEFAULT 1
@@ -37,14 +36,14 @@ public class Fornecedor {
     // Constructors
     public Fornecedor() {}
 
-    public Fornecedor(String fornecedor, String apelido, String email, String telefone, Integer tipo, BigDecimal limiteCredito, LocalDate situacao) {
+    public Fornecedor(String fornecedor, String apelido, String email, String telefone, Integer tipo, BigDecimal limiteCredito) {
         this.fornecedor = fornecedor;
         this.apelido = apelido;
         this.email = email;
         this.telefone = telefone;
         this.tipo = tipo;
         this.limiteCredito = limiteCredito;
-        this.situacao = situacao;
+        this.ativo = true;
     }
 
     // Getters e Setters
@@ -192,14 +191,6 @@ public class Fornecedor {
         this.limiteCredito = limiteCredito;
     }
 
-    public LocalDate getSituacao() {
-        return situacao;
-    }
-
-    public void setSituacao(LocalDate situacao) {
-        this.situacao = situacao;
-    }
-
     public LocalDateTime getDataCriacao() {
         return dataCriacao;
     }
@@ -266,7 +257,6 @@ public class Fornecedor {
                 ", telefone='" + telefone + '\'' +
                 ", tipo=" + tipo +
                 ", limiteCredito=" + limiteCredito +
-                ", situacao=" + situacao +
                 ", ativo=" + ativo +
                 '}';
     }

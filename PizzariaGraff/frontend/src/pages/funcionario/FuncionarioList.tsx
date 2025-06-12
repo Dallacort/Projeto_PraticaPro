@@ -82,6 +82,15 @@ const FuncionarioList: React.FC = () => {
       )
     },
     { 
+      header: 'Tipo', 
+      accessor: 'tipo',
+      cell: (item: Funcionario) => (
+        <span className={`px-2 py-1 rounded text-xs ${item.tipo === 1 ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+          {item.tipo === 1 ? 'Pessoa Física' : item.tipo === 2 ? 'Pessoa Jurídica' : 'N/A'}
+        </span>
+      )
+    },
+    { 
       header: 'Cidade', 
       accessor: 'cidade.nome',
       cell: (item: Funcionario) => (

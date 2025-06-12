@@ -191,9 +191,10 @@ const ClienteForm: React.FC = () => {
         [name]: newValue,
       };
       
-      // Se o tipo de pessoa mudou, limpar o campo CPF/CNPJ para evitar problemas de validação
+      // Se o tipo de pessoa mudou, limpar os campos CPF/CNPJ e RG/Inscrição Estadual para evitar problemas de validação
       if (name === 'tipo') {
         newData.cpfCpnj = '';
+        newData.rgInscricaoEstadual = '';
         // Forçar re-renderização
         setForceRender(prev => prev + 1);
       }
@@ -229,6 +230,19 @@ const ClienteForm: React.FC = () => {
     return formData.tipo === 1 ? 11 : 14;
   };
 
+  // Função para determinar o label do campo RG/Inscrição Estadual baseado no tipo
+  const getRgInscricaoLabel = () => {
+    return formData.tipo === 1 ? 'RG *' : 'Inscrição Estadual *';
+  };
+
+  const getRgInscricaoPlaceholder = () => {
+    return formData.tipo === 1 ? '000000000' : '000000000000';
+  };
+
+  const getRgInscricaoMaxLength = () => {
+    return formData.tipo === 1 ? 12 : 14;
+  };
+
   // Funções de validação usando a classe Validators
 
 
@@ -241,6 +255,11 @@ const ClienteForm: React.FC = () => {
     const validations = [
       () => Validators.validateRequired(formData.cliente, "Nome"),
       () => Validators.validateRequired(formData.cidadeId, "Cidade"),
+      () => Validators.validateRequired(formData.tipo.toString(), "Tipo"),
+      () => Validators.validateRequired(formData.limiteCredito.toString(), "Limite de Crédito"),
+      () => Validators.validateRequired(formData.condicaoPagamentoId, "Condição de Pagamento"),
+      // RG/Inscrição Estadual é obrigatório
+      () => Validators.validateRequired(formData.rgInscricaoEstadual, formData.tipo === 1 ? "RG" : "Inscrição Estadual"),
       // CPF/CNPJ é obrigatório e validado apenas para brasileiros
       () => {
         if (isBrasileiro) {
@@ -274,6 +293,10 @@ const ClienteForm: React.FC = () => {
       
       if (!cidadeSelecionada || !formData.cidadeId) {
         throw new Error('Cidade não selecionada ou inválida.');
+      }
+      
+      if (!condicaoPagamentoSelecionada || !formData.condicaoPagamentoId) {
+        throw new Error('Condição de Pagamento não selecionada ou inválida.');
       }
       
       // Para não brasileiros, enviar CPF/CNPJ como null se estiver vazio
@@ -418,12 +441,13 @@ const ClienteForm: React.FC = () => {
               />
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
                 <select
                   name="tipo"
                   value={formData.tipo}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10"
+                  required
                 >
                   <option value={1}>Pessoa Física</option>
                   <option value={2}>Pessoa Jurídica</option>
@@ -515,7 +539,7 @@ const ClienteForm: React.FC = () => {
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade *</label>
                 <div 
                   onClick={handleOpenCidadeModal} 
                   className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative"
@@ -599,15 +623,17 @@ const ClienteForm: React.FC = () => {
               </div>
             </div>
 
-            {/* Quarta linha: RG, CPF/CNPJ, Limite de Crédito, Condição de Pagamento */}
-            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '150px 180px 150px 2fr' }}>
+            {/* Quarta linha: RG/Inscrição Estadual, CPF/CNPJ, Limite de Crédito, Condição de Pagamento */}
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '180px 180px 150px 2fr' }}>
               <FormField
-                label="RG"
+                key={`rgInscricao-${formData.tipo}-${forceRender}`} // Força re-renderização quando tipo muda
+                label={getRgInscricaoLabel()}
                 name="rgInscricaoEstadual"
                 value={formData.rgInscricaoEstadual}
                 onChange={handleChange}
-                maxLength={12}
-                placeholder="000000000"
+                required
+                maxLength={getRgInscricaoMaxLength()}
+                placeholder={getRgInscricaoPlaceholder()}
               />
 
               <FormField
@@ -622,17 +648,18 @@ const ClienteForm: React.FC = () => {
               />
 
               <FormField
-                label="Limite de Crédito"
+                label="Limite de Crédito *"
                 name="limiteCredito"
                 type="number"
                 step="0.01"
                 value={formData.limiteCredito}
                 onChange={handleChange}
                 placeholder="0.00"
+                required
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Condição de Pagamento</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Condição de Pagamento *</label>
                 <div 
                   onClick={handleOpenCondicaoPagamentoModal} 
                   className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative h-10"

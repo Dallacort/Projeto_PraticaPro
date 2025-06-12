@@ -17,7 +17,6 @@ interface FornecedorPayload {
   tipo: number;
   observacoes: string;
   limiteCredito: number;
-  situacao: string; // LocalDate no backend, enviado como string "yyyy-MM-dd"
   cidadeId: number;
   condicaoPagamentoId?: number;
   nacionalidadeId?: number;
@@ -73,7 +72,7 @@ const adaptFornecedorFromApi = async (fornecedor: any): Promise<Fornecedor> => {
     tipo: fornecedor.tipo || 2,
     observacoes: fornecedor.observacoes || '',
     limiteCredito: Number(fornecedor.limiteCredito) || 0,
-    situacao: fornecedor.situacao || '',
+
     condicaoPagamentoId: fornecedor.condicaoPagamentoId || null,
     nacionalidadeId: fornecedor.nacionalidadeId || null,
     transportadoraId: fornecedor.transportadoraId || null,
@@ -99,7 +98,6 @@ const adaptFornecedorToApi = (fornecedor: any): FornecedorPayload => {
   console.log('Dados recebidos do formulário fornecedor:', fornecedor);
   
   // Garantir que campos obrigatórios tenham valores padrão
-  const hoje = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
   
   const payload: FornecedorPayload = {
     // Campos obrigatórios com valores padrão se necessário
@@ -109,7 +107,7 @@ const adaptFornecedorToApi = (fornecedor: any): FornecedorPayload => {
     telefone: String(fornecedor.telefone || '').trim() || '00000000000',
     tipo: Number(fornecedor.tipo) || 2,
     limiteCredito: Number(fornecedor.limiteCredito) || 0,
-    situacao: String(fornecedor.situacao || '').trim() || hoje,
+
     cidadeId: Number(fornecedor.cidade?.id || fornecedor.cidadeId),
     ativo: fornecedor.ativo !== undefined ? Boolean(fornecedor.ativo) : true,
     

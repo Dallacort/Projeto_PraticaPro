@@ -103,6 +103,9 @@ public class FuncionarioDTO {
     
     @Schema(description = "Status ativo/inativo", example = "true")
     private Boolean ativo;
+    
+    @Schema(description = "Tipo do funcionário: 1=Pessoa Física, 2=Pessoa Jurídica", example = "1")
+    private Integer tipo;
 
     // Constructors
     public FuncionarioDTO() {}
@@ -135,6 +138,7 @@ public class FuncionarioDTO {
         this.funcaoFuncionarioId = funcionario.getFuncaoFuncionarioId();
         this.cpfCpnj = funcionario.getCpfCpnj();
         this.ativo = funcionario.getAtivo();
+        this.tipo = funcionario.getTipo();
         
         // Relacionamentos
         if (funcionario.getCidade() != null) {
@@ -180,6 +184,7 @@ public class FuncionarioDTO {
         funcionario.setFuncaoFuncionarioId(this.funcaoFuncionarioId);
         funcionario.setCpfCpnj(this.cpfCpnj);
         funcionario.setAtivo(this.ativo);
+        funcionario.setTipo(this.tipo);
         return funcionario;
     }
 
@@ -414,6 +419,14 @@ public class FuncionarioDTO {
 
     public void setAtivo(Boolean ativo) {
         this.ativo = ativo;
+    }
+
+    public Integer getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(Integer tipo) {
+        this.tipo = tipo;
     }
 
     public String getNacionalidadeNome() {

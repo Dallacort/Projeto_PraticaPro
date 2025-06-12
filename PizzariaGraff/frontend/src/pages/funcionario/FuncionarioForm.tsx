@@ -34,6 +34,7 @@ interface FuncionarioFormData {
   dataDemissao: string;
   cidadeId: string;
   funcaoFuncionarioId: string;
+  tipo: string;
   ativo: boolean;
 }
 
@@ -70,6 +71,7 @@ const FuncionarioForm: React.FC = () => {
     dataDemissao: '',
     cidadeId: '',
     funcaoFuncionarioId: '',
+    tipo: '1',
     ativo: true,
   });
   
@@ -128,6 +130,7 @@ const FuncionarioForm: React.FC = () => {
             dataDemissao: funcionarioData.dataDemissao || '',
             cidadeId: String(funcionarioData.cidade?.id || funcionarioData.cidadeId || ''),
             funcaoFuncionarioId: String(funcionarioData.funcaoFuncionarioId || ''),
+            tipo: funcionarioData.tipo ? String(funcionarioData.tipo) : '1',
             ativo: funcionarioData.ativo !== undefined ? funcionarioData.ativo : true,
           });
           
@@ -353,7 +356,7 @@ const FuncionarioForm: React.FC = () => {
             </div>
             
             {/* Primeira linha: Código, Função, Funcionário, Apelido, Estado Civil */}
-            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '100px 200px 2fr 1.5fr 1.5fr' }}>
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '100px 1fr 200px 2fr 1.5fr 1.5fr' }}>
               <FormField
                 label="Código"
                 name="id"
@@ -362,6 +365,18 @@ const FuncionarioForm: React.FC = () => {
                 disabled={true}
               />
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                <select
+                  name="tipo"
+                  value={formData.tipo}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10"
+                >
+                  <option value="1">Pessoa Física</option>
+                  <option value="2">Pessoa Jurídica</option>
+                </select>
+              </div>
               <FormField
                 label="Funcionário *"
                 name="funcionario"

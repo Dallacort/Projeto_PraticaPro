@@ -78,7 +78,6 @@ public class FuncaoFuncionarioController {
             System.out.println("CargaHoraria: " + funcaoDTO.getCargaHoraria());
             System.out.println("Descricao: " + funcaoDTO.getDescricao());
             System.out.println("Observacao: " + funcaoDTO.getObservacao());
-            System.out.println("Situacao: " + funcaoDTO.getSituacao());
             System.out.println("SalarioBase: " + funcaoDTO.getSalarioBase());
             System.out.println("Ativo: " + funcaoDTO.getAtivo());
             
@@ -91,7 +90,6 @@ public class FuncaoFuncionarioController {
             System.out.println("CargaHoraria: " + funcao.getCargaHoraria());
             System.out.println("Descricao: " + funcao.getDescricao());
             System.out.println("Observacao: " + funcao.getObservacao());
-            System.out.println("Situacao: " + funcao.getSituacao());
             System.out.println("SalarioBase: " + funcao.getSalarioBase());
             System.out.println("Ativo: " + funcao.getAtivo());
             
@@ -105,7 +103,6 @@ public class FuncaoFuncionarioController {
             System.out.println("CargaHoraria: " + responseDTO.getCargaHoraria());
             System.out.println("Descricao: " + responseDTO.getDescricao());
             System.out.println("Observacao: " + responseDTO.getObservacao());
-            System.out.println("Situacao: " + responseDTO.getSituacao());
             System.out.println("SalarioBase: " + responseDTO.getSalarioBase());
             System.out.println("Ativo: " + responseDTO.getAtivo());
             System.out.println("=====================");

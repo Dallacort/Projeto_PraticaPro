@@ -4,7 +4,6 @@ import com.example.PizzariaGraff.model.Marca;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Schema(description = "DTO para transferência de dados de Marca")
@@ -15,10 +14,6 @@ public class MarcaDTO {
 
     @Schema(description = "Nome da marca", example = "Samsung", required = true)
     private String marca;
-
-    @Schema(description = "Data da situação", example = "2024-01-01", required = true)
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate situacao;
 
     @Schema(description = "Status ativo/inativo", example = "true")
     private Boolean ativo;
@@ -37,7 +32,6 @@ public class MarcaDTO {
     public MarcaDTO(Marca marca) {
         this.id = marca.getId();
         this.marca = marca.getMarca();
-        this.situacao = marca.getSituacao();
         this.dataCriacao = marca.getDataCriacao();
         this.dataAlteracao = marca.getDataAlteracao();
         this.ativo = marca.getAtivo();
@@ -58,14 +52,6 @@ public class MarcaDTO {
 
     public void setMarca(String marca) {
         this.marca = marca;
-    }
-
-    public LocalDate getSituacao() {
-        return situacao;
-    }
-
-    public void setSituacao(LocalDate situacao) {
-        this.situacao = situacao;
     }
 
     public Boolean getAtivo() {
@@ -97,7 +83,6 @@ public class MarcaDTO {
         Marca marca = new Marca();
         marca.setId(this.id);
         marca.setMarca(this.marca);
-        marca.setSituacao(this.situacao);
         marca.setDataCriacao(this.dataCriacao);
         marca.setDataAlteracao(this.dataAlteracao);
         marca.setAtivo(this.ativo);
@@ -109,7 +94,6 @@ public class MarcaDTO {
         return "MarcaDTO{" +
                 "id=" + id +
                 ", marca='" + marca + '\'' +
-                ", situacao=" + situacao +
                 ", ativo=" + ativo +
                 ", dataCriacao=" + dataCriacao +
                 ", dataAlteracao=" + dataAlteracao +

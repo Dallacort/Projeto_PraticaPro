@@ -82,11 +82,7 @@ const UnidadeMedidaList: React.FC = () => {
         <div>{item.unidadeMedida}</div>
       )
     },
-    { 
-      header: 'Situação', 
-      accessor: 'situacao',
-      cell: (item: UnidadeMedida) => formatDate(item.situacao)
-    },
+
     { 
       header: 'Data Criação', 
       accessor: 'dataCriacao',

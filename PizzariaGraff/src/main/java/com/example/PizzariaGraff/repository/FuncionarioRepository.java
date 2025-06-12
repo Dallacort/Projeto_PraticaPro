@@ -158,8 +158,8 @@ public class FuncionarioRepository {
                      "complemento, bairro, cep, cidade_id, data_admissao, data_demissao, " +
                      "rg_inscricao_estadual, cnh, data_validade_cnh, sexo, observacao, estado_civil, " +
                      "salario, nacionalidade_id, data_nascimento, " +
-                     "funcao_funcionario_id, cpf_cpnj, ativo, data_criacao, data_alteracao) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "funcao_funcionario_id, cpf_cpnj, ativo, tipo, data_criacao, data_alteracao) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -190,8 +190,9 @@ public class FuncionarioRepository {
             stmt.setObject(22, funcionario.getFuncaoFuncionarioId());
             stmt.setString(23, funcionario.getCpfCpnj());
             stmt.setBoolean(24, funcionario.getAtivo() != null ? funcionario.getAtivo() : true);
-            stmt.setTimestamp(25, funcionario.getDataCriacao() != null ? Timestamp.valueOf(funcionario.getDataCriacao()) : Timestamp.valueOf(now));
-            stmt.setTimestamp(26, funcionario.getDataAlteracao() != null ? Timestamp.valueOf(funcionario.getDataAlteracao()) : Timestamp.valueOf(now));
+            stmt.setObject(25, funcionario.getTipo() != null ? funcionario.getTipo() : 1); // Default: Pessoa Física
+            stmt.setTimestamp(26, funcionario.getDataCriacao() != null ? Timestamp.valueOf(funcionario.getDataCriacao()) : Timestamp.valueOf(now));
+            stmt.setTimestamp(27, funcionario.getDataAlteracao() != null ? Timestamp.valueOf(funcionario.getDataAlteracao()) : Timestamp.valueOf(now));
             
             stmt.executeUpdate();
             
@@ -225,7 +226,7 @@ public class FuncionarioRepository {
                      "numero = ?, complemento = ?, bairro = ?, cep = ?, cidade_id = ?, data_admissao = ?, " +
                      "data_demissao = ?, rg_inscricao_estadual = ?, cnh = ?, data_validade_cnh = ?, sexo = ?, " +
                      "observacao = ?, estado_civil = ?, salario = ?, nacionalidade_id = ?, " +
-                     "data_nascimento = ?, funcao_funcionario_id = ?, cpf_cpnj = ?, ativo = ?, " +
+                     "data_nascimento = ?, funcao_funcionario_id = ?, cpf_cpnj = ?, ativo = ?, tipo = ?, " +
                      "data_alteracao = ? WHERE id = ?";
 
         System.out.println("SQL: " + sql);
@@ -260,8 +261,9 @@ public class FuncionarioRepository {
             stmt.setObject(22, funcionario.getFuncaoFuncionarioId());
             stmt.setString(23, funcionario.getCpfCpnj());
             stmt.setBoolean(24, funcionario.getAtivo() != null ? funcionario.getAtivo() : true);
-            stmt.setTimestamp(25, Timestamp.valueOf(now));
-            stmt.setLong(26, funcionario.getId());
+            stmt.setObject(25, funcionario.getTipo() != null ? funcionario.getTipo() : 1); // Default: Pessoa Física
+            stmt.setTimestamp(26, Timestamp.valueOf(now));
+            stmt.setLong(27, funcionario.getId());
             
             System.out.println("Parâmetros definidos, executando update...");
             int rowsAffected = stmt.executeUpdate();
@@ -329,6 +331,7 @@ public class FuncionarioRepository {
         funcionario.setFuncaoFuncionarioId(rs.getObject("funcao_funcionario_id", Long.class));
         funcionario.setCpfCpnj(rs.getString("cpf_cpnj"));
         funcionario.setAtivo(rs.getObject("ativo", Boolean.class));
+        funcionario.setTipo(rs.getObject("tipo", Integer.class));
         
         Date dataAdmissao = rs.getDate("data_admissao");
         if (dataAdmissao != null) {

@@ -23,7 +23,6 @@ interface ProdutoFormData {
   quantidadeMinima: number;
   marcaId: string;
   unidadeMedidaId: string;
-  situacao: string;
   ativo: boolean;
 }
 
@@ -51,7 +50,6 @@ const ProdutoForm: React.FC = () => {
     quantidadeMinima: 0,
     marcaId: '',
     unidadeMedidaId: '',
-    situacao: new Date().toISOString().split('T')[0],
     ativo: true,
   });
   
@@ -93,7 +91,6 @@ const ProdutoForm: React.FC = () => {
             quantidadeMinima: produtoData.quantidadeMinima || 0,
             marcaId: produtoData.marcaId ? String(produtoData.marcaId) : '',
             unidadeMedidaId: produtoData.unidadeMedidaId ? String(produtoData.unidadeMedidaId) : '',
-            situacao: produtoData.situacao || new Date().toISOString().split('T')[0],
             ativo: produtoData.ativo !== undefined ? produtoData.ativo : true,
           });
           
@@ -178,7 +175,6 @@ const ProdutoForm: React.FC = () => {
     if (!formData.observacoes?.trim()) errors.push("Observações são obrigatórias");
     if (!formData.marcaId || formData.marcaId === '') errors.push("Marca é obrigatória");
     if (!formData.unidadeMedidaId || formData.unidadeMedidaId === '') errors.push("Unidade de medida é obrigatória");
-    if (!formData.situacao) errors.push("Data da situação é obrigatória");
     
     return errors;
   };
@@ -211,7 +207,6 @@ const ProdutoForm: React.FC = () => {
         quantidadeMinima: formData.quantidadeMinima,
         marcaId: formData.marcaId ? Number(formData.marcaId) : null,
         unidadeMedidaId: formData.unidadeMedidaId ? Number(formData.unidadeMedidaId) : null,
-        situacao: formData.situacao
       };
       
       console.log('Dados sendo enviados para o produto:', produtoDataPayload);
@@ -336,8 +331,8 @@ const ProdutoForm: React.FC = () => {
               />
             </div>
 
-            {/* Segunda linha: Marca, Unidade de Medida, Data Situação, Descrição */}
-            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '2fr 2fr 150px 3fr' }}>
+            {/* Segunda linha: Marca, Unidade de Medida, Descrição */}
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '1fr 1fr 3fr' }}>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
                 <div 
@@ -377,16 +372,6 @@ const ProdutoForm: React.FC = () => {
                   {!isView && <FaSearch className="text-gray-500" />}
                 </div>
               </div>
-
-              <FormField
-                label="Data Situação"
-                name="situacao"
-                type="date"
-                value={formData.situacao}
-                onChange={handleChange}
-                required
-                disabled={isView}
-              />
 
               <FormField
                 label="Descrição"

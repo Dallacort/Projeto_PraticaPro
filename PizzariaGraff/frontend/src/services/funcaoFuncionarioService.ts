@@ -10,7 +10,7 @@ const adaptFuncaoFromApi = (funcao: any): FuncaoFuncionario => {
     cargaHoraria: funcao.cargaHoraria || null,
     descricao: funcao.descricao || '',
     observacao: funcao.observacao || '',
-    situacao: funcao.situacao || '',
+
     dataCriacao: funcao.dataCriacao || null,
     dataAlteracao: funcao.dataAlteracao || null,
     
@@ -32,7 +32,7 @@ const adaptFuncaoToApi = (funcao: Omit<FuncaoFuncionario, 'id' | 'dataCriacao' |
     cargaHoraria: funcao.cargaHoraria && funcao.cargaHoraria.toString().trim() ? Number(funcao.cargaHoraria) : null,
     descricao: funcao.descricao?.trim() || null,
     observacao: funcao.observacao?.trim() || null,
-    situacao: funcao.situacao?.trim() || null,
+
     
     // Campos legados
     salarioBase: funcao.salarioBase && funcao.salarioBase.toString().trim() ? Number(funcao.salarioBase) : null,
@@ -117,7 +117,7 @@ export const updateFuncaoFuncionario = async (id: number, funcao: Omit<FuncaoFun
       cargaHoraria: Number(funcao.cargaHoraria),
       descricao: funcao.descricao,
       observacao: funcao.observacao,
-      situacao: funcao.situacao,
+  
       salarioBase: Number(funcao.salarioBase),
       ativo: funcao.ativo
     };

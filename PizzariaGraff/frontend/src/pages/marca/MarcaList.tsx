@@ -82,11 +82,7 @@ const MarcaList: React.FC = () => {
         <div>{item.marca}</div>
       )
     },
-    { 
-      header: 'Situação', 
-      accessor: 'situacao',
-      cell: (item: Marca) => formatDate(item.situacao)
-    },
+    
 
     { 
       header: 'Data Criação', 

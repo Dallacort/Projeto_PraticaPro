@@ -11,7 +11,6 @@ interface FuncaoFuncionarioFormData {
   cargaHoraria: string;           // Carga horária (string para input)
   descricao: string;              // Descrição detalhada
   observacao: string;             // Observações
-  situacao: string;               // Data da situação
   salarioBase: string;            // Salário base (legado)
   ativo: boolean;                 // Status ativo
 }
@@ -29,7 +28,6 @@ const FuncaoFuncionarioForm: React.FC = () => {
     cargaHoraria: '',
     descricao: '',
     observacao: '',
-    situacao: '',
     salarioBase: '',
     ativo: true,
   });
@@ -60,7 +58,6 @@ const FuncaoFuncionarioForm: React.FC = () => {
             cargaHoraria: funcaoData.cargaHoraria ? String(funcaoData.cargaHoraria) : '',
             descricao: funcaoData.descricao || '',
             observacao: funcaoData.observacao || '',
-            situacao: funcaoData.situacao || '',
             salarioBase: funcaoData.salarioBase ? String(funcaoData.salarioBase) : '',
             ativo: funcaoData.ativo !== undefined ? funcaoData.ativo : true,
           });
@@ -132,7 +129,6 @@ const FuncaoFuncionarioForm: React.FC = () => {
         cargaHoraria: formData.cargaHoraria.trim() ? Number(formData.cargaHoraria) : null,
         descricao: formData.descricao.trim() || null,
         observacao: formData.observacao.trim() || null,
-        situacao: formData.situacao.trim() || null,
         salarioBase: formData.salarioBase.trim() ? Number(formData.salarioBase) : null,
         ativo: formData.ativo,
       };
@@ -190,7 +186,7 @@ const FuncaoFuncionarioForm: React.FC = () => {
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm">
           {/* Dados Básicos */}
           <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Dados Básicos</h2>
               <div className="flex items-center">
                 <label className="flex items-center cursor-pointer">
@@ -201,7 +197,6 @@ const FuncaoFuncionarioForm: React.FC = () => {
                       name="ativo"
                       checked={formData.ativo}
                       onChange={handleChange}
-                      disabled={isNew}
                       className="sr-only"
                     />
                     <div className={`block w-14 h-8 rounded-full ${formData.ativo ? 'bg-green-500' : 'bg-gray-400'}`}></div>
@@ -250,7 +245,7 @@ const FuncaoFuncionarioForm: React.FC = () => {
               </div>
             </div>
 
-            {/* Linha 2: Requer CNH, Carga Horária, Data Situação */}
+            {/* Linha 2: Requer CNH, Carga Horária */}
             <div className="grid grid-cols-12 gap-4 mb-4">
               <div className="col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Carga Horária (horas/semana)</label>
@@ -266,16 +261,7 @@ const FuncaoFuncionarioForm: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Data Situação</label>
-                <input
-                  type="date"
-                  name="situacao"
-                  value={formData.situacao}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
+              
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Requer CNH</label>
                 <div className="flex items-center h-10">
@@ -323,27 +309,27 @@ const FuncaoFuncionarioForm: React.FC = () => {
               </div>
             </div>
 
-             {/* Rodapé do formulário com informações de registro e botões */}
-        <div className="flex justify-between items-end pt-6 border-t mt-6">
-          {/* Informações do Registro (sempre que existirem datas) */}
-          {(dataCriacao || dataAlteracao) && (
-            <div className="text-sm text-gray-600">
-              <h3 className="font-semibold text-gray-700 mb-1">Informações do Registro:</h3>
-              {dataCriacao && (
-                <p>
-                  Cadastrado em: {formatDate(dataCriacao)}
-                </p>
+            {/* Rodapé do formulário com informações de registro e botões */}
+            <div className="flex justify-between items-end pt-6 border-t mt-6">
+              {/* Informações do Registro (sempre que existirem datas) */}
+              {(dataCriacao || dataAlteracao) && (
+                <div className="text-sm text-gray-600">
+                  <h3 className="font-semibold text-gray-700 mb-1">Informações do Registro:</h3>
+                  {dataCriacao && (
+                    <p>
+                      Cadastrado em: {formatDate(dataCriacao)}
+                    </p>
+                  )}
+                  {dataAlteracao && (
+                    <p>
+                      Última modificação: {formatDate(dataAlteracao)}
+                    </p>
+                  )}
+                </div>
               )}
-              {dataAlteracao && (
-                <p>
-                  Última modificação: {formatDate(dataAlteracao)}
-                </p>
-              )}
-            </div>
-          )}
 
               {/* Botões */}
-              <div className="flex gap-3">
+              <div className="flex gap-3 ml-auto">
                 <button
                   type="button"
                   onClick={handleCancel}

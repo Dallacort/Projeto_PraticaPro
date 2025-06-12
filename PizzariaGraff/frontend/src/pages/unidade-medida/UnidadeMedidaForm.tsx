@@ -18,12 +18,7 @@ const UnidadeMedidaForm: React.FC = () => {
   
   const [formData, setFormData] = useState({
     unidadeMedida: '',
-    situacao: new Date().toISOString().split('T')[0],
     ativo: true,
-    dataCriacao: null as string | null,
-    dataAlteracao: null as string | null,
-    dataCadastro: null as string | null,
-    ultimaModificacao: null as string | null
   });
 
   useEffect(() => {
@@ -43,12 +38,7 @@ const UnidadeMedidaForm: React.FC = () => {
       if (unidadeMedida) {
         setFormData({
           unidadeMedida: unidadeMedida.unidadeMedida,
-          situacao: unidadeMedida.situacao || new Date().toISOString().split('T')[0],
           ativo: unidadeMedida.ativo,
-          dataCriacao: unidadeMedida.dataCriacao,
-          dataAlteracao: unidadeMedida.dataAlteracao,
-          dataCadastro: unidadeMedida.dataCadastro,
-          ultimaModificacao: unidadeMedida.ultimaModificacao
         });
       }
     } catch (err) {
@@ -126,9 +116,7 @@ const UnidadeMedidaForm: React.FC = () => {
     }
   };
 
-  // Extrair datas para exibição
-  const dataCadastro = formData.dataCriacao || formData.dataCadastro;
-  const ultimaModificacao = formData.dataAlteracao || formData.ultimaModificacao;
+  // Extrair datas para exibição - removidas do formData
 
   if (loading) {
     return (
@@ -188,7 +176,7 @@ const UnidadeMedidaForm: React.FC = () => {
               </div>
             </div>
             
-            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '100px 3fr 200px' }}>
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '100px 3fr' }}>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Código</label>
                 <input
@@ -215,44 +203,13 @@ const UnidadeMedidaForm: React.FC = () => {
                   disabled={isView}
                 />
               </div>
-
-              <div>
-                <label htmlFor="situacao" className="block text-sm font-medium text-gray-700 mb-1">
-                  Data Situação *
-                </label>
-                <input
-                  type="date"
-                  id="situacao"
-                  name="situacao"
-                  value={formData.situacao}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  required
-                  disabled={isView}
-                />
-              </div>
             </div>
           </div>
         </div>
         
         {/* Rodapé do formulário com informações de registro e botões */}
         <div className="flex justify-between items-end pt-6 border-t mt-6">
-          {/* Informações do Registro (sempre que existirem datas) */}
-          {(dataCadastro || ultimaModificacao) && (
-            <div className="text-sm text-gray-600">
-              <h3 className="font-semibold text-gray-700 mb-1">Informações do Registro:</h3>
-              {dataCadastro && (
-                <p>
-                  Cadastrado em: {formatDate(dataCadastro)}
-                </p>
-              )}
-              {ultimaModificacao && (
-                <p>
-                  Última modificação: {formatDate(ultimaModificacao)}
-                </p>
-              )}
-            </div>
-          )}
+          {/* Informações do Registro removidas */}
 
           {/* Botões de ação - Sempre à direita */}
           <div className="flex gap-3 ml-auto">

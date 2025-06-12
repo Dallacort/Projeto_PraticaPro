@@ -64,9 +64,7 @@ public class FornecedorDTO {
     @Schema(description = "Limite de crédito", example = "25000.00", required = true)
     private BigDecimal limiteCredito;
 
-    @Schema(description = "Data da situação", example = "2024-01-01", required = true)
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate situacao;
+
 
     @Schema(description = "Data de criação do registro", example = "2024-01-15T10:30:00")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -112,7 +110,6 @@ public class FornecedorDTO {
         this.observacoes = fornecedor.getObservacoes();
         this.condicaoPagamentoId = fornecedor.getCondicaoPagamentoId();
         this.limiteCredito = fornecedor.getLimiteCredito();
-        this.situacao = fornecedor.getSituacao();
         this.dataCriacao = fornecedor.getDataCriacao();
         this.dataAlteracao = fornecedor.getDataAlteracao();
         this.ativo = fornecedor.getAtivo();
@@ -140,7 +137,6 @@ public class FornecedorDTO {
         fornecedor.setObservacoes(this.observacoes);
         fornecedor.setCondicaoPagamentoId(this.condicaoPagamentoId);
         fornecedor.setLimiteCredito(this.limiteCredito);
-        fornecedor.setSituacao(this.situacao);
         fornecedor.setDataCriacao(this.dataCriacao);
         fornecedor.setDataAlteracao(this.dataAlteracao);
         fornecedor.setAtivo(this.ativo);
@@ -192,8 +188,7 @@ public class FornecedorDTO {
     public void setCondicaoPagamentoId(Long condicaoPagamentoId) { this.condicaoPagamentoId = condicaoPagamentoId; }
     public BigDecimal getLimiteCredito() { return limiteCredito; }
     public void setLimiteCredito(BigDecimal limiteCredito) { this.limiteCredito = limiteCredito; }
-    public LocalDate getSituacao() { return situacao; }
-    public void setSituacao(LocalDate situacao) { this.situacao = situacao; }
+
     public LocalDateTime getDataCriacao() { return dataCriacao; }
     public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
     public LocalDateTime getDataAlteracao() { return dataAlteracao; }

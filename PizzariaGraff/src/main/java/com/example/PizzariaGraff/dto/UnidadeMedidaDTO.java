@@ -4,7 +4,6 @@ import com.example.PizzariaGraff.model.UnidadeMedida;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Schema(description = "DTO para transferência de dados de Unidade de Medida")
@@ -15,10 +14,6 @@ public class UnidadeMedidaDTO {
 
     @Schema(description = "Nome da unidade de medida", example = "Quilograma", required = true)
     private String unidadeMedida;
-
-    @Schema(description = "Data da situação", example = "2024-01-01", required = true)
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate situacao;
 
     @Schema(description = "Status ativo/inativo", example = "true")
     private Boolean ativo;
@@ -37,7 +32,6 @@ public class UnidadeMedidaDTO {
     public UnidadeMedidaDTO(UnidadeMedida unidadeMedida) {
         this.id = unidadeMedida.getId();
         this.unidadeMedida = unidadeMedida.getUnidadeMedida();
-        this.situacao = unidadeMedida.getSituacao();
         this.dataCriacao = unidadeMedida.getDataCriacao();
         this.dataAlteracao = unidadeMedida.getDataAlteracao();
         this.ativo = unidadeMedida.getAtivo();
@@ -58,14 +52,6 @@ public class UnidadeMedidaDTO {
 
     public void setUnidadeMedida(String unidadeMedida) {
         this.unidadeMedida = unidadeMedida;
-    }
-
-    public LocalDate getSituacao() {
-        return situacao;
-    }
-
-    public void setSituacao(LocalDate situacao) {
-        this.situacao = situacao;
     }
 
     public Boolean getAtivo() {
@@ -97,7 +83,6 @@ public class UnidadeMedidaDTO {
         UnidadeMedida unidadeMedida = new UnidadeMedida();
         unidadeMedida.setId(this.id);
         unidadeMedida.setUnidadeMedida(this.unidadeMedida);
-        unidadeMedida.setSituacao(this.situacao);
         unidadeMedida.setDataCriacao(this.dataCriacao);
         unidadeMedida.setDataAlteracao(this.dataAlteracao);
         unidadeMedida.setAtivo(this.ativo);
@@ -109,7 +94,6 @@ public class UnidadeMedidaDTO {
         return "UnidadeMedidaDTO{" +
                 "id=" + id +
                 ", unidadeMedida='" + unidadeMedida + '\'' +
-                ", situacao=" + situacao +
                 ", ativo=" + ativo +
                 ", dataCriacao=" + dataCriacao +
                 ", dataAlteracao=" + dataAlteracao +

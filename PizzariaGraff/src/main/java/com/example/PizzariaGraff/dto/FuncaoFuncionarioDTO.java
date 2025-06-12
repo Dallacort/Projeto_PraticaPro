@@ -30,9 +30,7 @@ public class FuncaoFuncionarioDTO {
     @Schema(description = "Observações sobre a função", example = "Disponibilidade para fins de semana")
     private String observacao;
     
-    @Schema(description = "Data da situação", example = "2024-01-01")
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate situacao;
+
     
     @Schema(description = "Data de criação do registro", example = "2024-01-15T10:30:00")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -67,7 +65,6 @@ public class FuncaoFuncionarioDTO {
         this.cargaHoraria = funcao.getCargaHoraria();
         this.descricao = funcao.getDescricao();
         this.observacao = funcao.getObservacao();
-        this.situacao = funcao.getSituacao();
         this.dataCriacao = funcao.getDataCriacao();
         this.dataAlteracao = funcao.getDataAlteracao();
         
@@ -93,7 +90,6 @@ public class FuncaoFuncionarioDTO {
         funcao.setCargaHoraria(this.cargaHoraria);
         funcao.setDescricao(this.descricao);
         funcao.setObservacao(this.observacao);
-        funcao.setSituacao(this.situacao);
         funcao.setDataCriacao(this.dataCriacao);
         funcao.setDataAlteracao(this.dataAlteracao);
         
@@ -155,13 +151,7 @@ public class FuncaoFuncionarioDTO {
         this.observacao = observacao;
     }
 
-    public LocalDate getSituacao() {
-        return situacao;
-    }
 
-    public void setSituacao(LocalDate situacao) {
-        this.situacao = situacao;
-    }
 
     public LocalDateTime getDataCriacao() {
         return dataCriacao;

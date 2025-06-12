@@ -18,7 +18,6 @@ const MarcaForm: React.FC = () => {
   
   const [formData, setFormData] = useState({
     marca: '',
-    situacao: new Date().toISOString().split('T')[0],
     ativo: true,
     dataCriacao: null as string | null,
     dataAlteracao: null as string | null,
@@ -65,7 +64,6 @@ const MarcaForm: React.FC = () => {
       if (marca) {
         setFormData({
           marca: marca.marca,
-          situacao: marca.situacao || new Date().toISOString().split('T')[0],
           ativo: marca.ativo,
           dataCriacao: marca.dataCriacao,
           dataAlteracao: marca.dataAlteracao,
@@ -188,7 +186,7 @@ const MarcaForm: React.FC = () => {
               </div>
             </div>
             
-            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '100px 3fr 200px' }}>
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '100px 3fr' }}>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Código</label>
                 <input
@@ -211,22 +209,6 @@ const MarcaForm: React.FC = () => {
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   placeholder="Digite o nome da marca"
-                  required
-                  disabled={isView}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="situacao" className="block text-sm font-medium text-gray-700 mb-1">
-                  Data Situação *
-                </label>
-                <input
-                  type="date"
-                  id="situacao"
-                  name="situacao"
-                  value={formData.situacao}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   required
                   disabled={isView}
                 />

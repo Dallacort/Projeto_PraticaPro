@@ -72,12 +72,7 @@ const FornecedorViewModal: React.FC<FornecedorViewModalProps> = ({
                 <p className="text-sm font-medium text-gray-500">Telefone</p>
                 <p className="font-semibold">{fornecedor.telefone || 'N/A'}</p>
               </div>
-              {fornecedor.contato && (
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Contato</p>
-                  <p className="font-semibold">{fornecedor.contato}</p>
-                </div>
-              )}
+
               {fornecedor.tipo && (
                 <div>
                   <p className="text-sm font-medium text-gray-500">Tipo de Fornecedor</p>
@@ -90,12 +85,7 @@ const FornecedorViewModal: React.FC<FornecedorViewModalProps> = ({
                   <p className="font-semibold">R$ {Number(fornecedor.limiteCredito).toFixed(2)}</p>
                 </div>
               )}
-              {fornecedor.situacao && (
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Data Situação</p>
-                  <p className="font-semibold">{new Date(fornecedor.situacao).toLocaleDateString('pt-BR')}</p>
-                </div>
-              )}
+
             </div>
           </div>
 
@@ -156,34 +146,15 @@ const FornecedorViewModal: React.FC<FornecedorViewModalProps> = ({
           <div className="col-span-1 md:col-span-2 mt-4 pt-4 border-t">
             <h4 className="text-sm font-medium text-gray-700 mb-2">Informações do Registro</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
-              {(fornecedor.dataCriacao || fornecedor.dataCadastro) && (
-                <div>
-                  <p className="text-xs text-gray-500">Data de Cadastro</p>
-                  <p className="text-sm font-semibold">
-                    {new Date(fornecedor.dataCriacao || fornecedor.dataCadastro || '').toLocaleString('pt-BR', { 
-                      day: '2-digit', 
-                      month: '2-digit', 
-                      year: 'numeric', 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </p>
-                </div>
-              )}
-              {(fornecedor.dataAlteracao || fornecedor.ultimaModificacao) && (
-                <div>
-                  <p className="text-xs text-gray-500">Última Modificação</p>
-                  <p className="text-sm font-semibold">
-                    {new Date(fornecedor.dataAlteracao || fornecedor.ultimaModificacao || '').toLocaleString('pt-BR', { 
-                      day: '2-digit', 
-                      month: '2-digit', 
-                      year: 'numeric', 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </p>
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Data Criação</label>
+                <p className="text-gray-900">{fornecedor.dataCriacao || fornecedor.dataCadastro || 'N/A'}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Última Modificação</label>
+                <p className="text-gray-900">{fornecedor.dataAlteracao || fornecedor.ultimaModificacao || 'N/A'}</p>
+              </div>
             </div>
           </div>
         </div>

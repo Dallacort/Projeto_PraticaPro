@@ -21,8 +21,7 @@ const UnidadeMedidaModal: React.FC<UnidadeMedidaModalProps> = ({ isOpen, onClose
   const [showForm, setShowForm] = useState(false);
   const [novaUnidadeMedidaData, setNovaUnidadeMedidaData] = useState({
     unidadeMedida: '',
-    situacao: new Date().toISOString().split('T')[0],
-    ativo: true
+    ativo: true,
   });
 
   const fetchUnidadesMedida = useCallback(async () => {
@@ -46,8 +45,7 @@ const UnidadeMedidaModal: React.FC<UnidadeMedidaModalProps> = ({ isOpen, onClose
       setSearchTerm('');
       setNovaUnidadeMedidaData({
         unidadeMedida: '',
-        situacao: new Date().toISOString().split('T')[0],
-        ativo: true
+        ativo: true,
       });
     }
   }, [isOpen, fetchUnidadesMedida]);
@@ -202,15 +200,6 @@ const UnidadeMedidaModal: React.FC<UnidadeMedidaModalProps> = ({ isOpen, onClose
                   onChange={handleNovaUnidadeMedidaChange}
                   required
                   placeholder="Ex: Quilograma, Litro, Unidade..."
-                />
-                
-                <FormField
-                  label="Data da Situação"
-                  type="date"
-                  name="situacao"
-                  value={novaUnidadeMedidaData.situacao}
-                  onChange={handleNovaUnidadeMedidaChange}
-                  required
                 />
               </div>
             </div>

@@ -6,7 +6,7 @@ const adaptUnidadeMedidaFromApi = (unidadeMedida: any): UnidadeMedida => {
   return {
     id: unidadeMedida.id,
     unidadeMedida: unidadeMedida.unidadeMedida || '',
-    situacao: unidadeMedida.situacao || null,
+
     ativo: unidadeMedida.ativo !== undefined ? unidadeMedida.ativo : true, // Usar valor real da API
     dataCriacao: unidadeMedida.dataCriacao || null,
     dataAlteracao: unidadeMedida.dataAlteracao || null,
@@ -19,7 +19,7 @@ const adaptUnidadeMedidaFromApi = (unidadeMedida: any): UnidadeMedida => {
 const adaptUnidadeMedidaToApi = (unidadeMedida: Omit<UnidadeMedida, 'id' | 'dataCriacao' | 'dataAlteracao' | 'dataCadastro' | 'ultimaModificacao'>): any => {
   return {
     unidadeMedida: unidadeMedida.unidadeMedida,
-    situacao: unidadeMedida.situacao || new Date().toISOString().split('T')[0],
+
     ativo: unidadeMedida.ativo !== undefined ? unidadeMedida.ativo : true
   };
 };

@@ -1,6 +1,5 @@
 package com.example.PizzariaGraff.model;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 
@@ -11,7 +10,6 @@ public class FuncaoFuncionario {
     private BigDecimal cargaHoraria;     // Carga horária
     private String descricao;            // Descrição da função
     private String observacao;           // Observações
-    private LocalDate situacao;          // Data da situação
     private LocalDateTime dataCriacao;   // Data de criação
     private LocalDateTime dataAlteracao; // Data de alteração
     
@@ -79,14 +77,6 @@ public class FuncaoFuncionario {
         this.observacao = observacao;
     }
 
-    public LocalDate getSituacao() {
-        return situacao;
-    }
-
-    public void setSituacao(LocalDate situacao) {
-        this.situacao = situacao;
-    }
-
     public LocalDateTime getDataCriacao() {
         return dataCriacao;
     }
@@ -113,11 +103,7 @@ public class FuncaoFuncionario {
     }
 
     public Boolean getAtivo() {
-        if (ativo != null) {
-            return ativo;
-        }
-        // Se ativo não foi definido, usa a situacao como referência
-        return situacao != null;
+        return ativo != null ? ativo : true;
     }
 
     public void setAtivo(Boolean ativo) {
@@ -147,7 +133,11 @@ public class FuncaoFuncionario {
                 ", funcaoFuncionario='" + funcaoFuncionario + '\'' +
                 ", requerCNH=" + requerCNH +
                 ", cargaHoraria=" + cargaHoraria +
+                ", descricao='" + descricao + '\'' +
+                ", observacao='" + observacao + '\'' +
                 ", ativo=" + ativo +
+                ", dataCriacao=" + dataCriacao +
+                ", dataAlteracao=" + dataAlteracao +
                 '}';
     }
 } 

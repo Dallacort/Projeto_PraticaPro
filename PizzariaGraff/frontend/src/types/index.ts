@@ -39,7 +39,6 @@ export interface FuncaoFuncionario {
   cargaHoraria?: number;             // Carga horária semanal
   descricao?: string;                // Descrição detalhada
   observacao?: string;               // Observações
-  situacao?: string;                 // Data da situação
   dataCriacao?: string;              // Data de criação
   dataAlteracao?: string;            // Data de alteração
   
@@ -147,7 +146,6 @@ export interface Fornecedor {
   observacoes?: string;
   condicaoPagamentoId?: number;
   limiteCredito?: number;
-  situacao?: string;
   ativo: boolean;
   nacionalidadeId?: number;
   transportadoraId?: number;
@@ -178,7 +176,6 @@ export interface Produto {
   unidadeMedidaId?: number;
   unidadeMedidaNome?: string;
   unidadeMedida?: UnidadeMedida;
-  situacao?: string;
   codigo?: string;
   precoVenda?: number;
   precoCusto?: number;
@@ -197,7 +194,6 @@ export interface Produto {
 export interface Marca {
   id: number;
   marca: string;
-  situacao?: string;
   ativo?: boolean;
   dataCriacao?: string;
   dataAlteracao?: string;
@@ -208,7 +204,6 @@ export interface Marca {
 export interface UnidadeMedida {
   id: number;
   unidadeMedida: string;
-  situacao?: string;
   ativo?: boolean;
   dataCriacao?: string;
   dataAlteracao?: string;
@@ -350,6 +345,7 @@ export interface Funcionario {
   funcaoFuncionario?: FuncaoFuncionario;
   funcaoFuncionarioId?: number;
   cargo?: string;
+  tipo?: number;                   // Tipo do funcionário (1=Pessoa Física, 2=Pessoa Jurídica)
   ativo?: boolean;
   dataCriacao?: string;
   dataAlteracao?: string;

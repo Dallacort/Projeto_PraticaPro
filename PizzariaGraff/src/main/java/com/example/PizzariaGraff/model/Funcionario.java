@@ -31,6 +31,7 @@ public class Funcionario {
     private Long funcaoFuncionarioId; // bigint(20) - FK para FuncaoFuncionario
     private String cpfCpnj;     // varchar(14)
     private Boolean ativo;      // boolean - campo de controle
+    private Integer tipo;       // int(11) - Tipo do funcionário (1=Pessoa Física, 2=Pessoa Jurídica)
     
     // Relacionamentos
     private Cidade cidade;
@@ -252,6 +253,14 @@ public class Funcionario {
 
     public void setAtivo(Boolean ativo) {
         this.ativo = ativo;
+    }
+
+    public Integer getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(Integer tipo) {
+        this.tipo = tipo;
     }
 
     public Cidade getCidade() {

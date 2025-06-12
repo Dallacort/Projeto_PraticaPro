@@ -21,8 +21,7 @@ const MarcaModal: React.FC<MarcaModalProps> = ({ isOpen, onClose, onSelect }) =>
   const [showForm, setShowForm] = useState(false);
   const [novaMarcaData, setNovaMarcaData] = useState({
     marca: '',
-    situacao: new Date().toISOString().split('T')[0],
-    ativo: true
+    ativo: true,
   });
 
   const fetchMarcas = useCallback(async () => {
@@ -46,8 +45,7 @@ const MarcaModal: React.FC<MarcaModalProps> = ({ isOpen, onClose, onSelect }) =>
       setSearchTerm('');
       setNovaMarcaData({
         marca: '',
-        situacao: new Date().toISOString().split('T')[0],
-        ativo: true
+        ativo: true,
       });
     }
   }, [isOpen, fetchMarcas]);
@@ -202,15 +200,6 @@ const MarcaModal: React.FC<MarcaModalProps> = ({ isOpen, onClose, onSelect }) =>
                   onChange={handleNovaMarcaChange}
                   required
                   placeholder="Ex: Samsung, Apple, Sony..."
-                />
-                
-                <FormField
-                  label="Data da Situação"
-                  type="date"
-                  name="situacao"
-                  value={novaMarcaData.situacao}
-                  onChange={handleNovaMarcaChange}
-                  required
                 />
               </div>
             </div>

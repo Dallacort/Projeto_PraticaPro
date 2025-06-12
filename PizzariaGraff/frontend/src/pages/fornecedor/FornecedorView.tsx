@@ -144,17 +144,9 @@ const FornecedorView: React.FC = () => {
               <p className="font-semibold">{fornecedor.email || 'N/A'}</p>
             </div>
 
-            <div>
-              <p className="text-sm font-medium text-gray-500">Contato</p>
-              <p className="font-semibold">{fornecedor.contato || 'N/A'}</p>
-            </div>
 
-            <div>
-              <p className="text-sm font-medium text-gray-500">Data Situação</p>
-              <p className="font-semibold">
-                {fornecedor.situacao ? formatDate(fornecedor.situacao) : 'N/A'}
-              </p>
-            </div>
+
+
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">

@@ -24,8 +24,7 @@ public class FuncaoFuncionarioRepository {
         try (Connection conn = databaseConnection.getConnection()) {
             DatabaseMetaData metaData = conn.getMetaData();
             
-            // Verificar se as novas colunas existem
-            String[] newColumns = {"funcao_funcionario", "requer_cnh", "carga_horaria", "observacao", "situacao", "data_criacao", "data_alteracao"};
+            String[] newColumns = {"funcao_funcionario", "requer_cnh", "carga_horaria", "observacao", "data_criacao", "data_alteracao"};
             
             for (String columnName : newColumns) {
                 ResultSet columns = metaData.getColumns(null, null, "funcao_funcionario", columnName);
@@ -35,7 +34,7 @@ public class FuncaoFuncionarioRepository {
                 columns.close();
             }
         } catch (SQLException e) {
-            System.err.println("Erro ao verificar estrutura do banco para funcao_funcionario: " + e.getMessage());
+            System.err.println("Erro ao verificar/criar estrutura do banco para funcao_funcionario: " + e.getMessage());
         }
     }
     
@@ -112,33 +111,28 @@ public class FuncaoFuncionarioRepository {
     }
     
     private FuncaoFuncionario insert(FuncaoFuncionario funcao) {
-        // Tentar inserção com novos campos primeiro
-        String sqlNovo = "INSERT INTO funcao_funcionario (funcao_funcionario, requer_cnh, carga_horaria, " +
-                         "descricao, observacao, situacao, ativo, data_criacao, data_alteracao, " +
-                         "salario_base, data_cadastro, ultima_modificacao) " +
-                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO funcao_funcionario (funcao_funcionario, requer_cnh, carga_horaria, " +
+                     "descricao, observacao, ativo, data_criacao, data_alteracao, " +
+                     "salario_base, data_cadastro, ultima_modificacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
-        // Fallback para estrutura antiga
-        String sqlLegado = "INSERT INTO funcao_funcionario (descricao, salario_base, ativo, data_cadastro, ultima_modificacao) " +
-                          "VALUES (?, ?, ?, ?, ?)";
-        
-        try (Connection conn = databaseConnection.getConnection()) {
+        try (Connection conn = databaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
             LocalDateTime now = LocalDateTime.now();
             
-            try (PreparedStatement stmt = conn.prepareStatement(sqlNovo, Statement.RETURN_GENERATED_KEYS)) {
-                // Tentar com estrutura nova
                 stmt.setString(1, funcao.getFuncaoFuncionario());
                 stmt.setBoolean(2, funcao.getRequerCNH() != null ? funcao.getRequerCNH() : false);
                 stmt.setBigDecimal(3, funcao.getCargaHoraria());
                 stmt.setString(4, funcao.getDescricao());
                 stmt.setString(5, funcao.getObservacao());
-                stmt.setDate(6, funcao.getSituacao() != null ? Date.valueOf(funcao.getSituacao()) : null);
-                stmt.setBoolean(7, funcao.getAtivo() != null ? funcao.getAtivo() : true);
-                stmt.setTimestamp(8, funcao.getDataCriacao() != null ? Timestamp.valueOf(funcao.getDataCriacao()) : Timestamp.valueOf(now));
-                stmt.setTimestamp(9, funcao.getDataAlteracao() != null ? Timestamp.valueOf(funcao.getDataAlteracao()) : Timestamp.valueOf(now));
-                stmt.setDouble(10, funcao.getSalarioBase() != null ? funcao.getSalarioBase() : 0.0);
-                stmt.setTimestamp(11, funcao.getDataCadastro() != null ? Timestamp.valueOf(funcao.getDataCadastro()) : Timestamp.valueOf(now));
-                stmt.setTimestamp(12, funcao.getUltimaModificacao() != null ? Timestamp.valueOf(funcao.getUltimaModificacao()) : Timestamp.valueOf(now));
+            stmt.setBoolean(6, funcao.getAtivo() != null ? funcao.getAtivo() : true);
+            stmt.setTimestamp(7, funcao.getDataCriacao() != null ? Timestamp.valueOf(funcao.getDataCriacao()) : Timestamp.valueOf(now));
+            stmt.setTimestamp(8, funcao.getDataAlteracao() != null ? Timestamp.valueOf(funcao.getDataAlteracao()) : Timestamp.valueOf(now));
+            
+            // Campos legados
+            stmt.setDouble(9, funcao.getSalarioBase() != null ? funcao.getSalarioBase() : 0.0);
+            stmt.setTimestamp(10, funcao.getDataCadastro() != null ? Timestamp.valueOf(funcao.getDataCadastro()) : Timestamp.valueOf(now));
+            stmt.setTimestamp(11, funcao.getUltimaModificacao() != null ? Timestamp.valueOf(funcao.getUltimaModificacao()) : Timestamp.valueOf(now));
                 
                 stmt.executeUpdate();
                 
@@ -146,96 +140,51 @@ public class FuncaoFuncionarioRepository {
                 if (rs.next()) {
                     funcao.setId(rs.getLong(1));
                 }
-                rs.close();
-                
-            } catch (SQLException e) {
-                // Fallback para estrutura antiga
-                System.out.println("Usando estrutura legada para inserção: " + e.getMessage());
-                try (PreparedStatement stmtLegado = conn.prepareStatement(sqlLegado, Statement.RETURN_GENERATED_KEYS)) {
-                    stmtLegado.setString(1, funcao.getDescricao());
-                    stmtLegado.setDouble(2, funcao.getSalarioBase() != null ? funcao.getSalarioBase() : 0.0);
-                    stmtLegado.setBoolean(3, funcao.getAtivo() != null ? funcao.getAtivo() : true);
-                    stmtLegado.setTimestamp(4, Timestamp.valueOf(now));
-                    stmtLegado.setTimestamp(5, Timestamp.valueOf(now));
-                    
-                    stmtLegado.executeUpdate();
-                    
-                    ResultSet rs = stmtLegado.getGeneratedKeys();
-                    if (rs.next()) {
-                        funcao.setId(rs.getLong(1));
-                    }
-                    rs.close();
-                }
-            }
-            
-            // Atualizar campos de data se não foram definidos
+
             if (funcao.getDataCriacao() == null) {
                 funcao.setDataCriacao(now);
             }
             if (funcao.getDataAlteracao() == null) {
                 funcao.setDataAlteracao(now);
             }
-            if (funcao.getDataCadastro() == null) {
-                funcao.setDataCadastro(now);
-            }
-            if (funcao.getUltimaModificacao() == null) {
-                funcao.setUltimaModificacao(now);
-            }
-            
+
+            rs.close();
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao inserir função de funcionário", e);
+            throw new RuntimeException("Erro ao inserir função funcionário", e);
         }
         
         return funcao;
     }
     
     private FuncaoFuncionario update(FuncaoFuncionario funcao) {
-        // Tentar atualização com novos campos
-        String sqlNovo = "UPDATE funcao_funcionario SET funcao_funcionario = ?, requer_cnh = ?, carga_horaria = ?, " +
-                         "descricao = ?, observacao = ?, situacao = ?, ativo = ?, data_alteracao = ?, " +
+        String sql = "UPDATE funcao_funcionario SET funcao_funcionario = ?, requer_cnh = ?, " +
+                     "carga_horaria = ?, descricao = ?, observacao = ?, ativo = ?, data_alteracao = ?, " +
                          "salario_base = ?, ultima_modificacao = ? WHERE id = ?";
         
-        // Fallback para estrutura antiga
-        String sqlLegado = "UPDATE funcao_funcionario SET descricao = ?, salario_base = ?, ativo = ?, ultima_modificacao = ? WHERE id = ?";
+        try (Connection conn = databaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
         
-        try (Connection conn = databaseConnection.getConnection()) {
             LocalDateTime now = LocalDateTime.now();
             
-            try (PreparedStatement stmt = conn.prepareStatement(sqlNovo)) {
-                // Tentar com estrutura nova
                 stmt.setString(1, funcao.getFuncaoFuncionario());
                 stmt.setBoolean(2, funcao.getRequerCNH() != null ? funcao.getRequerCNH() : false);
                 stmt.setBigDecimal(3, funcao.getCargaHoraria());
                 stmt.setString(4, funcao.getDescricao());
                 stmt.setString(5, funcao.getObservacao());
-                stmt.setDate(6, funcao.getSituacao() != null ? Date.valueOf(funcao.getSituacao()) : null);
-                stmt.setBoolean(7, funcao.getAtivo() != null ? funcao.getAtivo() : true);
-                stmt.setTimestamp(8, Timestamp.valueOf(now));
-                stmt.setDouble(9, funcao.getSalarioBase() != null ? funcao.getSalarioBase() : 0.0);
-                stmt.setTimestamp(10, Timestamp.valueOf(now));
-                stmt.setLong(11, funcao.getId());
+            stmt.setBoolean(6, funcao.getAtivo() != null ? funcao.getAtivo() : true);
+            stmt.setTimestamp(7, Timestamp.valueOf(now));
+            
+            // Campos legados
+            stmt.setDouble(8, funcao.getSalarioBase() != null ? funcao.getSalarioBase() : 0.0);
+            stmt.setTimestamp(9, Timestamp.valueOf(now));
+            stmt.setLong(10, funcao.getId());
                 
                 stmt.executeUpdate();
-                
-            } catch (SQLException e) {
-                // Fallback para estrutura antiga
-                System.out.println("Usando estrutura legada para atualização: " + e.getMessage());
-                try (PreparedStatement stmtLegado = conn.prepareStatement(sqlLegado)) {
-                    stmtLegado.setString(1, funcao.getDescricao());
-                    stmtLegado.setDouble(2, funcao.getSalarioBase() != null ? funcao.getSalarioBase() : 0.0);
-                    stmtLegado.setBoolean(3, funcao.getAtivo() != null ? funcao.getAtivo() : true);
-                    stmtLegado.setTimestamp(4, Timestamp.valueOf(now));
-                    stmtLegado.setLong(5, funcao.getId());
-                    
-                    stmtLegado.executeUpdate();
-                }
-            }
             
             funcao.setDataAlteracao(now);
             funcao.setUltimaModificacao(now);
-            
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao atualizar função de funcionário", e);
+            throw new RuntimeException("Erro ao atualizar função funcionário", e);
         }
         
         return funcao;
@@ -288,15 +237,6 @@ public class FuncaoFuncionarioRepository {
             funcao.setObservacao(null);
         }
         
-        try {
-            Date situacao = rs.getDate("situacao");
-            if (situacao != null) {
-                funcao.setSituacao(situacao.toLocalDate());
-            }
-        } catch (SQLException e) {
-            funcao.setSituacao(null);
-        }
-        
         // Campos legados
         funcao.setSalarioBase(rs.getDouble("salario_base"));
         funcao.setAtivo(rs.getBoolean("ativo"));
@@ -308,7 +248,7 @@ public class FuncaoFuncionarioRepository {
                 funcao.setDataCriacao(dataCriacao.toLocalDateTime());
             }
         } catch (SQLException e) {
-            // Usar data_cadastro como fallback
+            // Campo não existe, usar data_cadastro
             Timestamp dataCadastro = rs.getTimestamp("data_cadastro");
             if (dataCadastro != null) {
                 funcao.setDataCriacao(dataCadastro.toLocalDateTime());
@@ -321,13 +261,14 @@ public class FuncaoFuncionarioRepository {
                 funcao.setDataAlteracao(dataAlteracao.toLocalDateTime());
             }
         } catch (SQLException e) {
-            // Usar ultima_modificacao como fallback
+            // Campo não existe, usar ultima_modificacao
             Timestamp ultimaModificacao = rs.getTimestamp("ultima_modificacao");
             if (ultimaModificacao != null) {
                 funcao.setDataAlteracao(ultimaModificacao.toLocalDateTime());
             }
         }
         
+        // Campos legados (com fallback se os novos campos não existirem)
         Timestamp dataCadastro = rs.getTimestamp("data_cadastro");
         if (dataCadastro != null) {
             funcao.setDataCadastro(dataCadastro.toLocalDateTime());

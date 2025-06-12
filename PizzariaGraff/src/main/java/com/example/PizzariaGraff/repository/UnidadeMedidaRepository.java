@@ -6,8 +6,10 @@ import org.springframework.stereotype.Repository;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public class UnidadeMedidaRepository {
@@ -21,18 +23,21 @@ public class UnidadeMedidaRepository {
 
     private void verificarEstruturaBanco() {
         try (Connection conn = databaseConnection.getConnection()) {
-            // Verificar se a coluna 'ativo' existe na tabela unidade_medida
+            // Verifica se as novas colunas existem e as adiciona se necessário
             DatabaseMetaData metaData = conn.getMetaData();
-            ResultSet columns = metaData.getColumns(null, null, "unidade_medida", "ativo");
+            ResultSet columns = metaData.getColumns(null, null, "unidade_medida", null);
             
-            if (!columns.next()) {
-                // Coluna 'ativo' não existe, vamos criá-la
-                System.out.println("Adicionando coluna 'ativo' na tabela unidade_medida");
+            Set<String> existingColumns = new HashSet<>();
+            while (columns.next()) {
+                existingColumns.add(columns.getString("COLUMN_NAME").toLowerCase());
+            }
+            
+            // Adiciona coluna ativo se não existir
+            if (!existingColumns.contains("ativo")) {
                 try (Statement stmt = conn.createStatement()) {
-                    stmt.execute("ALTER TABLE unidade_medida ADD COLUMN ativo BOOLEAN DEFAULT TRUE");
-                    // Atualizar registros existentes
-                    stmt.execute("UPDATE unidade_medida SET ativo = TRUE WHERE situacao IS NOT NULL");
-                    stmt.execute("UPDATE unidade_medida SET ativo = FALSE WHERE situacao IS NULL");
+                    stmt.execute("ALTER TABLE unidade_medida ADD COLUMN ativo TINYINT(1) DEFAULT 1 COMMENT 'Status da unidade de medida: 1=Ativo, 0=Inativo'");
+                    // Define todos como ativos por padrão
+                    stmt.execute("UPDATE unidade_medida SET ativo = TRUE");
                 }
             }
             columns.close();
@@ -128,7 +133,7 @@ public class UnidadeMedidaRepository {
     }
 
     private UnidadeMedida insert(UnidadeMedida unidadeMedida) {
-        String sql = "INSERT INTO unidade_medida (unidade_medida, situacao, ativo, data_criacao, data_alteracao) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO unidade_medida (unidade_medida, ativo, data_criacao, data_alteracao) VALUES (?, ?, ?, ?)";
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -136,10 +141,9 @@ public class UnidadeMedidaRepository {
             LocalDateTime now = LocalDateTime.now();
 
             stmt.setString(1, unidadeMedida.getUnidadeMedida());
-            stmt.setDate(2, unidadeMedida.getSituacao() != null ? Date.valueOf(unidadeMedida.getSituacao()) : null);
-            stmt.setBoolean(3, unidadeMedida.getAtivo() != null ? unidadeMedida.getAtivo() : true);
-            stmt.setTimestamp(4, unidadeMedida.getDataCriacao() != null ? Timestamp.valueOf(unidadeMedida.getDataCriacao()) : Timestamp.valueOf(now));
-            stmt.setTimestamp(5, unidadeMedida.getDataAlteracao() != null ? Timestamp.valueOf(unidadeMedida.getDataAlteracao()) : Timestamp.valueOf(now));
+            stmt.setBoolean(2, unidadeMedida.getAtivo() != null ? unidadeMedida.getAtivo() : true);
+            stmt.setTimestamp(3, unidadeMedida.getDataCriacao() != null ? Timestamp.valueOf(unidadeMedida.getDataCriacao()) : Timestamp.valueOf(now));
+            stmt.setTimestamp(4, unidadeMedida.getDataAlteracao() != null ? Timestamp.valueOf(unidadeMedida.getDataAlteracao()) : Timestamp.valueOf(now));
 
             stmt.executeUpdate();
 
@@ -164,7 +168,7 @@ public class UnidadeMedidaRepository {
     }
 
     private UnidadeMedida update(UnidadeMedida unidadeMedida) {
-        String sql = "UPDATE unidade_medida SET unidade_medida = ?, situacao = ?, ativo = ?, data_alteracao = ? WHERE id = ?";
+        String sql = "UPDATE unidade_medida SET unidade_medida = ?, ativo = ?, data_alteracao = ? WHERE id = ?";
 
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -172,10 +176,9 @@ public class UnidadeMedidaRepository {
             LocalDateTime now = LocalDateTime.now();
 
             stmt.setString(1, unidadeMedida.getUnidadeMedida());
-            stmt.setDate(2, unidadeMedida.getSituacao() != null ? Date.valueOf(unidadeMedida.getSituacao()) : null);
-            stmt.setBoolean(3, unidadeMedida.getAtivo() != null ? unidadeMedida.getAtivo() : true);
-            stmt.setTimestamp(4, Timestamp.valueOf(now));
-            stmt.setLong(5, unidadeMedida.getId());
+            stmt.setBoolean(2, unidadeMedida.getAtivo() != null ? unidadeMedida.getAtivo() : true);
+            stmt.setTimestamp(3, Timestamp.valueOf(now));
+            stmt.setLong(4, unidadeMedida.getId());
 
             stmt.executeUpdate();
 
@@ -205,18 +208,8 @@ public class UnidadeMedidaRepository {
         unidadeMedida.setId(rs.getLong("id"));
         unidadeMedida.setUnidadeMedida(rs.getString("unidade_medida"));
 
-        Date situacao = rs.getDate("situacao");
-        if (situacao != null) {
-            unidadeMedida.setSituacao(situacao.toLocalDate());
-        }
-
-        // Carregar campo ativo do banco, com fallback para situacao se não existir
-        try {
-            unidadeMedida.setAtivo(rs.getBoolean("ativo"));
-        } catch (SQLException e) {
-            // Se a coluna ativo não existir, usar fallback baseado na situacao
-            unidadeMedida.setAtivo(situacao != null);
-        }
+        // Carregar campo ativo do banco
+        unidadeMedida.setAtivo(rs.getBoolean("ativo"));
 
         Timestamp dataCriacao = rs.getTimestamp("data_criacao");
         if (dataCriacao != null) {

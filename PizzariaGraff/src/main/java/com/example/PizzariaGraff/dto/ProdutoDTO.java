@@ -56,9 +56,7 @@ public class ProdutoDTO {
     @Schema(description = "Nome da unidade de medida", example = "Unidade")
     private String unidadeMedidaNome;
 
-    @Schema(description = "Data da situação", example = "2024-01-01")
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate situacao;
+
 
     @Schema(description = "Status ativo/inativo", example = "true")
     private Boolean ativo;
@@ -88,7 +86,6 @@ public class ProdutoDTO {
         this.quantidadeMinima = produto.getQuantidadeMinima();
         this.marcaId = produto.getMarcaId();
         this.unidadeMedidaId = produto.getUnidadeMedidaId();
-        this.situacao = produto.getSituacao();
         this.dataCriacao = produto.getDataCriacao();
         this.dataAlteracao = produto.getDataAlteracao();
         
@@ -124,7 +121,6 @@ public class ProdutoDTO {
         produto.setQuantidadeMinima(this.quantidadeMinima);
         produto.setMarcaId(this.marcaId);
         produto.setUnidadeMedidaId(this.unidadeMedidaId);
-        produto.setSituacao(this.situacao);
         produto.setDataCriacao(this.dataCriacao);
         produto.setDataAlteracao(this.dataAlteracao);
         produto.setAtivo(this.ativo);
@@ -177,8 +173,7 @@ public class ProdutoDTO {
     public String getUnidadeMedidaNome() { return unidadeMedidaNome; }
     public void setUnidadeMedidaNome(String unidadeMedidaNome) { this.unidadeMedidaNome = unidadeMedidaNome; }
     
-    public LocalDate getSituacao() { return situacao; }
-    public void setSituacao(LocalDate situacao) { this.situacao = situacao; }
+
     
     public Boolean getAtivo() { return ativo; }
     public void setAtivo(Boolean ativo) { this.ativo = ativo; }

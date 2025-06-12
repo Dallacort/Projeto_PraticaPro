@@ -1,12 +1,10 @@
 package com.example.PizzariaGraff.model;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class Marca {
     private Long id;
     private String marca;               // varchar(60) NOT NULL
-    private LocalDate situacao;         // date NOT NULL
     private LocalDateTime dataCriacao;  // timestamp NOT NULL
     private LocalDateTime dataAlteracao; // timestamp NOT NULL
 
@@ -16,9 +14,9 @@ public class Marca {
     // Constructors
     public Marca() {}
 
-    public Marca(String marca, LocalDate situacao) {
+    public Marca(String marca) {
         this.marca = marca;
-        this.situacao = situacao;
+        this.ativo = true;
     }
 
     // Getters e Setters
@@ -38,14 +36,6 @@ public class Marca {
         this.marca = marca;
     }
 
-    public LocalDate getSituacao() {
-        return situacao;
-    }
-
-    public void setSituacao(LocalDate situacao) {
-        this.situacao = situacao;
-    }
-
     public LocalDateTime getDataCriacao() {
         return dataCriacao;
     }
@@ -63,12 +53,7 @@ public class Marca {
     }
 
     public Boolean getAtivo() {
-        if (ativo != null) {
-            return ativo;
-        }
-        // Se ativo não foi definido, usa a situacao como referência
-        // situacao != null significa ativo
-        return situacao != null;
+        return ativo != null ? ativo : true;
     }
 
     public void setAtivo(Boolean ativo) {
@@ -80,7 +65,7 @@ public class Marca {
         return "Marca{" +
                 "id=" + id +
                 ", marca='" + marca + '\'' +
-                ", situacao=" + situacao +
+                ", ativo=" + ativo +
                 ", dataCriacao=" + dataCriacao +
                 ", dataAlteracao=" + dataAlteracao +
                 '}';

@@ -22,7 +22,7 @@ const adaptProdutoFromApi = (produto: any): Produto => {
       id: produto.marca.id || produto.marcaId,
       marca: produto.marca.marca || produto.marcaNome || '',
       ativo: produto.marca.ativo !== undefined ? produto.marca.ativo : true,
-      situacao: produto.marca.situacao || null,
+
       dataCriacao: produto.marca.dataCriacao || null,
       dataAlteracao: produto.marca.dataAlteracao || null,
       dataCadastro: produto.marca.dataCadastro || null,
@@ -34,13 +34,13 @@ const adaptProdutoFromApi = (produto: any): Produto => {
       id: produto.unidadeMedida.id || produto.unidadeMedidaId,
       unidadeMedida: produto.unidadeMedida.unidadeMedida || produto.unidadeMedidaNome || '',
       ativo: produto.unidadeMedida.ativo !== undefined ? produto.unidadeMedida.ativo : true,
-      situacao: produto.unidadeMedida.situacao || null,
+
       dataCriacao: produto.unidadeMedida.dataCriacao || null,
       dataAlteracao: produto.unidadeMedida.dataAlteracao || null,
       dataCadastro: produto.unidadeMedida.dataCadastro || null,
       ultimaModificacao: produto.unidadeMedida.ultimaModificacao || null
     } : null,
-    situacao: produto.situacao || null,
+
     ativo: produto.ativo !== undefined ? produto.ativo : true, // Usar valor real da API
     dataCriacao: produto.dataCriacao || null,
     dataAlteracao: produto.dataAlteracao || null,
@@ -66,7 +66,7 @@ const adaptProdutoToApi = (produto: Omit<Produto, 'id' | 'dataCriacao' | 'dataAl
   const referencia = produto.referencia || '';
   const descricao = produto.descricao || '';
   const observacoes = produto.observacoes || '';
-  const situacao = produto.situacao && produto.situacao !== '' ? produto.situacao : new Date().toISOString().split('T')[0];
+
   
   // Conversão mais tolerante de IDs
   let marcaId = null;
@@ -93,7 +93,7 @@ const adaptProdutoToApi = (produto: Omit<Produto, 'id' | 'dataCriacao' | 'dataAl
     quantidadeMinima: produto.quantidadeMinima || produto.estoqueMinimo || 0,
     marcaId: marcaId,
     unidadeMedidaId: unidadeMedidaId,
-    situacao: situacao,
+
     ativo: produto.ativo !== undefined ? produto.ativo : true
   };
   
@@ -106,7 +106,7 @@ const adaptProdutoToApi = (produto: Omit<Produto, 'id' | 'dataCriacao' | 'dataAl
   console.log('- observacoes:', observacoes);
   console.log('- marcaId:', marcaId);
   console.log('- unidadeMedidaId:', unidadeMedidaId);
-  console.log('- situacao:', situacao);
+
   
   return dataPayload;
 };

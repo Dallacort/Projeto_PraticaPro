@@ -18,7 +18,6 @@ public class Produto {
     private BigDecimal percentualLucro;  // decimal(10,2)
     private String descricao;            // varchar(255) NOT NULL
     private String observacoes;          // varchar(255) NOT NULL
-    private LocalDate situacao;          // date NOT NULL
     private LocalDateTime dataCriacao;   // timestamp NOT NULL
     private LocalDateTime dataAlteracao; // timestamp NOT NULL
     
@@ -36,13 +35,13 @@ public class Produto {
     // Constructors
     public Produto() {}
 
-    public Produto(String produto, String codigoBarras, String referencia, String descricao, String observacoes, LocalDate situacao) {
+    public Produto(String produto, String codigoBarras, String referencia, String descricao, String observacoes) {
         this.produto = produto;
         this.codigoBarras = codigoBarras;
         this.referencia = referencia;
         this.descricao = descricao;
         this.observacoes = observacoes;
-        this.situacao = situacao;
+        this.ativo = true;
     }
 
     // Getters e Setters
@@ -150,14 +149,6 @@ public class Produto {
         this.observacoes = observacoes;
     }
 
-    public LocalDate getSituacao() {
-        return situacao;
-    }
-
-    public void setSituacao(LocalDate situacao) {
-        this.situacao = situacao;
-    }
-
     public LocalDateTime getDataCriacao() {
         return dataCriacao;
     }
@@ -175,12 +166,7 @@ public class Produto {
     }
 
     public Boolean getAtivo() {
-        if (ativo != null) {
-            return ativo;
-        }
-        // Se ativo não foi definido, usa a situacao como referência
-        // situacao != null significa ativo
-        return situacao != null;
+        return ativo != null ? ativo : true;
     }
 
     public void setAtivo(Boolean ativo) {
@@ -229,7 +215,7 @@ public class Produto {
                 ", valorCompra=" + valorCompra +
                 ", valorVenda=" + valorVenda +
                 ", quantidade=" + quantidade +
-                ", situacao=" + situacao +
+                ", ativo=" + ativo +
                 '}';
     }
 } 

@@ -104,6 +104,7 @@ const adaptFuncionarioFromApi = (funcionario: any): Funcionario => {
     nacionalidadeId: funcionario.nacionalidadeId,
     dataNascimento: funcionario.dataNascimento,
     funcaoFuncionarioId: funcionario.funcaoFuncionarioId,
+    tipo: funcionario.tipo,
     cidade: cidade,
     funcaoFuncionario: funcaoFuncionario,
     ativo: funcionario.ativo !== undefined ? funcionario.ativo : true,
@@ -144,6 +145,7 @@ const adaptFuncionarioToApi = (funcionario: any): any => {
     nacionalidadeId: funcionario.nacionalidadeId || null,
     dataNascimento: funcionario.dataNascimento || null,
     funcaoFuncionarioId: funcionario.funcaoFuncionarioId || null,
+    tipo: funcionario.tipo || 1,
     ativo: funcionario.ativo !== undefined ? funcionario.ativo : true
   };
   

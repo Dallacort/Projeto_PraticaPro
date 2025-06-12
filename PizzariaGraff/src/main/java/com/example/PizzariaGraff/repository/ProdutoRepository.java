@@ -7,8 +7,10 @@ import org.springframework.stereotype.Repository;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public class ProdutoRepository {
@@ -22,18 +24,21 @@ public class ProdutoRepository {
     
     private void verificarEstruturaBanco() {
         try (Connection conn = databaseConnection.getConnection()) {
-            // Verificar se a coluna 'ativo' existe na tabela produto
+            // Verifica se as novas colunas existem e as adiciona se necessário
             DatabaseMetaData metaData = conn.getMetaData();
-            ResultSet columns = metaData.getColumns(null, null, "produto", "ativo");
+            ResultSet columns = metaData.getColumns(null, null, "produto", null);
             
-            if (!columns.next()) {
-                // Coluna 'ativo' não existe, vamos criá-la
-                System.out.println("Adicionando coluna 'ativo' na tabela produto");
+            Set<String> existingColumns = new HashSet<>();
+            while (columns.next()) {
+                existingColumns.add(columns.getString("COLUMN_NAME").toLowerCase());
+            }
+            
+            // Adiciona coluna ativo se não existir
+            if (!existingColumns.contains("ativo")) {
                 try (Statement stmt = conn.createStatement()) {
-                    stmt.execute("ALTER TABLE produto ADD COLUMN ativo BOOLEAN DEFAULT TRUE");
-                    // Atualizar registros existentes
-                    stmt.execute("UPDATE produto SET ativo = TRUE WHERE situacao IS NOT NULL");
-                    stmt.execute("UPDATE produto SET ativo = FALSE WHERE situacao IS NULL");
+                    stmt.execute("ALTER TABLE produto ADD COLUMN ativo TINYINT(1) DEFAULT 1 COMMENT 'Status do produto: 1=Ativo, 0=Inativo'");
+                    // Define todos como ativos por padrão
+                    stmt.execute("UPDATE produto SET ativo = TRUE");
                 }
             }
             columns.close();
@@ -171,18 +176,22 @@ public class ProdutoRepository {
     }
     
     public Produto save(Produto produto) {
+        Produto savedProduto;
         if (produto.getId() == null) {
-            return insert(produto);
+            savedProduto = insert(produto);
         } else {
-            return update(produto);
+            savedProduto = update(produto);
         }
+        
+        // Buscar o produto completo com os nomes das relações
+        return findById(savedProduto.getId()).orElse(savedProduto);
     }
     
     private Produto insert(Produto produto) {
         String sql = "INSERT INTO produto (produto, unidade_medida_id, codigo_barras, referencia, marca_id, " +
                      "quantidade_minima, valor_compra, valor_venda, quantidade, percentual_lucro, descricao, " +
-                     "observacoes, situacao, ativo, data_criacao, ultima_modificacao) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "observacoes, ativo, data_criacao, ultima_modificacao) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -201,10 +210,9 @@ public class ProdutoRepository {
             stmt.setBigDecimal(10, produto.getPercentualLucro());
             stmt.setString(11, produto.getDescricao());
             stmt.setString(12, produto.getObservacoes());
-            stmt.setDate(13, produto.getSituacao() != null ? Date.valueOf(produto.getSituacao()) : null);
-            stmt.setBoolean(14, produto.getAtivo() != null ? produto.getAtivo() : true);
-            stmt.setTimestamp(15, produto.getDataCriacao() != null ? Timestamp.valueOf(produto.getDataCriacao()) : Timestamp.valueOf(now));
-            stmt.setTimestamp(16, produto.getDataAlteracao() != null ? Timestamp.valueOf(produto.getDataAlteracao()) : Timestamp.valueOf(now));
+            stmt.setBoolean(13, produto.getAtivo() != null ? produto.getAtivo() : true);
+            stmt.setTimestamp(14, produto.getDataCriacao() != null ? Timestamp.valueOf(produto.getDataCriacao()) : Timestamp.valueOf(now));
+            stmt.setTimestamp(15, produto.getDataAlteracao() != null ? Timestamp.valueOf(produto.getDataAlteracao()) : Timestamp.valueOf(now));
             
             stmt.executeUpdate();
             
@@ -231,7 +239,7 @@ public class ProdutoRepository {
     private Produto update(Produto produto) {
         String sql = "UPDATE produto SET produto = ?, unidade_medida_id = ?, codigo_barras = ?, referencia = ?, " +
                      "marca_id = ?, quantidade_minima = ?, valor_compra = ?, valor_venda = ?, quantidade = ?, " +
-                     "percentual_lucro = ?, descricao = ?, observacoes = ?, situacao = ?, ativo = ?, ultima_modificacao = ? " +
+                     "percentual_lucro = ?, descricao = ?, observacoes = ?, ativo = ?, ultima_modificacao = ? " +
                      "WHERE id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
@@ -251,10 +259,9 @@ public class ProdutoRepository {
             stmt.setBigDecimal(10, produto.getPercentualLucro());
             stmt.setString(11, produto.getDescricao());
             stmt.setString(12, produto.getObservacoes());
-            stmt.setDate(13, produto.getSituacao() != null ? Date.valueOf(produto.getSituacao()) : null);
-            stmt.setBoolean(14, produto.getAtivo() != null ? produto.getAtivo() : true);
-            stmt.setTimestamp(15, Timestamp.valueOf(now));
-            stmt.setLong(16, produto.getId());
+            stmt.setBoolean(13, produto.getAtivo() != null ? produto.getAtivo() : true);
+            stmt.setTimestamp(14, Timestamp.valueOf(now));
+            stmt.setLong(15, produto.getId());
             
             stmt.executeUpdate();
             
@@ -283,52 +290,31 @@ public class ProdutoRepository {
         Produto produto = new Produto();
         produto.setId(rs.getLong("id"));
         produto.setProduto(rs.getString("produto"));
-        
-        Long unidadeMedidaId = rs.getObject("unidade_medida_id", Long.class);
-        produto.setUnidadeMedidaId(unidadeMedidaId);
-        
+        produto.setUnidadeMedidaId(rs.getObject("unidade_medida_id", Long.class));
         produto.setCodigoBarras(rs.getString("codigo_barras"));
         produto.setReferencia(rs.getString("referencia"));
-        
-        Long marcaId = rs.getObject("marca_id", Long.class);
-        produto.setMarcaId(marcaId);
-        
-        Integer quantidadeMinima = rs.getObject("quantidade_minima", Integer.class);
-        produto.setQuantidadeMinima(quantidadeMinima);
-        
+        produto.setMarcaId(rs.getObject("marca_id", Long.class));
+        produto.setQuantidadeMinima(rs.getObject("quantidade_minima", Integer.class));
         produto.setValorCompra(rs.getBigDecimal("valor_compra"));
         produto.setValorVenda(rs.getBigDecimal("valor_venda"));
-        
-        Integer quantidade = rs.getObject("quantidade", Integer.class);
-        produto.setQuantidade(quantidade);
-        
+        produto.setQuantidade(rs.getObject("quantidade", Integer.class));
         produto.setPercentualLucro(rs.getBigDecimal("percentual_lucro"));
         produto.setDescricao(rs.getString("descricao"));
         produto.setObservacoes(rs.getString("observacoes"));
-        
-        Date situacao = rs.getDate("situacao");
-        if (situacao != null) {
-            produto.setSituacao(situacao.toLocalDate());
-        }
 
-        // Carregar campo ativo do banco, com fallback para situacao se não existir
-        try {
-            produto.setAtivo(rs.getBoolean("ativo"));
-        } catch (SQLException e) {
-            // Se a coluna ativo não existir, usar fallback baseado na situacao
-            produto.setAtivo(situacao != null);
-        }
-        
+        // Carregar campo ativo do banco
+        produto.setAtivo(rs.getBoolean("ativo"));
+
         Timestamp dataCriacao = rs.getTimestamp("data_criacao");
         if (dataCriacao != null) {
             produto.setDataCriacao(dataCriacao.toLocalDateTime());
         }
-        
+
         Timestamp ultimaModificacao = rs.getTimestamp("ultima_modificacao");
         if (ultimaModificacao != null) {
             produto.setDataAlteracao(ultimaModificacao.toLocalDateTime());
         }
-        
+
         return produto;
     }
     
@@ -359,18 +345,8 @@ public class ProdutoRepository {
         produto.setDescricao(rs.getString("descricao"));
         produto.setObservacoes(rs.getString("observacoes"));
         
-        Date situacao = rs.getDate("situacao");
-        if (situacao != null) {
-            produto.setSituacao(situacao.toLocalDate());
-        }
-
-        // Carregar campo ativo do banco, com fallback para situacao se não existir
-        try {
-            produto.setAtivo(rs.getBoolean("ativo"));
-        } catch (SQLException e) {
-            // Se a coluna ativo não existir, usar fallback baseado na situacao
-            produto.setAtivo(situacao != null);
-        }
+        // Carregar campo ativo do banco
+        produto.setAtivo(rs.getBoolean("ativo"));
         
         Timestamp dataCriacao = rs.getTimestamp("data_criacao");
         if (dataCriacao != null) {
@@ -382,8 +358,8 @@ public class ProdutoRepository {
             produto.setDataAlteracao(ultimaModificacao.toLocalDateTime());
         }
         
-                 produto.setMarcaNome(rs.getString("marca_nome"));
-         produto.setUnidadeMedidaNome(rs.getString("unidade_nome"));
+        produto.setMarcaNome(rs.getString("marca_nome"));
+        produto.setUnidadeMedidaNome(rs.getString("unidade_nome"));
         
         return produto;
     }

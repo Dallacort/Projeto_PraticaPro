@@ -6,7 +6,6 @@ const adaptMarcaFromApi = (marca: any): Marca => {
   return {
     id: marca.id,
     marca: marca.marca || '',
-    situacao: marca.situacao || null,
     ativo: marca.ativo !== undefined ? marca.ativo : true, // Usar valor real da API
     dataCriacao: marca.dataCriacao || null,
     dataAlteracao: marca.dataAlteracao || null,
@@ -19,7 +18,6 @@ const adaptMarcaFromApi = (marca: any): Marca => {
 const adaptMarcaToApi = (marca: Omit<Marca, 'id' | 'dataCriacao' | 'dataAlteracao' | 'dataCadastro' | 'ultimaModificacao'>): any => {
   return {
     marca: marca.marca,
-    situacao: marca.situacao || new Date().toISOString().split('T')[0],
     ativo: marca.ativo !== undefined ? marca.ativo : true
   };
 };

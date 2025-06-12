@@ -33,7 +33,7 @@ interface FornecedorFormData {
   tipo: number;
   observacoes: string;
   limiteCredito: number;
-  situacao: string;
+
   cidadeId: string;
   condicaoPagamentoId: string;
   nacionalidadeId: string;
@@ -67,7 +67,6 @@ const FornecedorForm: React.FC = () => {
     tipo: 2, // Padrão Pessoa Jurídica
     observacoes: '',
     limiteCredito: 0,
-    situacao: '',
     cidadeId: '',
     condicaoPagamentoId: '',
     nacionalidadeId: '',
@@ -120,7 +119,6 @@ const FornecedorForm: React.FC = () => {
             tipo: Number(fornecedorData.tipo) || 2,
             observacoes: fornecedorData.observacoes || '',
             limiteCredito: Number(fornecedorData.limiteCredito) || 0,
-            situacao: fornecedorData.situacao || '',
             cidadeId: fornecedorData.cidade?.id ? String(fornecedorData.cidade.id) : '',
             condicaoPagamentoId: String(fornecedorData.condicaoPagamentoId || ''),
             nacionalidadeId: String(fornecedorData.nacionalidadeId || ''),
@@ -268,7 +266,6 @@ const FornecedorForm: React.FC = () => {
       () => Validators.validateRequired(formData.telefone, "Telefone"),
       () => Validators.validateRequired(formData.cidadeId, "Cidade"),
       () => Validators.validateRequired(formData.limiteCredito, "Limite de crédito"),
-      () => Validators.validateRequired(formData.situacao, "Data situação"),
       
       // CPF/CNPJ é obrigatório apenas para brasileiros
       () => {
@@ -298,9 +295,6 @@ const FornecedorForm: React.FC = () => {
       
       // Validar limite de crédito (deve ser positivo)
       () => Validators.validatePositiveNumber(formData.limiteCredito, "Limite de crédito"),
-      
-      // Validar data situação
-      () => Validators.validateDate(formData.situacao, true),
       
       // Validar emails adicionais se fornecidos
       () => {
@@ -371,7 +365,6 @@ const FornecedorForm: React.FC = () => {
         tipo: formData.tipo,
         observacoes: formData.observacoes,
         limiteCredito: formData.limiteCredito,
-        situacao: formData.situacao,
         ativo: formData.ativo,
         nacionalidadeId: formData.nacionalidadeId ? Number(formData.nacionalidadeId) : null,
         transportadoraId: formData.transportadoraId ? Number(formData.transportadoraId) : null,
@@ -672,8 +665,8 @@ const FornecedorForm: React.FC = () => {
               </div>
             </div>
 
-            {/* Quarta linha: RG, CPF/CNPJ, Data Situação, Nacionalidade, Transportadora */}
-            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '150px 180px 150px 2fr 2fr' }}>
+            {/* Quarta linha: RG, CPF/CNPJ, Nacionalidade, Transportadora */}
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '150px 180px 1fr 1fr' }}>
               <FormField
                 label="RG/I.E."
                 name="rgInscricaoEstadual"
@@ -692,13 +685,7 @@ const FornecedorForm: React.FC = () => {
                 placeholder={getCpfCnpjPlaceholder()}
               />
 
-              <FormField
-                label="Data Situação"
-                name="situacao"
-                type="date"
-                value={formData.situacao}
-                onChange={handleChange}
-              />
+
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nacionalidade</label>
