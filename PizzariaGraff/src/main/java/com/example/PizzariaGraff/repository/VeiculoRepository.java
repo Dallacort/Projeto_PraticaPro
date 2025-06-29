@@ -1,7 +1,6 @@
 package com.example.PizzariaGraff.repository;
 
 import com.example.PizzariaGraff.model.Veiculo;
-import com.example.PizzariaGraff.model.Transportadora;
 import org.springframework.stereotype.Repository;
 
 import java.sql.*;
@@ -14,21 +13,16 @@ import java.util.Optional;
 public class VeiculoRepository {
     
     private final DatabaseConnection databaseConnection;
-    private final TransportadoraRepository transportadoraRepository;
     
-    public VeiculoRepository(DatabaseConnection databaseConnection, TransportadoraRepository transportadoraRepository) {
+    public VeiculoRepository(DatabaseConnection databaseConnection) {
         this.databaseConnection = databaseConnection;
-        this.transportadoraRepository = transportadoraRepository;
     }
-    
-    
     
     public List<Veiculo> findAll() {
         List<Veiculo> veiculos = new ArrayList<>();
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                "SELECT v.*, t.razao_social as transportadora_nome FROM veiculo v " +
-                "LEFT JOIN transportadora t ON v.transportadora_id = t.id")) {
+                "SELECT * FROM veiculo ORDER BY placa")) {
             
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
@@ -44,9 +38,7 @@ public class VeiculoRepository {
         List<Veiculo> veiculos = new ArrayList<>();
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                "SELECT v.*, t.razao_social as transportadora_nome FROM veiculo v " +
-                "LEFT JOIN transportadora t ON v.transportadora_id = t.id " +
-                "WHERE v.ativo = true")) {
+                "SELECT * FROM veiculo WHERE ativo = true ORDER BY placa")) {
             
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
@@ -61,9 +53,7 @@ public class VeiculoRepository {
     public Optional<Veiculo> findById(Long id) {
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                "SELECT v.*, t.razao_social as transportadora_nome FROM veiculo v " +
-                "LEFT JOIN transportadora t ON v.transportadora_id = t.id " +
-                "WHERE v.id = ?")) {
+                "SELECT * FROM veiculo WHERE id = ?")) {
             
             statement.setLong(1, id);
             ResultSet resultSet = statement.executeQuery();
@@ -76,31 +66,11 @@ public class VeiculoRepository {
         return Optional.empty();
     }
     
-    public Optional<Veiculo> findByPlaca(String placa) {
-        try (Connection connection = databaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                "SELECT v.*, t.razao_social as transportadora_nome FROM veiculo v " +
-                "LEFT JOIN transportadora t ON v.transportadora_id = t.id " +
-                "WHERE v.placa = ?")) {
-            
-            statement.setString(1, placa);
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                return Optional.of(mapRowToVeiculo(resultSet));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Erro ao buscar veículo por placa", e);
-        }
-        return Optional.empty();
-    }
-    
     public List<Veiculo> findByTransportadoraId(Long transportadoraId) {
         List<Veiculo> veiculos = new ArrayList<>();
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                "SELECT v.*, t.razao_social as transportadora_nome FROM veiculo v " +
-                "LEFT JOIN transportadora t ON v.transportadora_id = t.id " +
-                "WHERE v.transportadora_id = ?")) {
+                "SELECT * FROM veiculo WHERE transportadora_id = ? ORDER BY placa")) {
             
             statement.setLong(1, transportadoraId);
             ResultSet resultSet = statement.executeQuery();
@@ -111,6 +81,39 @@ public class VeiculoRepository {
             throw new RuntimeException("Erro ao buscar veículos por transportadora", e);
         }
         return veiculos;
+    }
+    
+    public boolean existsByPlaca(String placa) {
+        try (Connection connection = databaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                "SELECT COUNT(*) FROM veiculo WHERE placa = ?")) {
+            
+            statement.setString(1, placa);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao verificar existência de placa", e);
+        }
+        return false;
+    }
+    
+    public boolean existsByPlacaAndIdNot(String placa, Long id) {
+        try (Connection connection = databaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                "SELECT COUNT(*) FROM veiculo WHERE placa = ? AND id != ?")) {
+            
+            statement.setString(1, placa);
+            statement.setLong(2, id);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao verificar existência de placa", e);
+        }
+        return false;
     }
     
     public Veiculo save(Veiculo veiculo) {
@@ -145,8 +148,8 @@ public class VeiculoRepository {
                 statement.setNull(5, Types.DECIMAL);
             }
             
-            if (veiculo.getTransportadora() != null && veiculo.getTransportadora().getId() != null) {
-                statement.setLong(6, veiculo.getTransportadora().getId());
+            if (veiculo.getTransportadoraId() != null) {
+                statement.setLong(6, veiculo.getTransportadoraId());
             } else {
                 statement.setNull(6, Types.BIGINT);
             }
@@ -178,8 +181,8 @@ public class VeiculoRepository {
     private Veiculo update(Veiculo veiculo) {
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                "UPDATE veiculo SET placa = ?, modelo = ?, marca = ?, ano = ?, " +
-                "capacidade = ?, transportadora_id = ?, ativo = ?, ultima_modificacao = ? WHERE id = ?")) {
+                "UPDATE veiculo SET placa = ?, modelo = ?, marca = ?, ano = ?, capacidade = ?, " +
+                "transportadora_id = ?, ativo = ?, ultima_modificacao = ? WHERE id = ?")) {
             
             LocalDateTime now = LocalDateTime.now();
             
@@ -199,8 +202,8 @@ public class VeiculoRepository {
                 statement.setNull(5, Types.DECIMAL);
             }
             
-            if (veiculo.getTransportadora() != null && veiculo.getTransportadora().getId() != null) {
-                statement.setLong(6, veiculo.getTransportadora().getId());
+            if (veiculo.getTransportadoraId() != null) {
+                statement.setLong(6, veiculo.getTransportadoraId());
             } else {
                 statement.setNull(6, Types.BIGINT);
             }
@@ -239,36 +242,29 @@ public class VeiculoRepository {
         veiculo.setPlaca(rs.getString("placa"));
         veiculo.setModelo(rs.getString("modelo"));
         veiculo.setMarca(rs.getString("marca"));
-        veiculo.setAno(rs.getObject("ano", Integer.class));
-        veiculo.setCapacidade(rs.getBigDecimal("capacidade"));
-        veiculo.setAtivo(rs.getBoolean("ativo"));
         
-        // Carregar campos de data
-        try {
-            Timestamp dataCadastroTimestamp = rs.getTimestamp("data_cadastro");
-            if (dataCadastroTimestamp != null) {
-                veiculo.setDataCadastro(dataCadastroTimestamp.toLocalDateTime());
-            }
-            
-            Timestamp ultimaModificacaoTimestamp = rs.getTimestamp("ultima_modificacao");
-            if (ultimaModificacaoTimestamp != null) {
-                veiculo.setUltimaModificacao(ultimaModificacaoTimestamp.toLocalDateTime());
-            }
-        } catch (SQLException e) {
-            System.err.println("Erro ao carregar campos de data: " + e.getMessage());
+        int ano = rs.getInt("ano");
+        if (!rs.wasNull()) {
+            veiculo.setAno(ano);
         }
+        
+        veiculo.setCapacidade(rs.getBigDecimal("capacidade"));
         
         Long transportadoraId = rs.getObject("transportadora_id", Long.class);
         if (transportadoraId != null) {
-            // Optionally preload the transportadora if needed
-            // Transportadora transportadora = transportadoraRepository.findById(transportadoraId).orElse(null);
-            // veiculo.setTransportadora(transportadora);
-            
-            // Or just set the ID and name for lighter loading
-            Transportadora transportadora = new Transportadora();
-            transportadora.setId(transportadoraId);
-            transportadora.setRazaoSocial(rs.getString("transportadora_nome"));
-            veiculo.setTransportadora(transportadora);
+            veiculo.setTransportadoraId(transportadoraId);
+        }
+        
+        veiculo.setAtivo(rs.getBoolean("ativo"));
+        
+        Timestamp dataCadastroTimestamp = rs.getTimestamp("data_cadastro");
+        if (dataCadastroTimestamp != null) {
+            veiculo.setDataCadastro(dataCadastroTimestamp.toLocalDateTime());
+        }
+        
+        Timestamp ultimaModificacaoTimestamp = rs.getTimestamp("ultima_modificacao");
+        if (ultimaModificacaoTimestamp != null) {
+            veiculo.setUltimaModificacao(ultimaModificacaoTimestamp.toLocalDateTime());
         }
         
         return veiculo;

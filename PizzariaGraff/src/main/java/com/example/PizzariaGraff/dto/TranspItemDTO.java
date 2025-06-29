@@ -53,7 +53,7 @@ public class TranspItemDTO {
         
         if (transpItem.getTransportadora() != null) {
             dto.setTransportadoraId(transpItem.getTransportadora().getId());
-            dto.setTransportadoraNome(transpItem.getTransportadora().getRazaoSocial());
+            dto.setTransportadoraNome(transpItem.getTransportadora().getTransportadora());
         }
         
         return dto;

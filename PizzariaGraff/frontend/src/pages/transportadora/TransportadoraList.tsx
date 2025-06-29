@@ -61,11 +61,23 @@ const TransportadoraList: React.FC = () => {
 
   const columns = [
     { header: 'ID', accessor: 'id' },
-    { header: 'Razão Social', accessor: 'razaoSocial' },
-    { header: 'Nome Fantasia', accessor: 'nomeFantasia' },
-    { header: 'CNPJ', accessor: 'cnpj' },
-    { header: 'Telefone', accessor: 'telefone' },
-    { header: 'E-mail', accessor: 'email' },
+    { header: 'Razão Social', accessor: 'transportadora' },
+    { header: 'Nome Fantasia', accessor: 'apelido' },
+    { header: 'CNPJ', accessor: 'cpfCnpj' },
+    { 
+      header: 'Telefone', 
+      accessor: 'telefonesAdicionais',
+      cell: (item: Transportadora) => (
+        <span>{item.telefonesAdicionais?.[0] || 'N/A'}</span>
+      )
+    },
+    { 
+      header: 'E-mail', 
+      accessor: 'emailsAdicionais',
+      cell: (item: Transportadora) => (
+        <span>{item.emailsAdicionais?.[0] || 'N/A'}</span>
+      )
+    },
     { 
       header: 'Cidade/Estado', 
       accessor: 'cidade.nome',

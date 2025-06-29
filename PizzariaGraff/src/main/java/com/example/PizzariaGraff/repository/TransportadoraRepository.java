@@ -1,9 +1,7 @@
 package com.example.PizzariaGraff.repository;
 
 import com.example.PizzariaGraff.model.Transportadora;
-import com.example.PizzariaGraff.model.Cidade;
 import org.springframework.stereotype.Repository;
-
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -14,95 +12,98 @@ import java.util.Optional;
 public class TransportadoraRepository {
     
     private final DatabaseConnection databaseConnection;
-    private final CidadeRepository cidadeRepository;
     
-    public TransportadoraRepository(DatabaseConnection databaseConnection, CidadeRepository cidadeRepository) {
+    public TransportadoraRepository(DatabaseConnection databaseConnection) {
         this.databaseConnection = databaseConnection;
-        this.cidadeRepository = cidadeRepository;
     }
     
+    private static final String FIND_QUERY = 
+        "SELECT t.*, c.nome as cidade_nome, e.uf as estado_uf " +
+        "FROM transportadora t " +
+        "LEFT JOIN cidade c ON t.cidade_id = c.id " +
+        "LEFT JOIN estado e ON c.estado_id = e.id";
     
     public List<Transportadora> findAll() {
         List<Transportadora> transportadoras = new ArrayList<>();
-        String sql = "SELECT t.*, c.nome as cidade_nome FROM transportadora t " +
-                     "LEFT JOIN cidade c ON t.cidade_id = c.id " +
-                     "ORDER BY t.razao_social ASC";
-        
-        try (Connection conn = databaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+        try (Connection connection = databaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_QUERY)) {
             
-            while (rs.next()) {
-                transportadoras.add(mapResultSetToTransportadora(rs));
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                transportadoras.add(mapRowToTransportadora(resultSet));
             }
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar transportadoras", e);
         }
-        
         return transportadoras;
     }
     
-    public List<Transportadora> findByAtivoTrue() {
+    public List<Transportadora> findAllActive() {
         List<Transportadora> transportadoras = new ArrayList<>();
-        String sql = "SELECT t.*, c.nome as cidade_nome FROM transportadora t " +
-                     "LEFT JOIN cidade c ON t.cidade_id = c.id " +
-                     "WHERE t.ativo = true " +
-                     "ORDER BY t.razao_social ASC";
-        
-        try (Connection conn = databaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+        try (Connection connection = databaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                FIND_QUERY + " WHERE t.ativo = true")) {
             
-            while (rs.next()) {
-                transportadoras.add(mapResultSetToTransportadora(rs));
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                transportadoras.add(mapRowToTransportadora(resultSet));
             }
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar transportadoras ativas", e);
         }
-        
         return transportadoras;
     }
     
     public Optional<Transportadora> findById(Long id) {
-        String sql = "SELECT t.*, c.nome as cidade_nome FROM transportadora t " +
-                     "LEFT JOIN cidade c ON t.cidade_id = c.id " +
-                     "WHERE t.id = ?";
-        
-        try (Connection conn = databaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection connection = databaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                FIND_QUERY + " WHERE t.id = ?")) {
             
-            stmt.setLong(1, id);
-            ResultSet rs = stmt.executeQuery();
-            
-            if (rs.next()) {
-                return Optional.of(mapResultSetToTransportadora(rs));
+            statement.setLong(1, id);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return Optional.of(mapRowToTransportadora(resultSet));
             }
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar transportadora por ID", e);
         }
-        
         return Optional.empty();
     }
     
-    public Optional<Transportadora> findByCnpj(String cnpj) {
-        String sql = "SELECT t.*, c.nome as cidade_nome FROM transportadora t " +
-                     "LEFT JOIN cidade c ON t.cidade_id = c.id " +
-                     "WHERE t.cnpj = ?";
-        
-        try (Connection conn = databaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+    public List<Transportadora> findByTermo(String termo) {
+        List<Transportadora> transportadoras = new ArrayList<>();
+        try (Connection connection = databaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                FIND_QUERY + " WHERE LOWER(t.razao_social) LIKE ? OR LOWER(t.nome_fantasia) LIKE ?")) {
             
-            stmt.setString(1, cnpj);
-            ResultSet rs = stmt.executeQuery();
+            String termoBusca = "%" + termo.toLowerCase() + "%";
+            statement.setString(1, termoBusca);
+            statement.setString(2, termoBusca);
             
-            if (rs.next()) {
-                return Optional.of(mapResultSetToTransportadora(rs));
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                transportadoras.add(mapRowToTransportadora(resultSet));
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao buscar transportadora por CNPJ", e);
+            throw new RuntimeException("Erro ao buscar transportadoras por termo", e);
         }
-        
-        return Optional.empty();
+        return transportadoras;
+    }
+    
+    public Transportadora findByCpfCnpj(String cpfCnpj) {
+        try (Connection connection = databaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                FIND_QUERY + " WHERE t.cnpj = ?")) {
+            
+            statement.setString(1, cpfCnpj);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return mapRowToTransportadora(resultSet);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar transportadora por CPF/CNPJ", e);
+        }
+        return null;
     }
     
     public Transportadora save(Transportadora transportadora) {
@@ -114,137 +115,164 @@ public class TransportadoraRepository {
     }
     
     private Transportadora insert(Transportadora transportadora) {
-        String sql = "INSERT INTO transportadora (razao_social, nome_fantasia, cnpj, email, telefone, endereco, cidade_id, ativo, data_cadastro, ultima_modificacao) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        try (Connection conn = databaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection connection = databaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO transportadora (razao_social, nome_fantasia, endereco, numero, complemento, " +
+                "bairro, cep, cidade_id, data_cadastro, ultima_modificacao, rg_ie, observacao, " +
+                "condicao_pagamento_id, cnpj, ativo, tipo) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                Statement.RETURN_GENERATED_KEYS)) {
             
             LocalDateTime now = LocalDateTime.now();
             
-            stmt.setString(1, transportadora.getRazaoSocial());
-            stmt.setString(2, transportadora.getNomeFantasia());
-            stmt.setString(3, transportadora.getCnpj());
-            stmt.setString(4, transportadora.getEmail());
-            stmt.setString(5, transportadora.getTelefone());
-            stmt.setString(6, transportadora.getEndereco());
+            statement.setString(1, transportadora.getTransportadora());
+            statement.setString(2, transportadora.getApelido());
+            statement.setString(3, transportadora.getEndereco());
+            statement.setString(4, transportadora.getNumero());
+            statement.setString(5, transportadora.getComplemento());
+            statement.setString(6, transportadora.getBairro());
+            statement.setString(7, transportadora.getCep());
+            statement.setObject(8, transportadora.getCidadeId(), Types.BIGINT);
+            statement.setTimestamp(9, Timestamp.valueOf(now));
+            statement.setTimestamp(10, Timestamp.valueOf(now));
+            statement.setString(11, transportadora.getRgIe());
+            statement.setString(12, transportadora.getObservacao());
+            statement.setObject(13, transportadora.getCondicaoPagamentoId(), Types.BIGINT);
+            statement.setString(14, transportadora.getCpfCnpj());
+            statement.setBoolean(15, transportadora.getAtivo() != null ? transportadora.getAtivo() : true);
             
-            if (transportadora.getCidade() != null) {
-                stmt.setLong(7, transportadora.getCidade().getId());
+            if (transportadora.getTipo() != null) {
+                String tipoStr = transportadora.getTipo() == 2 ? "J" : "F";
+                statement.setString(16, tipoStr);
             } else {
-                stmt.setNull(7, java.sql.Types.BIGINT);
+                statement.setString(16, "J");
             }
             
-            stmt.setBoolean(8, transportadora.getAtivo());
-            stmt.setTimestamp(9, Timestamp.valueOf(now));
-            stmt.setTimestamp(10, Timestamp.valueOf(now));
+            int affectedRows = statement.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Falha ao criar transportadora, nenhuma linha afetada.");
+            }
             
-            stmt.executeUpdate();
-            
-            ResultSet rs = stmt.getGeneratedKeys();
-            if (rs.next()) {
-                transportadora.setId(rs.getLong(1));
-                transportadora.setDataCadastro(now);
-                transportadora.setUltimaModificacao(now);
+            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    transportadora.setId(generatedKeys.getLong(1));
+                    transportadora.setDataCriacao(now);
+                    transportadora.setDataAlteracao(now);
+                } else {
+                    throw new SQLException("Falha ao criar transportadora, nenhum ID obtido.");
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao inserir transportadora", e);
         }
-        
         return transportadora;
     }
     
     private Transportadora update(Transportadora transportadora) {
-        String sql = "UPDATE transportadora SET razao_social = ?, nome_fantasia = ?, cnpj = ?, email = ?, " +
-                     "telefone = ?, endereco = ?, cidade_id = ?, ativo = ?, ultima_modificacao = ? WHERE id = ?";
-        
-        try (Connection conn = databaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection connection = databaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                "UPDATE transportadora SET razao_social = ?, nome_fantasia = ?, endereco = ?, " +
+                "numero = ?, complemento = ?, bairro = ?, cep = ?, cidade_id = ?, " +
+                "ultima_modificacao = ?, rg_ie = ?, observacao = ?, condicao_pagamento_id = ?, " +
+                "cnpj = ?, ativo = ?, tipo = ? WHERE id = ?")) {
             
             LocalDateTime now = LocalDateTime.now();
             
-            stmt.setString(1, transportadora.getRazaoSocial());
-            stmt.setString(2, transportadora.getNomeFantasia());
-            stmt.setString(3, transportadora.getCnpj());
-            stmt.setString(4, transportadora.getEmail());
-            stmt.setString(5, transportadora.getTelefone());
-            stmt.setString(6, transportadora.getEndereco());
+            statement.setString(1, transportadora.getTransportadora());
+            statement.setString(2, transportadora.getApelido());
+            statement.setString(3, transportadora.getEndereco());
+            statement.setString(4, transportadora.getNumero());
+            statement.setString(5, transportadora.getComplemento());
+            statement.setString(6, transportadora.getBairro());
+            statement.setString(7, transportadora.getCep());
+            statement.setObject(8, transportadora.getCidadeId(), Types.BIGINT);
+            statement.setTimestamp(9, Timestamp.valueOf(now));
+            statement.setString(10, transportadora.getRgIe());
+            statement.setString(11, transportadora.getObservacao());
+            statement.setObject(12, transportadora.getCondicaoPagamentoId(), Types.BIGINT);
+            statement.setString(13, transportadora.getCpfCnpj());
+            statement.setBoolean(14, transportadora.getAtivo() != null ? transportadora.getAtivo() : true);
             
-            if (transportadora.getCidade() != null) {
-                stmt.setLong(7, transportadora.getCidade().getId());
+            if (transportadora.getTipo() != null) {
+                String tipoStr = transportadora.getTipo() == 2 ? "J" : "F";
+                statement.setString(15, tipoStr);
             } else {
-                stmt.setNull(7, java.sql.Types.BIGINT);
+                statement.setString(15, "J");
             }
             
-            stmt.setBoolean(8, transportadora.getAtivo());
-            stmt.setTimestamp(9, Timestamp.valueOf(now));
-            stmt.setLong(10, transportadora.getId());
+            statement.setLong(16, transportadora.getId());
             
-            stmt.executeUpdate();
+            int affectedRows = statement.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Falha ao atualizar transportadora, nenhuma linha afetada.");
+            }
             
-            transportadora.setUltimaModificacao(now);
+            transportadora.setDataAlteracao(now);
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao atualizar transportadora", e);
         }
-        
         return transportadora;
     }
     
     public void deleteById(Long id) {
-        String sql = "DELETE FROM transportadora WHERE id = ?";
-        
-        try (Connection conn = databaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setLong(1, id);
-            stmt.executeUpdate();
+        try (Connection connection = databaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement("DELETE FROM transportadora WHERE id = ?")) {
+            statement.setLong(1, id);
+            statement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao deletar transportadora", e);
         }
     }
     
-    private Transportadora mapResultSetToTransportadora(ResultSet rs) throws SQLException {
+    private Transportadora mapRowToTransportadora(ResultSet rs) throws SQLException {
         Transportadora transportadora = new Transportadora();
         transportadora.setId(rs.getLong("id"));
-        transportadora.setRazaoSocial(rs.getString("razao_social"));
-        transportadora.setNomeFantasia(rs.getString("nome_fantasia"));
-        transportadora.setCnpj(rs.getString("cnpj"));
-        transportadora.setEmail(rs.getString("email"));
-        transportadora.setTelefone(rs.getString("telefone"));
+        transportadora.setTransportadora(rs.getString("razao_social"));
+        transportadora.setApelido(rs.getString("nome_fantasia"));
         transportadora.setEndereco(rs.getString("endereco"));
-        transportadora.setAtivo(rs.getBoolean("ativo"));
+        transportadora.setNumero(rs.getString("numero"));
+        transportadora.setComplemento(rs.getString("complemento"));
+        transportadora.setBairro(rs.getString("bairro"));
+        transportadora.setCep(rs.getString("cep"));
+        transportadora.setCidadeId(rs.getLong("cidade_id"));
         
-        // Carregar campos de data
-        try {
-            Timestamp dataCadastroTimestamp = rs.getTimestamp("data_cadastro");
-            if (dataCadastroTimestamp != null) {
-                transportadora.setDataCadastro(dataCadastroTimestamp.toLocalDateTime());
-            }
-            
-            Timestamp ultimaModificacaoTimestamp = rs.getTimestamp("ultima_modificacao");
-            if (ultimaModificacaoTimestamp != null) {
-                transportadora.setUltimaModificacao(ultimaModificacaoTimestamp.toLocalDateTime());
-            }
-        } catch (SQLException e) {
-            System.err.println("Erro ao carregar campos de data: " + e.getMessage());
+        Timestamp dataCriacaoTimestamp = rs.getTimestamp("data_cadastro");
+        if (dataCriacaoTimestamp != null) {
+            transportadora.setDataCriacao(dataCriacaoTimestamp.toLocalDateTime());
         }
         
-        // Carregar a cidade relacionada
-        Long cidadeId = rs.getLong("cidade_id");
-        if (cidadeId > 0) {
-            Cidade cidade = new Cidade();
-            cidade.setId(cidadeId);
-            
-            try {
-                cidade.setNome(rs.getString("cidade_nome"));
-            } catch (SQLException e) {
-                // Se não conseguir obter o nome via JOIN, buscar cidade do repositório
-                Optional<Cidade> cidadeOpt = cidadeRepository.findById(cidadeId);
-                if (cidadeOpt.isPresent()) {
-                    cidade = cidadeOpt.get();
-                }
-            }
-            
+        Timestamp dataAlteracaoTimestamp = rs.getTimestamp("ultima_modificacao");
+        if (dataAlteracaoTimestamp != null) {
+            transportadora.setDataAlteracao(dataAlteracaoTimestamp.toLocalDateTime());
+        }
+        
+        transportadora.setRgIe(rs.getString("rg_ie"));
+        transportadora.setObservacao(rs.getString("observacao"));
+
+        long condicaoId = rs.getLong("condicao_pagamento_id");
+        if (rs.wasNull()) {
+            transportadora.setCondicaoPagamentoId(null);
+        } else {
+            transportadora.setCondicaoPagamentoId(condicaoId);
+        }
+        
+        transportadora.setCpfCnpj(rs.getString("cnpj"));
+        transportadora.setAtivo(rs.getBoolean("ativo"));
+        
+        String tipoStr = rs.getString("tipo");
+        if (tipoStr != null) {
+            transportadora.setTipo("J".equalsIgnoreCase(tipoStr) ? 2 : 1);
+        }
+
+        if (transportadora.getCidadeId() != 0 && rs.getString("cidade_nome") != null) {
+            com.example.PizzariaGraff.model.Cidade cidade = new com.example.PizzariaGraff.model.Cidade();
+            cidade.setId(transportadora.getCidadeId());
+            cidade.setNome(rs.getString("cidade_nome"));
+
+            com.example.PizzariaGraff.model.Estado estado = new com.example.PizzariaGraff.model.Estado();
+            estado.setUf(rs.getString("estado_uf"));
+            cidade.setEstado(estado);
+
             transportadora.setCidade(cidade);
         }
         

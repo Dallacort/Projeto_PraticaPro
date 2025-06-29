@@ -1,39 +1,77 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import FormField from '../../components/FormField';
 import { getTransportadora, createTransportadora, updateTransportadora } from '../../services/transportadoraService';
-import { getCidades } from '../../services/cidadeService';
-import { Transportadora, Cidade } from '../../types';
+import { Transportadora, Cidade, CondicaoPagamento } from '../../types';
+import { FaSpinner, FaSearch, FaPlus } from 'react-icons/fa';
+import CidadeModal from '../../components/modals/CidadeModal';
+import CondicaoPagamentoModal from '../../components/modals/CondicaoPagamentoModal';
+import TelefonesModal from '../../components/modals/TelefonesModal';
+import EmailsModal from '../../components/modals/EmailsModal';
+import { formatDate } from '../../utils/formatters';
+import { Validators } from '../../utils/validators';
+import CondicaoPagamentoService from '../../services/condicaoPagamentoService';
+
+interface TransportadoraFormData {
+  transportadora: string;
+  apelido: string;
+  cpfCnpj: string;
+  rgIe: string;
+  email: string;
+  telefone: string;
+  emailsAdicionais: string[];
+  telefonesAdicionais: string[];
+  endereco: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cep: string;
+  tipo: number;
+  observacao: string;
+  cidadeId: string;
+  condicaoPagamentoId: string;
+  ativo: boolean;
+}
 
 const TransportadoraForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Considerar novo se o ID for 'novo' OU se estiver na rota '/transportadoras/novo'
   const isNew = id === 'novo' || location.pathname === '/transportadoras/novo' || !id;
-  
-  console.log('TransportadoraForm - ID:', id, 'isNew:', isNew, 'pathname:', location.pathname);
 
-  const [formData, setFormData] = useState<Omit<Transportadora, 'id' | 'cidade' | 'itens' | 'veiculos'> & { cidadeId: string }>({
-    razaoSocial: '',
-    nomeFantasia: '',
-    cnpj: '',
+  const [formData, setFormData] = useState<TransportadoraFormData>({
+    transportadora: '',
+    apelido: '',
+    cpfCnpj: '',
+    rgIe: '',
     email: '',
     telefone: '',
+    emailsAdicionais: [],
+    telefonesAdicionais: [],
     endereco: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cep: '',
+    tipo: 2,
+    observacao: '',
     cidadeId: '',
-    ativo: true
+    condicaoPagamentoId: '',
+    ativo: true,
   });
   
-  const [dataCadastro, setDataCadastro] = useState<string | null>(null);
-  const [ultimaModificacao, setUltimaModificacao] = useState<string | null>(null);
-  const [cidades, setCidades] = useState<Cidade[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ultimaModificacao, setUltimaModificacao] = useState<string | undefined>(undefined);
+  const [dataCadastro, setDataCadastro] = useState<string | undefined>(undefined);
   const [cidadeSelecionada, setCidadeSelecionada] = useState<Cidade | null>(null);
-  const [veiculosCount, setVeiculosCount] = useState<number>(0);
+  const [condicaoPagamentoSelecionada, setCondicaoPagamentoSelecionada] = useState<CondicaoPagamento | null>(null);
+  const [isCidadeModalOpen, setIsCidadeModalOpen] = useState(false);
+  const [isCondicaoPagamentoModalOpen, setIsCondicaoPagamentoModalOpen] = useState(false);
+  const [isTelefonesModalOpen, setIsTelefonesModalOpen] = useState(false);
+  const [isEmailsModalOpen, setIsEmailsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,79 +79,58 @@ const TransportadoraForm: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        // Buscar lista de cidades
-        const cidadesData = await getCidades();
-        console.log('Cidades recebidas:', cidadesData);
-        
-        if (cidadesData.length === 0) {
-          setError('Não foi possível carregar a lista de cidades. Por favor, cadastre uma cidade primeiro.');
-          setTimeout(() => {
-            navigate('/cidades');
-          }, 3000);
-          return;
-        }
-        
-        setCidades(cidadesData);
-        
-        // Se for edição, buscar dados da transportadora
         if (!isNew && id) {
           const transportadoraData = await getTransportadora(Number(id));
           if (!transportadoraData) {
             throw new Error('Transportadora não encontrada');
           }
-          
-          // Em vez de lançar erro, vamos lidar melhor com transportadoras sem cidade
-          let cidadeId = '';
-          
-          // Se a transportadora tem cidade definida, use-a
-          if (transportadoraData.cidade && transportadoraData.cidade.id) {
-            cidadeId = String(transportadoraData.cidade.id);
-            setCidadeSelecionada(transportadoraData.cidade);
-          } 
-          // Se não tem cidade definida, mas temos cidades disponíveis, use a primeira
-          else if (cidadesData.length > 0) {
-            cidadeId = String(cidadesData[0].id);
-            setCidadeSelecionada(cidadesData[0]);
-            console.log('Transportadora sem cidade definida, usando a primeira cidade disponível:', cidadesData[0].nome);
-          }
+
+          const todosEmails = transportadoraData.emailsAdicionais || [];
+          const todosTelefones = transportadoraData.telefonesAdicionais || [];
           
           setFormData({
-            razaoSocial: transportadoraData.razaoSocial,
-            nomeFantasia: transportadoraData.nomeFantasia,
-            cnpj: transportadoraData.cnpj,
-            email: transportadoraData.email || '',
-            telefone: transportadoraData.telefone || '',
+            transportadora: transportadoraData.transportadora || transportadoraData.razaoSocial || '',
+            apelido: transportadoraData.apelido || transportadoraData.nomeFantasia || '',
+            cpfCnpj: transportadoraData.cpfCnpj || transportadoraData.cnpj || '',
+            rgIe: transportadoraData.rgIe || transportadoraData.inscricaoEstadual || '',
+            email: todosEmails[0] || '',
+            telefone: todosTelefones[0] || '',
+            emailsAdicionais: todosEmails.slice(1),
+            telefonesAdicionais: todosTelefones.slice(1),
             endereco: transportadoraData.endereco || '',
-            cidadeId: cidadeId,
-            ativo: transportadoraData.ativo !== false
+            numero: transportadoraData.numero || '',
+            complemento: transportadoraData.complemento || '',
+            bairro: transportadoraData.bairro || '',
+            cep: transportadoraData.cep || '',
+            tipo: Number(transportadoraData.tipo) || 2,
+            observacao: transportadoraData.observacao || '',
+            cidadeId: transportadoraData.cidade?.id ? String(transportadoraData.cidade.id) : '',
+            condicaoPagamentoId: String(transportadoraData.condicaoPagamentoId || ''),
+            ativo: transportadoraData.ativo !== undefined ? transportadoraData.ativo : true,
           });
           
-          // Guardar datas para exibição
-          setDataCadastro(transportadoraData.dataCadastro || null);
-          setUltimaModificacao(transportadoraData.ultimaModificacao || null);
-          setVeiculosCount(transportadoraData.veiculos?.length || 0);
-          
-          console.log('Datas recebidas:', {
-            dataCadastro: transportadoraData.dataCadastro,
-            ultimaModificacao: transportadoraData.ultimaModificacao
-          });
-        } else {
-          // Para nova transportadora, definir uma cidade padrão se houver cidades disponíveis
-          if (cidadesData.length > 0) {
-            setFormData(prev => ({
-              ...prev,
-              cidadeId: String(cidadesData[0].id)
-            }));
-            setCidadeSelecionada(cidadesData[0]);
+          if (transportadoraData.cidade) {
+            setCidadeSelecionada(transportadoraData.cidade);
           }
+          
+          if (transportadoraData.condicaoPagamentoId) {
+            try {
+              const condicoes = await CondicaoPagamentoService.list();
+              const condicao = condicoes.find(c => c.id === Number(transportadoraData.condicaoPagamentoId));
+              if (condicao) {
+                setCondicaoPagamentoSelecionada(condicao);
+              }
+            } catch (error) {
+              console.error('Erro ao carregar condição de pagamento:', error);
+            }
+          }
+          
+          setUltimaModificacao(transportadoraData.ultimaModificacao || transportadoraData.dataAlteracao);
+          setDataCadastro(transportadoraData.dataCadastro || transportadoraData.dataCriacao);
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('Erro ao carregar dados:', err);
-        const errorMessage = err.response?.data?.mensagem || err.message || 'Erro ao carregar os dados necessários.';
-        setError(errorMessage);
-        setTimeout(() => {
-          navigate('/transportadoras');
-        }, 3000);
+        setError('Erro ao carregar os dados necessários.');
       } finally {
         setLoading(false);
       }
@@ -122,368 +139,228 @@ const TransportadoraForm: React.FC = () => {
     fetchData();
   }, [id, isNew, navigate]);
 
-  useEffect(() => {
-    const cidade = cidades.find((c) => c.id === Number(formData.cidadeId));
-    setCidadeSelecionada(cidade || null);
-  }, [formData.cidadeId, cidades]);
+  const [forceRender, setForceRender] = useState(0);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     
-    if (name === 'cidadeId') {
-      const cidadeId = value;
-      setFormData((prev) => ({
-        ...prev,
-        cidadeId,
-      }));
-      
-      const cidade = cidades.find(c => String(c.id) === cidadeId) || null;
-      setCidadeSelecionada(cidade);
-    } else if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData((prev) => ({
-        ...prev,
-        [name]: checked,
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+    let newData = {
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value,
+    };
+
+    if (name === 'tipo') {
+      newData.tipo = Number(value);
+      newData.cpfCnpj = '';
+      newData.rgIe = '';
+      setForceRender(prev => prev + 1);
     }
+    
+    setFormData(newData);
   };
+
+  const handleTelefonesAdicionais = (todosTelefones: string[]) => {
+    const [telefonePrincipal, ...adicionais] = todosTelefones;
+    setFormData(prev => ({
+      ...prev,
+      telefone: telefonePrincipal || '',
+      telefonesAdicionais: adicionais,
+    }));
+  };
+
+  const handleEmailsAdicionais = (todosEmails: string[]) => {
+    const [emailPrincipal, ...adicionais] = todosEmails;
+    setFormData(prev => ({
+      ...prev,
+      email: emailPrincipal || '',
+      emailsAdicionais: adicionais,
+    }));
+  };
+
+  const getTodosTelefones = () => [formData.telefone, ...formData.telefonesAdicionais].filter(Boolean);
+  const getTodosEmails = () => [formData.email, ...formData.emailsAdicionais].filter(Boolean);
 
   const validateForm = () => {
     const errors: string[] = [];
-    
-    if (!formData.razaoSocial) errors.push("Razão Social é obrigatória");
-    if (!formData.nomeFantasia) errors.push("Nome Fantasia é obrigatório");
-    if (!formData.cnpj) errors.push("CNPJ é obrigatório");
-    if (!formData.cidadeId) errors.push("Cidade é obrigatória");
-    
-    // Validação básica de CNPJ (apenas verifica o comprimento)
-    const cnpjClean = formData.cnpj.replace(/[^\d]/g, '');
-    if (cnpjClean.length !== 14) {
-      errors.push("CNPJ deve ter 14 dígitos");
-    }
-    
+    if (!formData.transportadora.trim()) errors.push('Razão Social/Nome é obrigatório');
+    if (!formData.apelido.trim()) errors.push('Nome Fantasia/Apelido é obrigatório');
+    if (!formData.cpfCnpj.trim()) errors.push('CPF/CNPJ é obrigatório');
+    if (!formData.cidadeId) errors.push('Cidade é obrigatória');
     return errors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const validationErrors = validateForm();
-    if (validationErrors.length > 0) {
-      setError(validationErrors.join(". "));
+
+    const formErrors = validateForm();
+    if (formErrors.length > 0) {
+      setError(formErrors.join(', '));
       return;
     }
 
     try {
       setSaving(true);
       setError(null);
-      
-      if (!cidadeSelecionada) {
-        throw new Error('Cidade não selecionada');
-      }
-      
-      // Preparar os dados da transportadora
-      const transportadoraData: Omit<Transportadora, 'id'> = {
-        razaoSocial: formData.razaoSocial,
-        nomeFantasia: formData.nomeFantasia,
-        cnpj: formData.cnpj,
-        email: formData.email,
-        telefone: formData.telefone,
-        endereco: formData.endereco,
+
+      const transportadoraData = {
+        ...formData,
+        cidadeId: Number(formData.cidadeId),
+        condicaoPagamentoId: Number(formData.condicaoPagamentoId),
+        telefonesAdicionais: getTodosTelefones(),
+        emailsAdicionais: getTodosEmails(),
         cidade: cidadeSelecionada,
-        ativo: formData.ativo,
-        // Os veículos são gerenciados em outra tela
-        veiculos: [],
-        itens: []
-        // As datas são gerenciadas pelo backend
       };
-      
-      console.log('Salvando dados:', transportadoraData, 'isNew:', isNew);
-      
+
       if (isNew) {
-        console.log('Criando nova transportadora:', transportadoraData);
-        const novaTransportadora = await createTransportadora(transportadoraData);
-        console.log('Transportadora criada:', novaTransportadora);
-        alert('Transportadora cadastrada com sucesso!');
-        navigate('/transportadoras');
-      } else if (id) {
-        console.log('Atualizando transportadora:', id, transportadoraData);
-        const transportadoraAtualizada = await updateTransportadora(Number(id), transportadoraData);
-        console.log('Transportadora atualizada:', transportadoraAtualizada);
-        alert('Transportadora atualizada com sucesso!');
-        navigate('/transportadoras');
+        await createTransportadora(transportadoraData);
+      } else {
+        await updateTransportadora(Number(id), transportadoraData);
       }
+
+      navigate('/transportadoras');
     } catch (err: any) {
       console.error('Erro ao salvar transportadora:', err);
-      // Extrair mensagem de erro da API se disponível
-      const errorMessage = err.response?.data?.mensagem || err.response?.data?.erro || err.message || 'Erro ao salvar transportadora. Verifique os dados e tente novamente.';
-      setError(errorMessage);
+      setError(err.response?.data?.message || err.message || 'Erro ao salvar transportadora');
     } finally {
       setSaving(false);
     }
   };
 
-  const formatDate = (dateString?: string | null) => {
-    if (!dateString) return '-';
-    try {
-      return new Date(dateString).toLocaleDateString('pt-BR');
-    } catch (error) {
-      console.error('Erro ao formatar data:', error);
-      return '-';
-    }
+  const handleOpenCidadeModal = () => setIsCidadeModalOpen(true);
+  const handleCloseCidadeModal = () => setIsCidadeModalOpen(false);
+  const handleSelectCidade = (cidade: Cidade) => {
+    setCidadeSelecionada(cidade);
+    setFormData(prev => ({ ...prev, cidadeId: String(cidade.id) }));
+    setIsCidadeModalOpen(false);
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <span className="ml-3">Carregando dados da transportadora...</span>
-      </div>
-    );
-  }
+  const handleOpenCondicaoPagamentoModal = () => setIsCondicaoPagamentoModalOpen(true);
+  const handleCloseCondicaoPagamentoModal = () => setIsCondicaoPagamentoModalOpen(false);
+  const handleSelectCondicaoPagamento = (condicao: CondicaoPagamento) => {
+    setCondicaoPagamentoSelecionada(condicao);
+    setFormData(prev => ({ ...prev, condicaoPagamentoId: String(condicao.id) }));
+    setIsCondicaoPagamentoModalOpen(false);
+  };
+  
+  const getCpfCnpjLabel = () => formData.tipo === 1 ? 'CPF' : 'CNPJ';
+  const getRgInscricaoLabel = () => formData.tipo === 1 ? 'RG' : 'Inscrição Estadual';
+  
+  if (loading) return <div className="flex justify-center items-center h-full"><FaSpinner className="animate-spin text-blue-500" size={24} /></div>;
 
   return (
-    <div className="px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">
+    <div className="flex flex-col bg-white shadow-md rounded-lg overflow-hidden max-w-7xl w-full mx-auto my-4">
+      <div className="flex justify-between items-center bg-gray-50 p-4 border-b">
+        <h1 className="text-xl font-bold text-gray-800">
           {isNew ? 'Nova Transportadora' : 'Editar Transportadora'}
         </h1>
       </div>
 
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
+      <form onSubmit={handleSubmit} className="p-4 space-y-6">
+        {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
 
-      <div className="bg-white rounded-lg shadow-md p-6">
-        {!isNew && (
-          <div className="mb-6 bg-gray-100 p-4 rounded-lg border border-gray-300">
-            <h3 className="font-semibold text-lg text-gray-700 mb-2">Informações do Registro</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-              <div>
-                <span className="font-semibold">Data de Cadastro:</span>{' '}
-                <span className="text-blue-700 font-medium">{formatDate(dataCadastro)}</span>
-              </div>
-              <div>
-                <span className="font-semibold">Última Modificação:</span>{' '}
-                <span className="text-blue-700 font-medium">{formatDate(ultimaModificacao)}</span>
-              </div>
-              <div>
-                <span className="font-semibold">Veículos Cadastrados:</span>{' '}
-                <span className="text-blue-700 font-medium">{veiculosCount}</span>
-                {veiculosCount > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">Os veículos são gerenciados em outra tela.</p>
-                )}
+        <div className="border-b pb-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Dados Básicos</h2>
+              <div className="flex items-center">
+                <label className="flex items-center cursor-pointer">
+                  <span className="mr-2 text-sm font-medium text-gray-700">Habilitado</span>
+                  <div className="relative">
+                    <input type="checkbox" name="ativo" checked={formData.ativo} onChange={handleChange} className="sr-only" />
+                    <div className={`block w-14 h-8 rounded-full ${formData.ativo ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform ${formData.ativo ? 'translate-x-6' : ''}`}></div>
+                  </div>
+                </label>
               </div>
             </div>
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit}>
-          <div className="flex flex-col space-y-4">
-            {/* Dados básicos */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                label="Razão Social"
-                name="razaoSocial"
-                value={formData.razaoSocial}
-                onChange={handleChange}
-                required
-                placeholder="Razão Social completa"
-                error={!formData.razaoSocial && error ? 'Campo obrigatório' : undefined}
-              />
-              
-              <FormField
-                label="Nome Fantasia"
-                name="nomeFantasia"
-                value={formData.nomeFantasia}
-                onChange={handleChange}
-                required
-                placeholder="Nome Fantasia"
-                error={!formData.nomeFantasia && error ? 'Campo obrigatório' : undefined}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                label="CNPJ"
-                name="cnpj"
-                value={formData.cnpj}
-                onChange={handleChange}
-                required
-                placeholder="00.000.000/0001-00"
-                error={!formData.cnpj && error ? 'Campo obrigatório' : undefined}
-              />
-            </div>
-
-            {/* Contato */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                label="Telefone"
-                name="telefone"
-                value={formData.telefone}
-                onChange={handleChange}
-                placeholder="(00) 00000-0000"
-              />
-              
-              <FormField
-                label="E-mail"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="exemplo@transportadora.com"
-              />
-            </div>
-
-            {/* Seção de Endereço */}
-            <h3 className="font-medium text-gray-700 mt-2">Endereço</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                label="Endereço"
-                name="endereco"
-                value={formData.endereco}
-                onChange={handleChange}
-                placeholder="Rua, Avenida, etc."
-              />
-              
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '100px 150px 2fr 1.5fr' }}>
+              <FormField label="Código" name="id" value={id && !isNew ? id : 'Novo'} onChange={() => {}} disabled />
               <div>
-                <div className="flex items-center justify-between mb-0">
-                  <label className="block text-sm font-medium text-gray-700">Cidade</label>
-                  <Link 
-                    to="/cidades" 
-                    className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-xs hover:bg-blue-200"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    Ver todas
-                  </Link>
-                </div>
-                <select
-                  name="cidadeId"
-                  value={formData.cidadeId}
-                  onChange={handleChange}
-                  className="mt-0 block w-full px-3 py-2 sm:text-sm border border-gray-300 rounded-md "
-                  required
-                >
-                  <option value="">Selecione uma cidade</option>
-                  {cidades.map((cidade) => (
-                    <option key={cidade.id} value={cidade.id}>
-                      {cidade.nome}
-                    </option>
-                  ))}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo <span className="text-red-500">*</span></label>
+                <select name="tipo" value={formData.tipo} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" required>
+                  <option value={1}>Pessoa Física</option>
+                  <option value={2}>Pessoa Jurídica</option>
                 </select>
-                {!formData.cidadeId && error && (
-                  <p className="mt-1 text-sm text-red-600">Campo obrigatório</p>
-                )}
               </div>
+              <FormField label="Razão Social / Nome" name="transportadora" value={formData.transportadora} onChange={handleChange} required maxLength={50} placeholder="Nome completo" />
+              <FormField label="Nome Fantasia / Apelido" name="apelido" value={formData.apelido} onChange={handleChange} required maxLength={50} placeholder="Como é conhecido" />
             </div>
-            
-            {/* Estado e País lado a lado */}
-            <div className="grid grid-cols-2 gap-4">
+
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '3fr 100px 1.5fr 1.5fr 120px 2fr' }}>
+              <FormField label="Endereço" name="endereco" value={formData.endereco} onChange={handleChange} maxLength={50} placeholder="Ex: Rua das Indústrias" />
+              <FormField label="Número" name="numero" value={formData.numero} onChange={handleChange} maxLength={10} placeholder="Ex: 1500" />
+              <FormField label="Complemento" name="complemento" value={formData.complemento} onChange={handleChange} maxLength={50} placeholder="Ex: Galpão A" />
+              <FormField label="Bairro" name="bairro" value={formData.bairro} onChange={handleChange} maxLength={50} placeholder="Ex: Vila Industrial" />
+              <FormField label="CEP" name="cep" value={formData.cep} onChange={handleChange} maxLength={9} placeholder="00000-000" />
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-sm font-medium text-gray-700">Estado</label>
-                  <Link 
-                    to="/estados" 
-                    className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-xs hover:bg-blue-200"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    Ver todos
-                  </Link>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade <span className="text-red-500">*</span></label>
+                <div onClick={handleOpenCidadeModal} className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200">
+                  <input type="text" readOnly value={cidadeSelecionada ? `${cidadeSelecionada.nome} - ${cidadeSelecionada.estado?.uf}` : 'Selecione...'} className="flex-grow bg-transparent outline-none cursor-pointer text-sm" />
+                  <FaSearch className="text-gray-500" />
                 </div>
-                {cidadeSelecionada?.estado && (
-                  <input 
-                    type="text" 
-                    className="mt-1 block w-full px-3 py-2 sm:text-sm border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 cursor-not-allowed" 
-                    value={cidadeSelecionada.estado.nome + (cidadeSelecionada.estado.uf ? ` (${cidadeSelecionada.estado.uf})` : '')}
-                    disabled
-                  />
-                )}
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-sm font-medium text-gray-700">País</label>
-                  <Link 
-                    to="/paises" 
-                    className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-xs hover:bg-blue-200"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    Ver todos
-                  </Link>
-                </div>
-                {cidadeSelecionada?.estado?.pais && (
-                  <input 
-                    type="text" 
-                    className="mt-1 block w-full px-3 py-2 sm:text-sm border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 cursor-not-allowed" 
-                    value={cidadeSelecionada.estado.pais.nome}
-                    disabled
-                  />
-                )}
               </div>
             </div>
 
-            {/* Status */}
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Telefone Principal</label>
+                <div className="relative">
+                  <input type="text" name="telefone" value={formData.telefone} onChange={handleChange} className="w-full px-3 py-2 pr-16 border border-gray-300 rounded-md" placeholder="(41) 99999-9999" maxLength={15} />
+                  <button type="button" onClick={() => setIsTelefonesModalOpen(true)} className="absolute right-1 top-1 bottom-1 px-3 bg-blue-500 text-white rounded-r flex items-center">
+                    <FaPlus className="mr-1" /> {formData.telefonesAdicionais.length}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email Principal</label>
+                <div className="relative">
+                  <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-3 py-2 pr-16 border border-gray-300 rounded-md" placeholder="contato@transportadora.com" maxLength={50} />
+                  <button type="button" onClick={() => setIsEmailsModalOpen(true)} className="absolute right-1 top-1 bottom-1 px-3 bg-blue-500 text-white rounded-r flex items-center">
+                    <FaPlus className="mr-1" /> {formData.emailsAdicionais.length}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '150px 180px 1fr' }}>
+              <FormField key={`rg-${forceRender}`} label={getRgInscricaoLabel()} name="rgIe" value={formData.rgIe} onChange={handleChange} maxLength={14} />
+              <FormField key={`cpf-${forceRender}`} label={getCpfCnpjLabel()} name="cpfCnpj" value={formData.cpfCnpj} onChange={handleChange} required maxLength={18} />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Condição de Pagamento</label>
+                <div onClick={handleOpenCondicaoPagamentoModal} className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200">
+                  <input type="text" readOnly value={condicaoPagamentoSelecionada ? condicaoPagamentoSelecionada.condicaoPagamento : 'Selecione...'} className="flex-grow bg-transparent outline-none cursor-pointer text-sm" />
+                  <FaSearch className="text-gray-500" />
+                </div>
+              </div>
+            </div>
+
             <div>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="ativo"
-                  checked={formData.ativo}
-                  onChange={handleChange}
-                  className="rounded text-blue-600 focus:ring-blue-500 h-5 w-5 mr-2"
-                />
-                <span className="text-gray-700">Transportadora Ativa</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+              <textarea name="observacao" value={formData.observacao} onChange={handleChange} maxLength={255} className="w-full px-3 py-2 border border-gray-300 rounded-md" rows={3} />
             </div>
+        </div>
+        
+        <div className="flex justify-between items-end pt-6 border-t mt-6">
+          {(dataCadastro || ultimaModificacao) && (
+            <div className="text-sm text-gray-600">
+              <p>Cadastrado em: {formatDate(dataCadastro)}</p>
+              <p>Última modificação: {formatDate(ultimaModificacao)}</p>
+            </div>
+          )}
+          <div className="flex gap-3 ml-auto">
+            <button type="button" onClick={() => navigate('/transportadoras')} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+            <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+              {saving ? <><FaSpinner className="animate-spin mr-2" /> Salvando...</> : 'Salvar'}
+            </button>
           </div>
+        </div>
+      </form>
 
-          <div className="mt-6 flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={() => navigate('/transportadoras')}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-md"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className={`bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md ${
-                saving ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
-            >
-              {saving ? (
-                <span className="inline-flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Salvando...
-                </span>
-              ) : (
-                'Salvar'
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
+      <CidadeModal isOpen={isCidadeModalOpen} onClose={handleCloseCidadeModal} onSelect={handleSelectCidade} />
+      <CondicaoPagamentoModal isOpen={isCondicaoPagamentoModalOpen} onClose={handleCloseCondicaoPagamentoModal} onSelect={handleSelectCondicaoPagamento} />
+      <TelefonesModal isOpen={isTelefonesModalOpen} onClose={() => setIsTelefonesModalOpen(false)} telefones={getTodosTelefones()} onSave={handleTelefonesAdicionais} />
+      <EmailsModal isOpen={isEmailsModalOpen} onClose={() => setIsEmailsModalOpen(false)} emails={getTodosEmails()} onSave={handleEmailsAdicionais} />
     </div>
   );
 };

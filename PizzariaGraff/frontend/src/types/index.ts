@@ -221,9 +221,13 @@ export interface ProdutoFornecedor {
 
 export interface Transportadora {
   id: number;
-  razaoSocial: string;
-  nomeFantasia: string;
-  cnpj: string;
+  transportadora: string;
+  razaoSocial?: string;
+  apelido: string;
+  nomeFantasia?: string;
+  cpfCnpj: string;
+  cnpj?: string;
+  rgIe?: string;
   inscricaoEstadual?: string;
   email?: string;
   telefone?: string;
@@ -232,25 +236,32 @@ export interface Transportadora {
   complemento?: string;
   bairro?: string;
   cep?: string;
-  cidade: Cidade;
+  tipo: number;
+  observacao?: string;
+  cidade: Cidade | null;
+  cidadeId?: number;
+  condicaoPagamentoId?: number;
   ativo: boolean;
   nome?: string;
-  veiculos: any[];
-  itens: any[];
+  veiculos?: any[];
+  itens?: any[];
+  emailsAdicionais?: string[];
+  telefonesAdicionais?: string[];
   dataCadastro?: string;
   ultimaModificacao?: string;
+  dataCriacao?: string;
+  dataAlteracao?: string;
 }
 
 export interface Veiculo {
   id: number;
-  descricao: string;
   placa: string;
-  anoModelo?: string;
-  anoFabricacao?: string;
-  capacidadeCarga?: number;
-  observacoes?: string;
+  modelo: string;
+  marca: string;
+  ano?: string;
+  capacidade?: number;
+  transportadoraId: number;
   ativo?: boolean;
-  transportadora: Transportadora;
   dataCadastro?: string;
   ultimaModificacao?: string;
 }

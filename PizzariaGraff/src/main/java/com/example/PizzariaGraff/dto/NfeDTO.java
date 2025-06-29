@@ -79,7 +79,7 @@ public class NfeDTO {
             nfe.getCondicaoPagamento() != null ? nfe.getCondicaoPagamento().getId() : null,
             nfe.getCondicaoPagamento() != null ? nfe.getCondicaoPagamento().getCondicaoPagamento() : null,
             nfe.getTransportadora() != null ? nfe.getTransportadora().getId() : null,
-            nfe.getTransportadora() != null ? nfe.getTransportadora().getRazaoSocial() : null,
+            nfe.getTransportadora() != null ? nfe.getTransportadora().getTransportadora() : null,
             nfe.getVeiculo() != null ? nfe.getVeiculo().getId() : null,
             nfe.getVeiculo() != null ? nfe.getVeiculo().getPlaca() : null,
             nfe.getModalidade() != null ? nfe.getModalidade().getId() : null,

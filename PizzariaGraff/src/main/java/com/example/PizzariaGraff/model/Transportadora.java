@@ -1,23 +1,30 @@
 package com.example.PizzariaGraff.model;
 
-import java.util.List;
 import java.time.LocalDateTime;
 
 public class Transportadora {
     private Long id;
-    private String razaoSocial;
-    private String nomeFantasia;
-    private String cnpj;
-    private String email;
-    private String telefone;
+    private String transportadora;
+    private String apelido;
     private String endereco;
-    private Cidade cidade;
-    private Boolean ativo = true;
-    private List<TranspItem> itens;
-    private List<Veiculo> veiculos;
-    private LocalDateTime dataCadastro;
-    private LocalDateTime ultimaModificacao;
+    private String numero;
+    private String complemento;
+    private String bairro;
+    private String cep;
+    private Long cidadeId;
+    private LocalDateTime dataCriacao;
+    private LocalDateTime dataAlteracao;
+    private String rgIe;
+    private String observacao;
+    private Long condicaoPagamentoId;
+    private String cpfCnpj;
+    private Boolean ativo;
+    private Integer tipo;
     
+    // Relacionamentos
+    private Cidade cidade;
+    private CondicaoPagamento condicaoPagamento;
+
     // Getters e Setters
     public Long getId() {
         return id;
@@ -27,44 +34,20 @@ public class Transportadora {
         this.id = id;
     }
 
-    public String getRazaoSocial() {
-        return razaoSocial;
+    public String getTransportadora() {
+        return transportadora;
     }
 
-    public void setRazaoSocial(String razaoSocial) {
-        this.razaoSocial = razaoSocial;
+    public void setTransportadora(String transportadora) {
+        this.transportadora = transportadora;
     }
 
-    public String getNomeFantasia() {
-        return nomeFantasia;
+    public String getApelido() {
+        return apelido;
     }
 
-    public void setNomeFantasia(String nomeFantasia) {
-        this.nomeFantasia = nomeFantasia;
-    }
-
-    public String getCnpj() {
-        return cnpj;
-    }
-
-    public void setCnpj(String cnpj) {
-        this.cnpj = cnpj;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getTelefone() {
-        return telefone;
-    }
-
-    public void setTelefone(String telefone) {
-        this.telefone = telefone;
+    public void setApelido(String apelido) {
+        this.apelido = apelido;
     }
 
     public String getEndereco() {
@@ -75,12 +58,92 @@ public class Transportadora {
         this.endereco = endereco;
     }
 
-    public Cidade getCidade() {
-        return cidade;
+    public String getNumero() {
+        return numero;
     }
 
-    public void setCidade(Cidade cidade) {
-        this.cidade = cidade;
+    public void setNumero(String numero) {
+        this.numero = numero;
+    }
+
+    public String getComplemento() {
+        return complemento;
+    }
+
+    public void setComplemento(String complemento) {
+        this.complemento = complemento;
+    }
+
+    public String getBairro() {
+        return bairro;
+    }
+
+    public void setBairro(String bairro) {
+        this.bairro = bairro;
+    }
+
+    public String getCep() {
+        return cep;
+    }
+
+    public void setCep(String cep) {
+        this.cep = cep;
+    }
+
+    public Long getCidadeId() {
+        return cidadeId;
+    }
+
+    public void setCidadeId(Long cidadeId) {
+        this.cidadeId = cidadeId;
+    }
+
+    public LocalDateTime getDataCriacao() {
+        return dataCriacao;
+    }
+
+    public void setDataCriacao(LocalDateTime dataCriacao) {
+        this.dataCriacao = dataCriacao;
+    }
+
+    public LocalDateTime getDataAlteracao() {
+        return dataAlteracao;
+    }
+
+    public void setDataAlteracao(LocalDateTime dataAlteracao) {
+        this.dataAlteracao = dataAlteracao;
+    }
+
+    public String getRgIe() {
+        return rgIe;
+    }
+
+    public void setRgIe(String rgIe) {
+        this.rgIe = rgIe;
+    }
+
+    public String getObservacao() {
+        return observacao;
+    }
+
+    public void setObservacao(String observacao) {
+        this.observacao = observacao;
+    }
+
+    public Long getCondicaoPagamentoId() {
+        return condicaoPagamentoId;
+    }
+
+    public void setCondicaoPagamentoId(Long condicaoPagamentoId) {
+        this.condicaoPagamentoId = condicaoPagamentoId;
+    }
+
+    public String getCpfCnpj() {
+        return cpfCnpj;
+    }
+
+    public void setCpfCnpj(String cpfCnpj) {
+        this.cpfCnpj = cpfCnpj;
     }
 
     public Boolean getAtivo() {
@@ -90,36 +153,28 @@ public class Transportadora {
     public void setAtivo(Boolean ativo) {
         this.ativo = ativo;
     }
-    
-    public List<TranspItem> getItens() {
-        return itens;
-    }
-    
-    public void setItens(List<TranspItem> itens) {
-        this.itens = itens;
-    }
-    
-    public List<Veiculo> getVeiculos() {
-        return veiculos;
-    }
-    
-    public void setVeiculos(List<Veiculo> veiculos) {
-        this.veiculos = veiculos;
-    }
-    
-    public LocalDateTime getDataCadastro() {
-        return dataCadastro;
+
+    public Integer getTipo() {
+        return tipo;
     }
 
-    public void setDataCadastro(LocalDateTime dataCadastro) {
-        this.dataCadastro = dataCadastro;
+    public void setTipo(Integer tipo) {
+        this.tipo = tipo;
     }
 
-    public LocalDateTime getUltimaModificacao() {
-        return ultimaModificacao;
+    public Cidade getCidade() {
+        return cidade;
     }
 
-    public void setUltimaModificacao(LocalDateTime ultimaModificacao) {
-        this.ultimaModificacao = ultimaModificacao;
+    public void setCidade(Cidade cidade) {
+        this.cidade = cidade;
+    }
+
+    public CondicaoPagamento getCondicaoPagamento() {
+        return condicaoPagamento;
+    }
+
+    public void setCondicaoPagamento(CondicaoPagamento condicaoPagamento) {
+        this.condicaoPagamento = condicaoPagamento;
     }
 } 

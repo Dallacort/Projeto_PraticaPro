@@ -12,17 +12,15 @@ public class VeiculoDTO {
     private Integer ano;
     private BigDecimal capacidade;
     private Long transportadoraId;
-    private String transportadoraNome;
     private Boolean ativo;
     private LocalDateTime dataCadastro;
     private LocalDateTime ultimaModificacao;
-    
+
     // Construtores
-    public VeiculoDTO() {
-    }
-    
+    public VeiculoDTO() {}
+
     public VeiculoDTO(Long id, String placa, String modelo, String marca, Integer ano, 
-                      BigDecimal capacidade, Long transportadoraId, String transportadoraNome, Boolean ativo) {
+                     BigDecimal capacidade, Long transportadoraId, Boolean ativo) {
         this.id = id;
         this.placa = placa;
         this.modelo = modelo;
@@ -30,12 +28,15 @@ public class VeiculoDTO {
         this.ano = ano;
         this.capacidade = capacidade;
         this.transportadoraId = transportadoraId;
-        this.transportadoraNome = transportadoraNome;
         this.ativo = ativo;
     }
-    
+
     // Método de conversão de Entity para DTO
     public static VeiculoDTO fromEntity(Veiculo veiculo) {
+        if (veiculo == null) {
+            return null;
+        }
+        
         VeiculoDTO dto = new VeiculoDTO();
         dto.setId(veiculo.getId());
         dto.setPlaca(veiculo.getPlaca());
@@ -43,25 +44,37 @@ public class VeiculoDTO {
         dto.setMarca(veiculo.getMarca());
         dto.setAno(veiculo.getAno());
         dto.setCapacidade(veiculo.getCapacidade());
+        dto.setTransportadoraId(veiculo.getTransportadoraId());
         dto.setAtivo(veiculo.getAtivo());
         
         // Garantir que as datas nunca sejam nulas
         dto.setDataCadastro(veiculo.getDataCadastro() != null ? 
-                            veiculo.getDataCadastro() : 
-                            LocalDateTime.now());
+                           veiculo.getDataCadastro() : 
+                           LocalDateTime.now());
         
         dto.setUltimaModificacao(veiculo.getUltimaModificacao() != null ? 
                                 veiculo.getUltimaModificacao() : 
                                 LocalDateTime.now());
         
-        if (veiculo.getTransportadora() != null) {
-            dto.setTransportadoraId(veiculo.getTransportadora().getId());
-            dto.setTransportadoraNome(veiculo.getTransportadora().getRazaoSocial());
-        }
-        
         return dto;
     }
-    
+
+    // Método de conversão de DTO para Entity
+    public Veiculo toEntity() {
+        Veiculo veiculo = new Veiculo();
+        veiculo.setId(this.id);
+        veiculo.setPlaca(this.placa);
+        veiculo.setModelo(this.modelo);
+        veiculo.setMarca(this.marca);
+        veiculo.setAno(this.ano);
+        veiculo.setCapacidade(this.capacidade);
+        veiculo.setTransportadoraId(this.transportadoraId);
+        veiculo.setAtivo(this.ativo);
+        veiculo.setDataCadastro(this.dataCadastro);
+        veiculo.setUltimaModificacao(this.ultimaModificacao);
+        return veiculo;
+    }
+
     // Getters e Setters
     public Long getId() {
         return id;
@@ -119,14 +132,6 @@ public class VeiculoDTO {
         this.transportadoraId = transportadoraId;
     }
 
-    public String getTransportadoraNome() {
-        return transportadoraNome;
-    }
-
-    public void setTransportadoraNome(String transportadoraNome) {
-        this.transportadoraNome = transportadoraNome;
-    }
-
     public Boolean getAtivo() {
         return ativo;
     }
@@ -134,7 +139,7 @@ public class VeiculoDTO {
     public void setAtivo(Boolean ativo) {
         this.ativo = ativo;
     }
-    
+
     public LocalDateTime getDataCadastro() {
         return dataCadastro;
     }

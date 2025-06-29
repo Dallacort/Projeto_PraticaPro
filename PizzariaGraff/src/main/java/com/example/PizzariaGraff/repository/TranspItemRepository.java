@@ -91,7 +91,7 @@ public class TranspItemRepository {
         List<TranspItem> itens = new ArrayList<>();
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                "SELECT i.*, t.razao_social as transportadora_nome FROM transp_item i " +
+                "SELECT i.*, t.transportadora as transportadora_nome FROM transp_item i " +
                 "LEFT JOIN transportadora t ON i.transportadora_id = t.id")) {
             
             ResultSet resultSet = statement.executeQuery();
@@ -108,7 +108,7 @@ public class TranspItemRepository {
         List<TranspItem> itens = new ArrayList<>();
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                "SELECT i.*, t.razao_social as transportadora_nome FROM transp_item i " +
+                "SELECT i.*, t.transportadora as transportadora_nome FROM transp_item i " +
                 "LEFT JOIN transportadora t ON i.transportadora_id = t.id " +
                 "WHERE i.ativo = true")) {
             
@@ -125,7 +125,7 @@ public class TranspItemRepository {
     public Optional<TranspItem> findById(Long id) {
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                "SELECT i.*, t.razao_social as transportadora_nome FROM transp_item i " +
+                "SELECT i.*, t.transportadora as transportadora_nome FROM transp_item i " +
                 "LEFT JOIN transportadora t ON i.transportadora_id = t.id " +
                 "WHERE i.id = ?")) {
             
@@ -143,7 +143,7 @@ public class TranspItemRepository {
     public Optional<TranspItem> findByCodigo(String codigo) {
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                "SELECT i.*, t.razao_social as transportadora_nome FROM transp_item i " +
+                "SELECT i.*, t.transportadora as transportadora_nome FROM transp_item i " +
                 "LEFT JOIN transportadora t ON i.transportadora_id = t.id " +
                 "WHERE i.codigo = ?")) {
             
@@ -162,7 +162,7 @@ public class TranspItemRepository {
         List<TranspItem> itens = new ArrayList<>();
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                "SELECT i.*, t.razao_social as transportadora_nome FROM transp_item i " +
+                "SELECT i.*, t.transportadora as transportadora_nome FROM transp_item i " +
                 "LEFT JOIN transportadora t ON i.transportadora_id = t.id " +
                 "WHERE i.transportadora_id = ?")) {
             
@@ -181,7 +181,7 @@ public class TranspItemRepository {
         List<TranspItem> itens = new ArrayList<>();
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                "SELECT i.*, t.razao_social as transportadora_nome FROM transp_item i " +
+                "SELECT i.*, t.transportadora as transportadora_nome FROM transp_item i " +
                 "LEFT JOIN transportadora t ON i.transportadora_id = t.id " +
                 "WHERE LOWER(i.descricao) LIKE ?")) {
             
@@ -319,7 +319,7 @@ public class TranspItemRepository {
         if (transportadoraId != null) {
             Transportadora transportadora = new Transportadora();
             transportadora.setId(transportadoraId);
-            transportadora.setRazaoSocial(rs.getString("transportadora_nome"));
+            transportadora.setTransportadora(rs.getString("transportadora_nome"));
             transpItem.setTransportadora(transportadora);
         }
         

@@ -1,7 +1,7 @@
 package com.example.PizzariaGraff.model;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 public class Veiculo {
     private Long id;
@@ -10,11 +10,25 @@ public class Veiculo {
     private String marca;
     private Integer ano;
     private BigDecimal capacidade;
-    private Transportadora transportadora;
+    private Long transportadoraId;
     private Boolean ativo = true;
     private LocalDateTime dataCadastro;
     private LocalDateTime ultimaModificacao;
-    
+
+    // Construtores
+    public Veiculo() {}
+
+    public Veiculo(String placa, String modelo, String marca, Integer ano, 
+                   BigDecimal capacidade, Long transportadoraId, Boolean ativo) {
+        this.placa = placa;
+        this.modelo = modelo;
+        this.marca = marca;
+        this.ano = ano;
+        this.capacidade = capacidade;
+        this.transportadoraId = transportadoraId;
+        this.ativo = ativo;
+    }
+
     // Getters e Setters
     public Long getId() {
         return id;
@@ -64,12 +78,12 @@ public class Veiculo {
         this.capacidade = capacidade;
     }
 
-    public Transportadora getTransportadora() {
-        return transportadora;
+    public Long getTransportadoraId() {
+        return transportadoraId;
     }
 
-    public void setTransportadora(Transportadora transportadora) {
-        this.transportadora = transportadora;
+    public void setTransportadoraId(Long transportadoraId) {
+        this.transportadoraId = transportadoraId;
     }
 
     public Boolean getAtivo() {
@@ -79,7 +93,7 @@ public class Veiculo {
     public void setAtivo(Boolean ativo) {
         this.ativo = ativo;
     }
-    
+
     public LocalDateTime getDataCadastro() {
         return dataCadastro;
     }

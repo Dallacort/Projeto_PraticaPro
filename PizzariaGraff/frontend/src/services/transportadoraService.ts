@@ -3,99 +3,59 @@ import { Transportadora, Cidade } from '../types';
 
 // Adapta a transportadora recebida da API para o formato usado no frontend
 export const adaptTransportadoraFromApi = (transportadora: any): Transportadora => {
-  // Criar a estrutura aninhada de cidade, estado e país
-  let cidade = null;
+  const cidade = transportadora.cidade || null;
   
-  // Se a API retornou cidadeId e cidadeNome, criar o objeto cidade
-  if (transportadora.cidadeId && transportadora.cidadeNome) {
-    cidade = {
-      id: transportadora.cidadeId,
-      nome: transportadora.cidadeNome,
-      estado: null
-    };
-    
-    // Se a API retornou estadoId e estadoNome, criar o objeto estado
-    if (transportadora.estadoId && transportadora.estadoNome) {
-      // Verificar todas as propriedades da transportadora para encontrar a UF
-      let estadoUf = '';
-      if (transportadora.estadoUf) {
-        estadoUf = transportadora.estadoUf;
-      } else if (transportadora.uf) {
-        estadoUf = transportadora.uf;
-      } else if (transportadora.estado && transportadora.estado.uf) {
-        estadoUf = transportadora.estado.uf;
-      } else {
-        // Se não encontrou, tentar extrair a UF do nome do estado
-        const estados = {
-          'ACRE': 'AC', 'ALAGOAS': 'AL', 'AMAPÁ': 'AP', 'AMAZONAS': 'AM', 'BAHIA': 'BA',
-          'CEARÁ': 'CE', 'DISTRITO FEDERAL': 'DF', 'ESPÍRITO SANTO': 'ES', 'GOIÁS': 'GO',
-          'MARANHÃO': 'MA', 'MATO GROSSO': 'MT', 'MATO GROSSO DO SUL': 'MS', 'MINAS GERAIS': 'MG',
-          'PARÁ': 'PA', 'PARAÍBA': 'PB', 'PARANÁ': 'PR', 'PERNAMBUCO': 'PE', 'PIAUÍ': 'PI',
-          'RIO DE JANEIRO': 'RJ', 'RIO GRANDE DO NORTE': 'RN', 'RIO GRANDE DO SUL': 'RS',
-          'RONDÔNIA': 'RO', 'RORAIMA': 'RR', 'SANTA CATARINA': 'SC', 'SÃO PAULO': 'SP',
-          'SERGIPE': 'SE', 'TOCANTINS': 'TO'
-        };
-        
-        const estadoNomeUpper = transportadora.estadoNome?.toUpperCase();
-        if (estadoNomeUpper && estados[estadoNomeUpper]) {
-          estadoUf = estados[estadoNomeUpper];
-        }
-      }
-      
-      cidade.estado = {
-        id: transportadora.estadoId,
-        nome: transportadora.estadoNome,
-        uf: estadoUf,
-        pais: null
-      };
-      
-      // Se a API retornou paisId e paisNome, criar o objeto país
-      if (transportadora.paisId && transportadora.paisNome) {
-        cidade.estado.pais = {
-          id: transportadora.paisId,
-          nome: transportadora.paisNome,
-          codigo: transportadora.paisId,
-          sigla: transportadora.paisId.substring(0, 2)
-        };
-      }
-    }
-  } else if (transportadora.cidade) {
-    // Se já veio um objeto cidade estruturado, usá-lo como está
-    cidade = transportadora.cidade;
-  }
-  
-  const result = {
+  const result: Transportadora = {
     id: transportadora.id,
-    razaoSocial: transportadora.razaoSocial || '',
-    nomeFantasia: transportadora.nomeFantasia || '',
-    cnpj: transportadora.cnpj || '',
+    transportadora: transportadora.transportadora || '',
+    apelido: transportadora.apelido || '',
+    cpfCnpj: transportadora.cpfCnpj || '',
+    rgIe: transportadora.rgIe || '',
     endereco: transportadora.endereco || '',
-    telefone: transportadora.telefone || '',
-    email: transportadora.email || '',
+    numero: transportadora.numero || '',
+    complemento: transportadora.complemento || '',
+    bairro: transportadora.bairro || '',
+    cep: transportadora.cep || '',
     cidade: cidade,
+    cidadeId: transportadora.cidadeId,
     ativo: transportadora.ativo !== false,
-    itens: transportadora.itens || [],
-    veiculos: transportadora.veiculos || [],
-    dataCadastro: transportadora.dataCadastro,
-    ultimaModificacao: transportadora.ultimaModificacao
+    tipo: transportadora.tipo || 2,
+    observacao: transportadora.observacao || '',
+    condicaoPagamentoId: transportadora.condicaoPagamentoId,
+    emailsAdicionais: transportadora.emailsAdicionais || [],
+    telefonesAdicionais: transportadora.telefonesAdicionais || [],
+    dataCadastro: transportadora.dataCadastro || transportadora.dataCriacao,
+    ultimaModificacao: transportadora.ultimaModificacao || transportadora.dataAlteracao,
+    
+    // Campos legados que podem vir da API mas não são mais o padrão
+    razaoSocial: transportadora.transportadora || transportadora.razaoSocial,
+    nomeFantasia: transportadora.apelido || transportadora.nomeFantasia,
+    cnpj: transportadora.cpfCnpj || transportadora.cnpj,
   };
   
   return result;
 };
 
 // Adapta a transportadora do frontend para o formato esperado pela API
-export const adaptTransportadoraToApi = (transportadora: Omit<Transportadora, 'id'>): any => {
+export const adaptTransportadoraToApi = (transportadora: Partial<Transportadora>): any => {
   return {
-    razaoSocial: transportadora.razaoSocial,
-    nomeFantasia: transportadora.nomeFantasia,
-    cnpj: transportadora.cnpj,
+    id: transportadora.id,
+    transportadora: transportadora.transportadora,
+    apelido: transportadora.apelido,
     endereco: transportadora.endereco,
-    telefone: transportadora.telefone,
-    email: transportadora.email,
-    cidadeId: transportadora.cidade?.id,
+    numero: transportadora.numero,
+    complemento: transportadora.complemento,
+    bairro: transportadora.bairro,
+    cep: transportadora.cep,
+    cidadeId: transportadora.cidade?.id || transportadora.cidadeId,
+    rgIe: transportadora.rgIe,
+    observacao: transportadora.observacao,
+    condicaoPagamentoId: transportadora.condicaoPagamentoId,
+    cpfCnpj: transportadora.cpfCnpj,
     ativo: transportadora.ativo,
-    itens: transportadora.itens || [],
-    veiculos: transportadora.veiculos || []
+    tipo: transportadora.tipo,
+    emailsAdicionais: transportadora.emailsAdicionais,
+    telefonesAdicionais: transportadora.telefonesAdicionais,
   };
 };
 
@@ -118,7 +78,7 @@ export const getTransportadoras = async (): Promise<Transportadora[]> => {
 // Busca uma transportadora por ID
 export const getTransportadora = async (id: number | string): Promise<Transportadora | null> => {
   try {
-    const response = await api.get(`/transportadoras/${id}`);
+    const response = await api.get(`/transportadoras/${id}/complete`);
     
     if (!response.data || !response.data.id) {
       throw new Error(`API retornou dados inválidos para transportadora ${id}`);
@@ -132,7 +92,7 @@ export const getTransportadora = async (id: number | string): Promise<Transporta
 };
 
 // Cria uma nova transportadora
-export const createTransportadora = async (transportadora: Omit<Transportadora, 'id'>): Promise<Transportadora> => {
+export const createTransportadora = async (transportadora: Partial<Transportadora>): Promise<Transportadora> => {
   try {
     const transportadoraApi = adaptTransportadoraToApi(transportadora);
     const response = await api.post('/transportadoras', transportadoraApi);
@@ -144,7 +104,7 @@ export const createTransportadora = async (transportadora: Omit<Transportadora, 
 };
 
 // Atualiza uma transportadora existente
-export const updateTransportadora = async (id: number | string, transportadora: Omit<Transportadora, 'id'>): Promise<Transportadora> => {
+export const updateTransportadora = async (id: number | string, transportadora: Partial<Transportadora>): Promise<Transportadora> => {
   try {
     const transportadoraApi = adaptTransportadoraToApi(transportadora);
     const response = await api.put(`/transportadoras/${id}`, transportadoraApi);

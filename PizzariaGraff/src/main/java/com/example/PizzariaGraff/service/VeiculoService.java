@@ -1,47 +1,71 @@
 package com.example.PizzariaGraff.service;
 
+import com.example.PizzariaGraff.dto.VeiculoDTO;
 import com.example.PizzariaGraff.model.Veiculo;
+import com.example.PizzariaGraff.repository.TransportadoraRepository;
 import com.example.PizzariaGraff.repository.VeiculoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class VeiculoService {
-    
-    private final VeiculoRepository veiculoRepository;
-    
-    public VeiculoService(VeiculoRepository veiculoRepository) {
-        this.veiculoRepository = veiculoRepository;
+
+    @Autowired
+    private VeiculoRepository veiculoRepository;
+
+    @Autowired
+    private TransportadoraRepository transportadoraRepository;
+
+    public List<VeiculoDTO> findAll() {
+        return veiculoRepository.findAll().stream()
+                .map(VeiculoDTO::fromEntity)
+                .collect(Collectors.toList());
     }
-    
-    public List<Veiculo> findAll() {
-        return veiculoRepository.findAll();
+
+    public List<VeiculoDTO> findAllAtivos() {
+        return veiculoRepository.findByAtivoTrue().stream()
+                .map(VeiculoDTO::fromEntity)
+                .collect(Collectors.toList());
     }
-    
-    public List<Veiculo> findByAtivoTrue() {
-        return veiculoRepository.findByAtivoTrue();
-    }
-    
-    public Veiculo findById(Long id) {
+
+    public VeiculoDTO findById(Long id) {
         return veiculoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Veículo não encontrado com o ID: " + id));
+                .map(VeiculoDTO::fromEntity)
+                .orElseThrow(() -> new RuntimeException("Veículo não encontrado"));
     }
-    
-    public Veiculo findByPlaca(String placa) {
-        return veiculoRepository.findByPlaca(placa)
-                .orElseThrow(() -> new RuntimeException("Veículo não encontrado com a placa: " + placa));
+
+    public List<VeiculoDTO> findByTransportadora(Long transportadoraId) {
+        return veiculoRepository.findByTransportadoraId(transportadoraId).stream()
+                .map(VeiculoDTO::fromEntity)
+                .collect(Collectors.toList());
     }
-    
-    public List<Veiculo> findByTransportadoraId(Long transportadoraId) {
-        return veiculoRepository.findByTransportadoraId(transportadoraId);
+
+    public VeiculoDTO save(VeiculoDTO dto) {
+        if (dto.getId() == null && veiculoRepository.existsByPlaca(dto.getPlaca())) {
+            throw new RuntimeException("Placa já cadastrada");
+        }
+        if (dto.getId() != null && veiculoRepository.existsByPlacaAndIdNot(dto.getPlaca(), dto.getId())) {
+            throw new RuntimeException("Placa já cadastrada para outro veículo");
+        }
+
+        // Validar se a transportadora existe
+        if (dto.getTransportadoraId() != null && 
+            !transportadoraRepository.findById(dto.getTransportadoraId()).isPresent()) {
+            throw new RuntimeException("Transportadora não encontrada");
+        }
+
+        Veiculo veiculo = dto.toEntity();
+        veiculo = veiculoRepository.save(veiculo);
+        return VeiculoDTO.fromEntity(veiculo);
     }
-    
-    public Veiculo save(Veiculo veiculo) {
-        return veiculoRepository.save(veiculo);
-    }
-    
+
     public void deleteById(Long id) {
+        if (!veiculoRepository.findById(id).isPresent()) {
+            throw new RuntimeException("Veículo não encontrado");
+        }
         veiculoRepository.deleteById(id);
     }
 } 
