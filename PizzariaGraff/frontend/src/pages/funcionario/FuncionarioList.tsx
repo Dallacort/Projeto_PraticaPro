@@ -65,13 +65,7 @@ const FuncionarioList: React.FC = () => {
         <span>{item.funcionario || item.nome}</span>
       )
     },
-    { 
-      header: 'CPF/CNPJ', 
-      accessor: 'cpfCpnj',
-      cell: (item: Funcionario) => (
-        <span>{item.cpfCpnj || 'N/A'}</span>
-      )
-    },
+
     { header: 'Telefone', accessor: 'telefone' },
     { header: 'E-mail', accessor: 'email' },
     { 
@@ -108,24 +102,7 @@ const FuncionarioList: React.FC = () => {
             </div>
       )
     },
-    { 
-      header: 'Estado', 
-      accessor: 'cidade.estado.nome',
-      cell: (item: Funcionario) => (
-        <div className="flex items-center">
-          {item.cidade?.estado && item.cidade.estado.id ? (
-              <Link 
-              to={`/estados/${item.cidade.estado.id}`}
-                className="text-blue-600 hover:underline"
-              >
-              {item.cidade.estado.nome} ({item.cidade.estado.uf})
-              </Link>
-            ) : (
-            <span>{item.cidade?.estado?.nome || 'N/A'} {item.cidade?.estado?.uf ? `(${item.cidade.estado.uf})` : ''}</span>
-          )}
-          </div>
-      )
-    },
+   
     { 
       header: 'Status', 
       accessor: 'ativo',

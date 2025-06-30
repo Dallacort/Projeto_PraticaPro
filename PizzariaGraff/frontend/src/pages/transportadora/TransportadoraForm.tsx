@@ -296,7 +296,7 @@ const TransportadoraForm: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Cidade <span className="text-red-500">*</span></label>
                 <div onClick={handleOpenCidadeModal} className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200">
-                  <input type="text" readOnly value={cidadeSelecionada ? `${cidadeSelecionada.nome} - ${cidadeSelecionada.estado?.uf}` : 'Selecione...'} className="flex-grow bg-transparent outline-none cursor-pointer text-sm" />
+                  <input type="text" readOnly value={cidadeSelecionada ? `${cidadeSelecionada.nome}` : 'Selecione...'} className="flex-grow bg-transparent outline-none cursor-pointer text-sm" />
                   <FaSearch className="text-gray-500" />
                 </div>
               </div>

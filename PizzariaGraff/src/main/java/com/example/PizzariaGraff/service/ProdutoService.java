@@ -70,6 +70,10 @@ public class ProdutoService {
             throw new RuntimeException("A unidade de medida é obrigatória");
         }
         
+        if (produto.getCategoriaId() == null) {
+            throw new RuntimeException("A categoria é obrigatória");
+        }
+        
         if (produto.getValorCompra() == null || produto.getValorCompra().doubleValue() <= 0) {
             throw new RuntimeException("O valor de compra deve ser maior que zero");
         }

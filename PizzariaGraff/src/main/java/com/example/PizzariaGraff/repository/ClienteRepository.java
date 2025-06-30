@@ -196,7 +196,7 @@ public class ClienteRepository {
             stmt.setString(8, cliente.getComplemento());
             stmt.setBigDecimal(9, cliente.getLimiteCredito());
             stmt.setObject(10, cliente.getNacionalidadeId());
-            stmt.setString(11, cliente.getRgInscricaoEstadual());
+            stmt.setObject(11, cliente.getRgInscricaoEstadual());
             stmt.setString(12, cliente.getCpfCpnj());
             stmt.setDate(13, cliente.getDataNascimento() != null ? Date.valueOf(cliente.getDataNascimento()) : null);
             stmt.setString(14, cliente.getEmail());
@@ -237,15 +237,12 @@ public class ClienteRepository {
                      "endereco = ?, cidade_id = ?, complemento = ?, limite_credito = ?, " +
                      "nacionalidade_id = ?, rg_inscricao_estadual = ?, cpf_cpnj = ?, data_nascimento = ?, " +
                      "email = ?, telefone = ?, estado_civil = ?, tipo = ?, sexo = ?, " +
-                     "condicao_pagamento_id = ?, observacao = ?, ativo = ? WHERE id = ?";
+                     "condicao_pagamento_id = ?, observacao = ?, ativo = ?, data_alteracao = ? WHERE id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            System.out.println("=== UPDATE CLIENTE SQL DEBUG ===");
-            System.out.println("SQL: " + sql);
-            System.out.println("Cliente ID: " + cliente.getId());
-            System.out.println("Nome: " + cliente.getCliente());
+            LocalDateTime now = LocalDateTime.now();
             
             stmt.setString(1, cliente.getCliente());
             stmt.setString(2, cliente.getApelido());
@@ -253,70 +250,29 @@ public class ClienteRepository {
             stmt.setString(4, cliente.getCep());
             stmt.setString(5, cliente.getNumero());
             stmt.setString(6, cliente.getEndereco());
-            
-            // Tratamento especial para cidadeId (MySQL)
-            if (cliente.getCidadeId() != null) {
-                stmt.setLong(7, cliente.getCidadeId());
-            } else {
-                stmt.setNull(7, Types.BIGINT);
-            }
-            
+            stmt.setObject(7, cliente.getCidadeId());
             stmt.setString(8, cliente.getComplemento());
             stmt.setBigDecimal(9, cliente.getLimiteCredito());
-            
-            // Tratamento especial para nacionalidadeId (MySQL)
-            if (cliente.getNacionalidadeId() != null) {
-                stmt.setLong(10, cliente.getNacionalidadeId());
-            } else {
-                stmt.setNull(10, Types.BIGINT);
-            }
-            
-            stmt.setString(11, cliente.getRgInscricaoEstadual());
+            stmt.setObject(10, cliente.getNacionalidadeId());
+            stmt.setObject(11, cliente.getRgInscricaoEstadual());
             stmt.setString(12, cliente.getCpfCpnj());
             stmt.setDate(13, cliente.getDataNascimento() != null ? Date.valueOf(cliente.getDataNascimento()) : null);
             stmt.setString(14, cliente.getEmail());
             stmt.setString(15, cliente.getTelefone());
             stmt.setString(16, cliente.getEstadoCivil());
-            
-            // Tratamento especial para tipo (MySQL)
-            if (cliente.getTipo() != null) {
-                stmt.setInt(17, cliente.getTipo());
-            } else {
-                stmt.setNull(17, Types.INTEGER);
-            }
-            
+            stmt.setObject(17, cliente.getTipo());
             stmt.setString(18, cliente.getSexo());
-            
-            // Tratamento especial para condicaoPagamentoId (MySQL)
-            if (cliente.getCondicaoPagamentoId() != null) {
-                stmt.setLong(19, cliente.getCondicaoPagamentoId());
-            } else {
-                stmt.setNull(19, Types.BIGINT);
-            }
-            
+            stmt.setObject(19, cliente.getCondicaoPagamentoId());
             stmt.setString(20, cliente.getObservacao());
+            stmt.setBoolean(21, cliente.getAtivo() != null ? cliente.getAtivo() : true);
+            stmt.setTimestamp(22, Timestamp.valueOf(now));
+            stmt.setLong(23, cliente.getId());
+
+            stmt.executeUpdate();
             
-            // Para MySQL tinyint(1) - usar setInt em vez de setBoolean
-            stmt.setInt(21, (cliente.getAtivo() != null && cliente.getAtivo()) ? 1 : 0);
-            
-            stmt.setLong(22, cliente.getId());
-            
-            System.out.println("Executando UPDATE...");
-            int rowsUpdated = stmt.executeUpdate();
-            System.out.println("Linhas atualizadas: " + rowsUpdated);
-            
-            if (rowsUpdated == 0) {
-                throw new RuntimeException("Nenhuma linha foi atualizada. Cliente ID " + cliente.getId() + " não encontrado.");
-            }
-            
-            System.out.println("UPDATE executado com sucesso");
-            
+            cliente.setDataAlteracao(now);
         } catch (SQLException e) {
-            System.err.println("Erro SQL no UPDATE: " + e.getMessage());
-            System.err.println("SQL State: " + e.getSQLState());
-            System.err.println("Error Code: " + e.getErrorCode());
-            e.printStackTrace();
-            throw new RuntimeException("Erro ao atualizar cliente: " + e.getMessage(), e);
+            throw new RuntimeException("Erro ao atualizar cliente", e);
         }
         
         return cliente;

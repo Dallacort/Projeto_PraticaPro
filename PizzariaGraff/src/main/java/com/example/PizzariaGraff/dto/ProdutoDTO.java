@@ -56,7 +56,11 @@ public class ProdutoDTO {
     @Schema(description = "Nome da unidade de medida", example = "Unidade")
     private String unidadeMedidaNome;
 
+    @Schema(description = "ID da categoria", example = "1", required = true)
+    private Long categoriaId;
 
+    @Schema(description = "Nome da categoria", example = "Bebidas")
+    private String categoriaNome;
 
     @Schema(description = "Status ativo/inativo", example = "true")
     private Boolean ativo;
@@ -86,15 +90,17 @@ public class ProdutoDTO {
         this.quantidadeMinima = produto.getQuantidadeMinima();
         this.marcaId = produto.getMarcaId();
         this.unidadeMedidaId = produto.getUnidadeMedidaId();
+        this.categoriaId = produto.getCategoriaId();
         this.dataCriacao = produto.getDataCriacao();
         this.dataAlteracao = produto.getDataAlteracao();
         
         // Incluir o campo ativo
         this.ativo = produto.getAtivo();
         
-        // Usar os novos campos marcaNome e unidadeMedidaNome diretamente do modelo
+        // Usar os novos campos marcaNome, unidadeMedidaNome e categoriaNome diretamente do modelo
         this.marcaNome = produto.getMarcaNome();
         this.unidadeMedidaNome = produto.getUnidadeMedidaNome();
+        this.categoriaNome = produto.getCategoriaNome();
         
         // Fallback para nomes das entidades relacionadas se não estiverem preenchidos
         if (this.marcaNome == null && produto.getMarca() != null) {
@@ -102,6 +108,9 @@ public class ProdutoDTO {
         }
         if (this.unidadeMedidaNome == null && produto.getUnidadeMedida() != null) {
             this.unidadeMedidaNome = produto.getUnidadeMedida().getUnidadeMedida();
+        }
+        if (this.categoriaNome == null && produto.getCategoria() != null) {
+            this.categoriaNome = produto.getCategoria().getCategoria();
         }
     }
 
@@ -121,6 +130,7 @@ public class ProdutoDTO {
         produto.setQuantidadeMinima(this.quantidadeMinima);
         produto.setMarcaId(this.marcaId);
         produto.setUnidadeMedidaId(this.unidadeMedidaId);
+        produto.setCategoriaId(this.categoriaId);
         produto.setDataCriacao(this.dataCriacao);
         produto.setDataAlteracao(this.dataAlteracao);
         produto.setAtivo(this.ativo);
@@ -173,7 +183,11 @@ public class ProdutoDTO {
     public String getUnidadeMedidaNome() { return unidadeMedidaNome; }
     public void setUnidadeMedidaNome(String unidadeMedidaNome) { this.unidadeMedidaNome = unidadeMedidaNome; }
     
-
+    public Long getCategoriaId() { return categoriaId; }
+    public void setCategoriaId(Long categoriaId) { this.categoriaId = categoriaId; }
+    
+    public String getCategoriaNome() { return categoriaNome; }
+    public void setCategoriaNome(String categoriaNome) { this.categoriaNome = categoriaNome; }
     
     public Boolean getAtivo() { return ativo; }
     public void setAtivo(Boolean ativo) { this.ativo = ativo; }

@@ -176,6 +176,9 @@ export interface Produto {
   unidadeMedidaId?: number;
   unidadeMedidaNome?: string;
   unidadeMedida?: UnidadeMedida;
+  categoriaId?: number;
+  categoriaNome?: string;
+  categoria?: Categoria;
   codigo?: string;
   precoVenda?: number;
   precoCusto?: number;
@@ -204,6 +207,16 @@ export interface Marca {
 export interface UnidadeMedida {
   id: number;
   unidadeMedida: string;
+  ativo?: boolean;
+  dataCriacao?: string;
+  dataAlteracao?: string;
+  dataCadastro?: string;
+  ultimaModificacao?: string;
+}
+
+export interface Categoria {
+  id: number;
+  categoria: string;
   ativo?: boolean;
   dataCriacao?: string;
   dataAlteracao?: string;

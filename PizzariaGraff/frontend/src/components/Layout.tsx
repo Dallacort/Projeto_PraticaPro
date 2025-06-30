@@ -46,6 +46,7 @@ const Layout: React.FC = () => {
         { name: 'Produtos', path: '/produtos', icon: '📦' },
         { name: 'Marcas', path: '/marcas', icon: '🏷️' },
         { name: 'Unidades de Medida', path: '/unidades-medida', icon: '📏' },
+        { name: 'Categorias', path: '/categorias', icon: '📂' },
         { name: 'Funcionários', path: '/funcionarios', icon: '👨‍💼' },
         { name: 'Funções de Funcionário', path: '/funcoes-funcionario', icon: '🎯' },
         { name: 'Transportadoras', path: '/transportadoras', icon: '🚚' },
@@ -63,10 +64,8 @@ const Layout: React.FC = () => {
         </svg>
       ),
       items: [
-        { name: 'Notas Fiscais', path: '/notas-fiscais', icon: '📄' },
         { name: 'Formas de Pagamento', path: '/formas-pagamento', icon: '💳' },
         { name: 'Condições de Pagamento', path: '/condicoes-pagamento', icon: '⏱️' },
-        { name: 'Modalidades NFe', path: '/modalidades-nfe', icon: '📑' },
       ],
     },
   ];

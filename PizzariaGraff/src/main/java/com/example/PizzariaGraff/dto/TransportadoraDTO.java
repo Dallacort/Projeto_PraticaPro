@@ -27,6 +27,10 @@ public class TransportadoraDTO {
     private String cidadeNome;
     private String condicaoPagamentoNome;
 
+    // Lista de veículos para o relacionamento N-N
+    private List<VeiculoDTO> veiculos;
+    private List<Long> veiculoIds;
+
     // Listas para múltiplos emails e telefones
     private List<String> emailsAdicionais;
     private List<String> telefonesAdicionais;
@@ -208,6 +212,22 @@ public class TransportadoraDTO {
         this.telefonesAdicionais = telefonesAdicionais;
     }
 
+    public List<VeiculoDTO> getVeiculos() {
+        return veiculos;
+    }
+
+    public void setVeiculos(List<VeiculoDTO> veiculos) {
+        this.veiculos = veiculos;
+    }
+
+    public List<Long> getVeiculoIds() {
+        return veiculoIds;
+    }
+
+    public void setVeiculoIds(List<Long> veiculoIds) {
+        this.veiculoIds = veiculoIds;
+    }
+
     // Métodos de conversão
     public static TransportadoraDTO fromEntity(Transportadora transportadora) {
         TransportadoraDTO dto = new TransportadoraDTO();
@@ -236,6 +256,12 @@ public class TransportadoraDTO {
         
         if (transportadora.getCondicaoPagamento() != null) {
             dto.setCondicaoPagamentoNome(transportadora.getCondicaoPagamento().getCondicaoPagamento());
+        }
+
+        if (transportadora.getVeiculos() != null) {
+            dto.setVeiculos(transportadora.getVeiculos().stream()
+                .map(VeiculoDTO::fromEntity)
+                .collect(java.util.stream.Collectors.toList()));
         }
         
         return dto;

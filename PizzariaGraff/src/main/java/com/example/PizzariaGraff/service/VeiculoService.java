@@ -38,7 +38,7 @@ public class VeiculoService {
     }
 
     public List<VeiculoDTO> findByTransportadora(Long transportadoraId) {
-        return veiculoRepository.findByTransportadoraId(transportadoraId).stream()
+        return veiculoRepository.findVeiculosByTransportadoraId(transportadoraId).stream()
                 .map(VeiculoDTO::fromEntity)
                 .collect(Collectors.toList());
     }
@@ -49,12 +49,6 @@ public class VeiculoService {
         }
         if (dto.getId() != null && veiculoRepository.existsByPlacaAndIdNot(dto.getPlaca(), dto.getId())) {
             throw new RuntimeException("Placa já cadastrada para outro veículo");
-        }
-
-        // Validar se a transportadora existe
-        if (dto.getTransportadoraId() != null && 
-            !transportadoraRepository.findById(dto.getTransportadoraId()).isPresent()) {
-            throw new RuntimeException("Transportadora não encontrada");
         }
 
         Veiculo veiculo = dto.toEntity();

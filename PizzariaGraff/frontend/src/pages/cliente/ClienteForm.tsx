@@ -566,7 +566,7 @@ const ClienteForm: React.FC = () => {
                   <input
                     type="text"
                     readOnly
-                    value={cidadeSelecionada ? `${cidadeSelecionada.nome} - ${cidadeSelecionada.estado?.uf}` : 'Selecione...'}
+                    value={cidadeSelecionada ? `${cidadeSelecionada.nome}` : 'Selecione...'}
                     className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
                     placeholder="Selecione..."
                   />
@@ -642,18 +642,17 @@ const ClienteForm: React.FC = () => {
             {/* Quarta linha: RG/Inscrição Estadual, CPF/CNPJ, Limite de Crédito, Condição de Pagamento */}
             <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '180px 180px 150px 2fr' }}>
               <FormField
-                key={`rgInscricao-${formData.tipo}-${forceRender}`} // Força re-renderização quando tipo muda
+                key={`rgInscricaoEstadual-${forceRender}`}
                 label={getRgInscricaoLabel()}
                 name="rgInscricaoEstadual"
                 value={formData.rgInscricaoEstadual}
                 onChange={handleChange}
-                required
                 maxLength={getRgInscricaoMaxLength()}
                 placeholder={getRgInscricaoPlaceholder()}
               />
 
               <FormField
-                key={`cpfCnpj-${formData.tipo}-${forceRender}`} // Força re-renderização quando tipo muda
+                key={`cpfCpnj-${forceRender}`}
                 label={getCpfCnpjLabel()}
                 name="cpfCpnj"
                 value={formData.cpfCpnj}

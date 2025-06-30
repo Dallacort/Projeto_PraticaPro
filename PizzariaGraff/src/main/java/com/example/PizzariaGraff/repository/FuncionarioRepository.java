@@ -178,7 +178,7 @@ public class FuncionarioRepository {
             stmt.setObject(10, funcionario.getCidadeId());
             stmt.setDate(11, funcionario.getDataAdmissao() != null ? Date.valueOf(funcionario.getDataAdmissao()) : null);
             stmt.setDate(12, funcionario.getDataDemissao() != null ? Date.valueOf(funcionario.getDataDemissao()) : null);
-            stmt.setString(13, funcionario.getRgInscricaoEstadual());
+            stmt.setObject(13, funcionario.getRgInscricaoEstadual());
             stmt.setString(14, funcionario.getCnh());
             stmt.setDate(15, funcionario.getDataValidadeCnh() != null ? Date.valueOf(funcionario.getDataValidadeCnh()) : null);
             stmt.setObject(16, funcionario.getSexo());
@@ -249,7 +249,7 @@ public class FuncionarioRepository {
             stmt.setObject(10, funcionario.getCidadeId());
             stmt.setDate(11, funcionario.getDataAdmissao() != null ? Date.valueOf(funcionario.getDataAdmissao()) : null);
             stmt.setDate(12, funcionario.getDataDemissao() != null ? Date.valueOf(funcionario.getDataDemissao()) : null);
-            stmt.setString(13, funcionario.getRgInscricaoEstadual());
+            stmt.setObject(13, funcionario.getRgInscricaoEstadual());
             stmt.setString(14, funcionario.getCnh());
             stmt.setDate(15, funcionario.getDataValidadeCnh() != null ? Date.valueOf(funcionario.getDataValidadeCnh()) : null);
             stmt.setObject(16, funcionario.getSexo());

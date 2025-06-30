@@ -66,16 +66,17 @@ public class VeiculoRepository {
         return Optional.empty();
     }
     
-    public List<Veiculo> findByTransportadoraId(Long transportadoraId) {
+    public List<Veiculo> findVeiculosByTransportadoraId(Long transportadoraId) {
         List<Veiculo> veiculos = new ArrayList<>();
+        String sql = "SELECT v.* FROM veiculo v " +
+                     "INNER JOIN transportadora_veiculo tv ON v.id = tv.veiculo_id " +
+                     "WHERE tv.transportadora_id = ?";
         try (Connection connection = databaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                "SELECT * FROM veiculo WHERE transportadora_id = ? ORDER BY placa")) {
-            
+             PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, transportadoraId);
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                veiculos.add(mapRowToVeiculo(resultSet));
+            ResultSet rs = statement.executeQuery();
+            while (rs.next()) {
+                veiculos.add(mapRowToVeiculo(rs));
             }
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar veículos por transportadora", e);
@@ -127,8 +128,8 @@ public class VeiculoRepository {
     private Veiculo insert(Veiculo veiculo) {
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO veiculo (placa, modelo, marca, ano, capacidade, transportadora_id, ativo, data_cadastro, ultima_modificacao) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+                "INSERT INTO veiculo (placa, modelo, marca, ano, capacidade, ativo, data_cadastro, ultima_modificacao) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
             
             LocalDateTime now = LocalDateTime.now();
             
@@ -148,15 +149,9 @@ public class VeiculoRepository {
                 statement.setNull(5, Types.DECIMAL);
             }
             
-            if (veiculo.getTransportadoraId() != null) {
-                statement.setLong(6, veiculo.getTransportadoraId());
-            } else {
-                statement.setNull(6, Types.BIGINT);
-            }
-            
-            statement.setBoolean(7, veiculo.getAtivo() != null ? veiculo.getAtivo() : true);
+            statement.setBoolean(6, veiculo.getAtivo() != null ? veiculo.getAtivo() : true);
+            statement.setTimestamp(7, Timestamp.valueOf(now));
             statement.setTimestamp(8, Timestamp.valueOf(now));
-            statement.setTimestamp(9, Timestamp.valueOf(now));
             
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
@@ -182,7 +177,7 @@ public class VeiculoRepository {
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(
                 "UPDATE veiculo SET placa = ?, modelo = ?, marca = ?, ano = ?, capacidade = ?, " +
-                "transportadora_id = ?, ativo = ?, ultima_modificacao = ? WHERE id = ?")) {
+                "ativo = ?, ultima_modificacao = ? WHERE id = ?")) {
             
             LocalDateTime now = LocalDateTime.now();
             
@@ -202,15 +197,9 @@ public class VeiculoRepository {
                 statement.setNull(5, Types.DECIMAL);
             }
             
-            if (veiculo.getTransportadoraId() != null) {
-                statement.setLong(6, veiculo.getTransportadoraId());
-            } else {
-                statement.setNull(6, Types.BIGINT);
-            }
-            
-            statement.setBoolean(7, veiculo.getAtivo() != null ? veiculo.getAtivo() : true);
-            statement.setTimestamp(8, Timestamp.valueOf(now));
-            statement.setLong(9, veiculo.getId());
+            statement.setBoolean(6, veiculo.getAtivo() != null ? veiculo.getAtivo() : true);
+            statement.setTimestamp(7, Timestamp.valueOf(now));
+            statement.setLong(8, veiculo.getId());
             
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
@@ -249,22 +238,16 @@ public class VeiculoRepository {
         }
         
         veiculo.setCapacidade(rs.getBigDecimal("capacidade"));
-        
-        Long transportadoraId = rs.getObject("transportadora_id", Long.class);
-        if (transportadoraId != null) {
-            veiculo.setTransportadoraId(transportadoraId);
-        }
-        
         veiculo.setAtivo(rs.getBoolean("ativo"));
         
-        Timestamp dataCadastroTimestamp = rs.getTimestamp("data_cadastro");
-        if (dataCadastroTimestamp != null) {
-            veiculo.setDataCadastro(dataCadastroTimestamp.toLocalDateTime());
+        Timestamp dataCadastro = rs.getTimestamp("data_cadastro");
+        if (dataCadastro != null) {
+            veiculo.setDataCadastro(dataCadastro.toLocalDateTime());
         }
         
-        Timestamp ultimaModificacaoTimestamp = rs.getTimestamp("ultima_modificacao");
-        if (ultimaModificacaoTimestamp != null) {
-            veiculo.setUltimaModificacao(ultimaModificacaoTimestamp.toLocalDateTime());
+        Timestamp ultimaModificacao = rs.getTimestamp("ultima_modificacao");
+        if (ultimaModificacao != null) {
+            veiculo.setUltimaModificacao(ultimaModificacao.toLocalDateTime());
         }
         
         return veiculo;

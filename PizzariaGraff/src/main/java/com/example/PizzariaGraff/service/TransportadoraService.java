@@ -2,12 +2,15 @@ package com.example.PizzariaGraff.service;
 
 import com.example.PizzariaGraff.dto.CidadeDTO;
 import com.example.PizzariaGraff.dto.TransportadoraDTO;
+import com.example.PizzariaGraff.dto.VeiculoDTO;
 import com.example.PizzariaGraff.model.Transportadora;
 import com.example.PizzariaGraff.model.TransportadoraEmail;
 import com.example.PizzariaGraff.model.TransportadoraTelefone;
+import com.example.PizzariaGraff.model.Veiculo;
 import com.example.PizzariaGraff.repository.TransportadoraRepository;
 import com.example.PizzariaGraff.repository.TransportadoraEmailRepository;
 import com.example.PizzariaGraff.repository.TransportadoraTelefoneRepository;
+import com.example.PizzariaGraff.repository.VeiculoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +29,9 @@ public class TransportadoraService {
     
     @Autowired
     private TransportadoraTelefoneRepository telefoneRepository;
+
+    @Autowired
+    private VeiculoRepository veiculoRepository;
 
     @Autowired
     private CidadeService cidadeService;
@@ -71,6 +77,14 @@ public class TransportadoraService {
         // Salvar a transportadora
         Transportadora transportadora = dto.toEntity();
         transportadora = save(transportadora);
+        
+        // Lidar com associações de veículos
+        transportadoraRepository.deleteVeiculoAssociation(transportadora.getId());
+        if (dto.getVeiculoIds() != null) {
+            for (Long veiculoId : dto.getVeiculoIds()) {
+                transportadoraRepository.addVeiculoAssociation(transportadora.getId(), veiculoId);
+            }
+        }
         
         // Salvar emails adicionais
         if (dto.getEmailsAdicionais() != null && !dto.getEmailsAdicionais().isEmpty()) {
@@ -120,7 +134,7 @@ public class TransportadoraService {
                 System.err.println("Erro ao buscar cidade para transportadora " + id + ": " + e.getMessage());
             }
         }
-
+        
         // Carregar emails
         List<TransportadoraEmail> emails = emailRepository.findByTransportadoraId(id);
         dto.setEmailsAdicionais(emails.stream()
@@ -131,6 +145,12 @@ public class TransportadoraService {
         List<TransportadoraTelefone> telefones = telefoneRepository.findByTransportadoraId(id);
         dto.setTelefonesAdicionais(telefones.stream()
             .map(TransportadoraTelefone::getTelefone)
+            .collect(Collectors.toList()));
+        
+        // Carregar veículos
+        List<Veiculo> veiculos = veiculoRepository.findVeiculosByTransportadoraId(id);
+        dto.setVeiculos(veiculos.stream()
+            .map(VeiculoDTO::fromEntity)
             .collect(Collectors.toList()));
         
         return dto;

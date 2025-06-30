@@ -125,7 +125,7 @@ public class FornecedorRepository {
             stmt.setString(6, fornecedor.getEndereco());
             stmt.setString(7, fornecedor.getNumero());
             stmt.setObject(8, fornecedor.getCidadeId());
-            stmt.setString(9, fornecedor.getRgInscricaoEstadual());
+            stmt.setObject(9, fornecedor.getRgInscricaoEstadual());
             stmt.setString(10, fornecedor.getCpfCnpj());
             stmt.setString(11, fornecedor.getEmail());
             stmt.setString(12, fornecedor.getTelefone());
@@ -181,7 +181,7 @@ public class FornecedorRepository {
             stmt.setString(6, fornecedor.getEndereco());
             stmt.setString(7, fornecedor.getNumero());
             stmt.setObject(8, fornecedor.getCidadeId());
-            stmt.setString(9, fornecedor.getRgInscricaoEstadual());
+            stmt.setObject(9, fornecedor.getRgInscricaoEstadual());
             stmt.setString(10, fornecedor.getCpfCnpj());
             stmt.setString(11, fornecedor.getEmail());
             stmt.setString(12, fornecedor.getTelefone());

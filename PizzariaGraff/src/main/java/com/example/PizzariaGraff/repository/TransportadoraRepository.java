@@ -214,7 +214,33 @@ public class TransportadoraRepository {
         return transportadora;
     }
     
+    public void deleteVeiculoAssociation(Long transportadoraId) {
+        String sql = "DELETE FROM transportadora_veiculo WHERE transportadora_id = ?";
+        try (Connection conn = databaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, transportadoraId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao deletar associação de veículos.", e);
+        }
+    }
+
+    public void addVeiculoAssociation(Long transportadoraId, Long veiculoId) {
+        String sql = "INSERT INTO transportadora_veiculo (transportadora_id, veiculo_id) VALUES (?, ?)";
+        try (Connection conn = databaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, transportadoraId);
+            stmt.setLong(2, veiculoId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao adicionar associação de veículo.", e);
+        }
+    }
+
     public void deleteById(Long id) {
+        // Primeiro, deletar associações de veículos
+        deleteVeiculoAssociation(id);
+
         try (Connection connection = databaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement("DELETE FROM transportadora WHERE id = ?")) {
             statement.setLong(1, id);

@@ -49,10 +49,11 @@ public class ProdutoRepository {
     
     public List<Produto> findAll() {
         List<Produto> produtos = new ArrayList<>();
-        String sql = "SELECT p.*, m.marca as marca_nome, u.unidade_medida as unidade_nome " +
+        String sql = "SELECT p.*, m.marca as marca_nome, u.unidade_medida as unidade_nome, c.categoria as categoria_nome " +
                      "FROM produto p " +
                      "LEFT JOIN marca m ON p.marca_id = m.id " +
                      "LEFT JOIN unidade_medida u ON p.unidade_medida_id = u.id " +
+                     "LEFT JOIN categoria c ON p.categoria_id = c.id " +
                      "ORDER BY p.produto";
         
         try (Connection conn = databaseConnection.getConnection();
@@ -72,10 +73,11 @@ public class ProdutoRepository {
     
     public List<Produto> findByAtivoTrue() {
         List<Produto> produtos = new ArrayList<>();
-        String sql = "SELECT p.*, m.marca as marca_nome, u.unidade_medida as unidade_nome " +
+        String sql = "SELECT p.*, m.marca as marca_nome, u.unidade_medida as unidade_nome, c.categoria as categoria_nome " +
                      "FROM produto p " +
                      "LEFT JOIN marca m ON p.marca_id = m.id " +
                      "LEFT JOIN unidade_medida u ON p.unidade_medida_id = u.id " +
+                     "LEFT JOIN categoria c ON p.categoria_id = c.id " +
                      "WHERE p.ativo = TRUE " +
                      "ORDER BY p.produto";
         
@@ -95,10 +97,11 @@ public class ProdutoRepository {
     }
     
     public Optional<Produto> findById(Long id) {
-        String sql = "SELECT p.*, m.marca as marca_nome, u.unidade_medida as unidade_nome " +
+        String sql = "SELECT p.*, m.marca as marca_nome, u.unidade_medida as unidade_nome, c.categoria as categoria_nome " +
                      "FROM produto p " +
                      "LEFT JOIN marca m ON p.marca_id = m.id " +
                      "LEFT JOIN unidade_medida u ON p.unidade_medida_id = u.id " +
+                     "LEFT JOIN categoria c ON p.categoria_id = c.id " +
                      "WHERE p.id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
@@ -188,10 +191,10 @@ public class ProdutoRepository {
     }
     
     private Produto insert(Produto produto) {
-        String sql = "INSERT INTO produto (produto, unidade_medida_id, codigo_barras, referencia, marca_id, " +
+        String sql = "INSERT INTO produto (produto, unidade_medida_id, codigo_barras, referencia, marca_id, categoria_id, " +
                      "quantidade_minima, valor_compra, valor_venda, quantidade, percentual_lucro, descricao, " +
                      "observacoes, ativo, data_criacao, ultima_modificacao) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -203,16 +206,17 @@ public class ProdutoRepository {
             stmt.setString(3, produto.getCodigoBarras());
             stmt.setString(4, produto.getReferencia());
             stmt.setObject(5, produto.getMarcaId());
-            stmt.setObject(6, produto.getQuantidadeMinima());
-            stmt.setBigDecimal(7, produto.getValorCompra());
-            stmt.setBigDecimal(8, produto.getValorVenda());
-            stmt.setObject(9, produto.getQuantidade());
-            stmt.setBigDecimal(10, produto.getPercentualLucro());
-            stmt.setString(11, produto.getDescricao());
-            stmt.setString(12, produto.getObservacoes());
-            stmt.setBoolean(13, produto.getAtivo() != null ? produto.getAtivo() : true);
-            stmt.setTimestamp(14, produto.getDataCriacao() != null ? Timestamp.valueOf(produto.getDataCriacao()) : Timestamp.valueOf(now));
-            stmt.setTimestamp(15, produto.getDataAlteracao() != null ? Timestamp.valueOf(produto.getDataAlteracao()) : Timestamp.valueOf(now));
+            stmt.setObject(6, produto.getCategoriaId());
+            stmt.setObject(7, produto.getQuantidadeMinima());
+            stmt.setBigDecimal(8, produto.getValorCompra());
+            stmt.setBigDecimal(9, produto.getValorVenda());
+            stmt.setObject(10, produto.getQuantidade());
+            stmt.setBigDecimal(11, produto.getPercentualLucro());
+            stmt.setString(12, produto.getDescricao());
+            stmt.setString(13, produto.getObservacoes());
+            stmt.setBoolean(14, produto.getAtivo() != null ? produto.getAtivo() : true);
+            stmt.setTimestamp(15, produto.getDataCriacao() != null ? Timestamp.valueOf(produto.getDataCriacao()) : Timestamp.valueOf(now));
+            stmt.setTimestamp(16, produto.getDataAlteracao() != null ? Timestamp.valueOf(produto.getDataAlteracao()) : Timestamp.valueOf(now));
             
             stmt.executeUpdate();
             
@@ -238,7 +242,7 @@ public class ProdutoRepository {
     
     private Produto update(Produto produto) {
         String sql = "UPDATE produto SET produto = ?, unidade_medida_id = ?, codigo_barras = ?, referencia = ?, " +
-                     "marca_id = ?, quantidade_minima = ?, valor_compra = ?, valor_venda = ?, quantidade = ?, " +
+                     "marca_id = ?, categoria_id = ?, quantidade_minima = ?, valor_compra = ?, valor_venda = ?, quantidade = ?, " +
                      "percentual_lucro = ?, descricao = ?, observacoes = ?, ativo = ?, ultima_modificacao = ? " +
                      "WHERE id = ?";
         
@@ -252,16 +256,17 @@ public class ProdutoRepository {
             stmt.setString(3, produto.getCodigoBarras());
             stmt.setString(4, produto.getReferencia());
             stmt.setObject(5, produto.getMarcaId());
-            stmt.setObject(6, produto.getQuantidadeMinima());
-            stmt.setBigDecimal(7, produto.getValorCompra());
-            stmt.setBigDecimal(8, produto.getValorVenda());
-            stmt.setObject(9, produto.getQuantidade());
-            stmt.setBigDecimal(10, produto.getPercentualLucro());
-            stmt.setString(11, produto.getDescricao());
-            stmt.setString(12, produto.getObservacoes());
-            stmt.setBoolean(13, produto.getAtivo() != null ? produto.getAtivo() : true);
-            stmt.setTimestamp(14, Timestamp.valueOf(now));
-            stmt.setLong(15, produto.getId());
+            stmt.setObject(6, produto.getCategoriaId());
+            stmt.setObject(7, produto.getQuantidadeMinima());
+            stmt.setBigDecimal(8, produto.getValorCompra());
+            stmt.setBigDecimal(9, produto.getValorVenda());
+            stmt.setObject(10, produto.getQuantidade());
+            stmt.setBigDecimal(11, produto.getPercentualLucro());
+            stmt.setString(12, produto.getDescricao());
+            stmt.setString(13, produto.getObservacoes());
+            stmt.setBoolean(14, produto.getAtivo() != null ? produto.getAtivo() : true);
+            stmt.setTimestamp(15, Timestamp.valueOf(now));
+            stmt.setLong(16, produto.getId());
             
             stmt.executeUpdate();
             
@@ -294,6 +299,7 @@ public class ProdutoRepository {
         produto.setCodigoBarras(rs.getString("codigo_barras"));
         produto.setReferencia(rs.getString("referencia"));
         produto.setMarcaId(rs.getObject("marca_id", Long.class));
+        produto.setCategoriaId(rs.getObject("categoria_id", Long.class));
         produto.setQuantidadeMinima(rs.getObject("quantidade_minima", Integer.class));
         produto.setValorCompra(rs.getBigDecimal("valor_compra"));
         produto.setValorVenda(rs.getBigDecimal("valor_venda"));
@@ -332,6 +338,9 @@ public class ProdutoRepository {
         Long marcaId = rs.getObject("marca_id", Long.class);
         produto.setMarcaId(marcaId);
         
+        Long categoriaId = rs.getObject("categoria_id", Long.class);
+        produto.setCategoriaId(categoriaId);
+        
         Integer quantidadeMinima = rs.getObject("quantidade_minima", Integer.class);
         produto.setQuantidadeMinima(quantidadeMinima);
         
@@ -360,6 +369,7 @@ public class ProdutoRepository {
         
         produto.setMarcaNome(rs.getString("marca_nome"));
         produto.setUnidadeMedidaNome(rs.getString("unidade_nome"));
+        produto.setCategoriaNome(rs.getString("categoria_nome"));
         
         return produto;
     }

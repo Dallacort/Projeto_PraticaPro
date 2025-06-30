@@ -291,9 +291,6 @@ const FornecedorForm: React.FC = () => {
       () => Validators.validateRequired(formData.condicaoPagamentoId, "Condição de Pagamento"),
       () => Validators.validateRequired(formData.nacionalidadeId, "Nacionalidade"),
       
-      // RG/Inscrição Estadual é obrigatório
-      () => Validators.validateRequired(formData.rgInscricaoEstadual, formData.tipo === 1 ? "RG" : "Inscrição Estadual"),
-      
       // CPF/CNPJ é obrigatório apenas para brasileiros
       () => {
         if (isBrasileiro) {
@@ -662,7 +659,7 @@ const FornecedorForm: React.FC = () => {
                   <input
                     type="text"
                     readOnly
-                    value={cidadeSelecionada ? `${cidadeSelecionada.nome} - ${cidadeSelecionada.estado?.uf}` : 'Selecione...'}
+                    value={cidadeSelecionada ? `${cidadeSelecionada.nome}` : 'Selecione...'}
                     className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
                     placeholder="Selecione..."
                   />
@@ -733,7 +730,6 @@ const FornecedorForm: React.FC = () => {
                 name="rgInscricaoEstadual"
                 value={formData.rgInscricaoEstadual}
                 onChange={handleChange}
-                required
                 maxLength={getRgInscricaoMaxLength()}
                 placeholder={getRgInscricaoPlaceholder()}
               />
@@ -748,8 +744,6 @@ const FornecedorForm: React.FC = () => {
                 maxLength={getCpfCnpjMaxLength()}
                 placeholder={getCpfCnpjPlaceholder()}
               />
-
-
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

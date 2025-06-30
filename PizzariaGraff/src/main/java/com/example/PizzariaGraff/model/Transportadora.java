@@ -24,6 +24,7 @@ public class Transportadora {
     // Relacionamentos
     private Cidade cidade;
     private CondicaoPagamento condicaoPagamento;
+    private java.util.List<Veiculo> veiculos;
 
     // Getters e Setters
     public Long getId() {
@@ -176,5 +177,13 @@ public class Transportadora {
 
     public void setCondicaoPagamento(CondicaoPagamento condicaoPagamento) {
         this.condicaoPagamento = condicaoPagamento;
+    }
+
+    public java.util.List<Veiculo> getVeiculos() {
+        return veiculos;
+    }
+
+    public void setVeiculos(java.util.List<Veiculo> veiculos) {
+        this.veiculos = veiculos;
     }
 } 

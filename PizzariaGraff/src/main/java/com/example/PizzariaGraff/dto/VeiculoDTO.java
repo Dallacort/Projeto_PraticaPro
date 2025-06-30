@@ -11,7 +11,6 @@ public class VeiculoDTO {
     private String marca;
     private Integer ano;
     private BigDecimal capacidade;
-    private Long transportadoraId;
     private Boolean ativo;
     private LocalDateTime dataCadastro;
     private LocalDateTime ultimaModificacao;
@@ -20,14 +19,13 @@ public class VeiculoDTO {
     public VeiculoDTO() {}
 
     public VeiculoDTO(Long id, String placa, String modelo, String marca, Integer ano, 
-                     BigDecimal capacidade, Long transportadoraId, Boolean ativo) {
+                     BigDecimal capacidade, Boolean ativo) {
         this.id = id;
         this.placa = placa;
         this.modelo = modelo;
         this.marca = marca;
         this.ano = ano;
         this.capacidade = capacidade;
-        this.transportadoraId = transportadoraId;
         this.ativo = ativo;
     }
 
@@ -44,7 +42,6 @@ public class VeiculoDTO {
         dto.setMarca(veiculo.getMarca());
         dto.setAno(veiculo.getAno());
         dto.setCapacidade(veiculo.getCapacidade());
-        dto.setTransportadoraId(veiculo.getTransportadoraId());
         dto.setAtivo(veiculo.getAtivo());
         
         // Garantir que as datas nunca sejam nulas
@@ -68,7 +65,6 @@ public class VeiculoDTO {
         veiculo.setMarca(this.marca);
         veiculo.setAno(this.ano);
         veiculo.setCapacidade(this.capacidade);
-        veiculo.setTransportadoraId(this.transportadoraId);
         veiculo.setAtivo(this.ativo);
         veiculo.setDataCadastro(this.dataCadastro);
         veiculo.setUltimaModificacao(this.ultimaModificacao);
@@ -122,14 +118,6 @@ public class VeiculoDTO {
 
     public void setCapacidade(BigDecimal capacidade) {
         this.capacidade = capacidade;
-    }
-
-    public Long getTransportadoraId() {
-        return transportadoraId;
-    }
-
-    public void setTransportadoraId(Long transportadoraId) {
-        this.transportadoraId = transportadoraId;
     }
 
     public Boolean getAtivo() {

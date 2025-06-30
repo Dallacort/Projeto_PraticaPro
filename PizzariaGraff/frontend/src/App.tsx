@@ -54,6 +54,10 @@ import MarcaForm from './pages/marca/MarcaForm';
 import UnidadeMedidaList from './pages/unidade-medida/UnidadeMedidaList';
 import UnidadeMedidaForm from './pages/unidade-medida/UnidadeMedidaForm';
 
+// Páginas de categoria
+import CategoriaList from './pages/categoria/CategoriaList';
+import CategoriaForm from './pages/categoria/CategoriaForm';
+
 // Páginas de veículo
 import VeiculoList from './pages/veiculo/VeiculoList';
 import VeiculoForm from './pages/veiculo/VeiculoForm';
@@ -230,6 +234,12 @@ const App: React.FC = () => {
             <Route path="unidades-medida/:id/visualizar" element={<UnidadeMedidaForm />} />
             <Route path="unidades-medida/:id" element={<UnidadeMedidaForm />} />
             <Route path="unidades-medida" element={<UnidadeMedidaList />} />
+            
+            {/* Rotas para Categorias */}
+            <Route path="categorias/novo" element={<CategoriaForm />} />
+            <Route path="categorias/:id/editar" element={<CategoriaForm />} />
+            <Route path="categorias/:id" element={<CategoriaForm />} />
+            <Route path="categorias" element={<CategoriaList />} />
             
             {/* Rota para página não encontrada (deve ficar por último) */}
             <Route path="*" element={<NotFoundPage />} />

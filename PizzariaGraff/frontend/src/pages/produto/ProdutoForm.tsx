@@ -3,8 +3,9 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import FormField from '../../components/FormField';
 import MarcaModal from '../../components/modals/MarcaModal';
 import UnidadeMedidaModal from '../../components/modals/UnidadeMedidaModal';
+import CategoriaModal from '../../components/modals/CategoriaModal';
 import { getProduto, createProduto, updateProduto } from '../../services/produtoService';
-import { Produto, Marca, UnidadeMedida } from '../../types';
+import { Produto, Marca, UnidadeMedida, Categoria } from '../../types';
 import { FaSpinner, FaSearch } from 'react-icons/fa';
 import { formatDate } from '../../utils/formatters';
 import { toast } from 'react-toastify';
@@ -23,6 +24,7 @@ interface ProdutoFormData {
   quantidadeMinima: number;
   marcaId: string;
   unidadeMedidaId: string;
+  categoriaId: string;
   ativo: boolean;
 }
 
@@ -50,6 +52,7 @@ const ProdutoForm: React.FC = () => {
     quantidadeMinima: 0,
     marcaId: '',
     unidadeMedidaId: '',
+    categoriaId: '',
     ativo: true,
   });
   
@@ -62,8 +65,10 @@ const ProdutoForm: React.FC = () => {
   // Estados para modais e seleções
   const [isMarcaModalOpen, setIsMarcaModalOpen] = useState(false);
   const [isUnidadeMedidaModalOpen, setIsUnidadeMedidaModalOpen] = useState(false);
+  const [isCategoriaModalOpen, setIsCategoriaModalOpen] = useState(false);
   const [marcaSelecionada, setMarcaSelecionada] = useState<Marca | null>(null);
   const [unidadeMedidaSelecionada, setUnidadeMedidaSelecionada] = useState<UnidadeMedida | null>(null);
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState<Categoria | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -91,6 +96,7 @@ const ProdutoForm: React.FC = () => {
             quantidadeMinima: produtoData.quantidadeMinima || 0,
             marcaId: produtoData.marcaId ? String(produtoData.marcaId) : '',
             unidadeMedidaId: produtoData.unidadeMedidaId ? String(produtoData.unidadeMedidaId) : '',
+            categoriaId: produtoData.categoriaId ? String(produtoData.categoriaId) : '',
             ativo: produtoData.ativo !== undefined ? produtoData.ativo : true,
           });
           
@@ -111,6 +117,16 @@ const ProdutoForm: React.FC = () => {
             setUnidadeMedidaSelecionada({
               id: produtoData.unidadeMedidaId!,
               unidadeMedida: produtoData.unidadeMedidaNome,
+              ativo: true
+            });
+          }
+          
+          if (produtoData.categoria) {
+            setCategoriaSelecionada(produtoData.categoria);
+          } else if (produtoData.categoriaNome) {
+            setCategoriaSelecionada({
+              id: produtoData.categoriaId!,
+              categoria: produtoData.categoriaNome,
               ativo: true
             });
           }
@@ -166,6 +182,18 @@ const ProdutoForm: React.FC = () => {
     setIsUnidadeMedidaModalOpen(false);
   };
 
+  const handleOpenCategoriaModal = () => setIsCategoriaModalOpen(true);
+  const handleCloseCategoriaModal = () => setIsCategoriaModalOpen(false);
+
+  const handleCategoriaSelecionada = (categoria: Categoria) => {
+    setCategoriaSelecionada(categoria);
+    setFormData(prev => ({
+      ...prev,
+      categoriaId: String(categoria.id)
+    }));
+    setIsCategoriaModalOpen(false);
+  };
+
   const validateForm = () => {
     const errors: string[] = [];
     
@@ -178,6 +206,9 @@ const ProdutoForm: React.FC = () => {
     }
     if (!formData.unidadeMedidaId || formData.unidadeMedidaId === '') {
       errors.push("Unidade de medida é obrigatória");
+    }
+    if (!formData.categoriaId || formData.categoriaId === '') {
+      errors.push("Categoria é obrigatória");
     }
     if (formData.valorCompra <= 0) {
       errors.push("Valor de compra deve ser maior que zero");
@@ -229,6 +260,7 @@ const ProdutoForm: React.FC = () => {
         quantidadeMinima: formData.quantidadeMinima,
         marcaId: formData.marcaId ? Number(formData.marcaId) : null,
         unidadeMedidaId: formData.unidadeMedidaId ? Number(formData.unidadeMedidaId) : null,
+        categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null,
       };
       
       console.log('Dados sendo enviados para o produto:', produtoDataPayload);
@@ -351,8 +383,8 @@ const ProdutoForm: React.FC = () => {
               />
             </div>
 
-            {/* Segunda linha: Marca, Unidade de Medida, Descrição */}
-            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '1fr 1fr 3fr' }}>
+            {/* Segunda linha: Marca, Unidade de Medida, Categoria, Descrição */}
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '1fr 1fr 1fr 2fr' }}>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Marca <span className="text-red-500">*</span>
@@ -390,6 +422,28 @@ const ProdutoForm: React.FC = () => {
                     type="text"
                     readOnly
                     value={unidadeMedidaSelecionada ? unidadeMedidaSelecionada.unidadeMedida : 'Selecione...'}
+                    className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
+                    placeholder="Selecione..."
+                  />
+                  {!isView && <FaSearch className="text-gray-500" />}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Categoria <span className="text-red-500">*</span>
+                </label>
+                <div 
+                  onClick={!isView ? handleOpenCategoriaModal : undefined}
+                  className={`flex items-center gap-2 p-2 border border-gray-300 rounded-md ${!isView ? 'bg-gray-100 cursor-pointer hover:bg-gray-200' : 'bg-gray-50'} relative`}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && !isView && handleOpenCategoriaModal()}
+                >
+                  <input
+                    type="text"
+                    readOnly
+                    value={categoriaSelecionada ? categoriaSelecionada.categoria : 'Selecione...'}
                     className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
                     placeholder="Selecione..."
                   />
@@ -551,6 +605,12 @@ const ProdutoForm: React.FC = () => {
         isOpen={isUnidadeMedidaModalOpen}
         onClose={handleCloseUnidadeMedidaModal}
         onSelect={handleUnidadeMedidaSelecionada}
+      />
+      
+      <CategoriaModal
+        isOpen={isCategoriaModalOpen}
+        onClose={handleCloseCategoriaModal}
+        onSelect={handleCategoriaSelecionada}
       />
     </div>
   );

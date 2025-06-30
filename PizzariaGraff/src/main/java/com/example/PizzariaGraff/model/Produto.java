@@ -11,6 +11,7 @@ public class Produto {
     private String codigoBarras;         // varchar(255) NOT NULL
     private String referencia;           // varchar(10) NOT NULL
     private Long marcaId;                // bigint(20) - FK para Marca
+    private Long categoriaId;            // bigint(20) - FK para Categoria
     private Integer quantidadeMinima;    // int(11)
     private BigDecimal valorCompra;      // decimal(10,2)
     private BigDecimal valorVenda;       // decimal(10,2)
@@ -27,10 +28,12 @@ public class Produto {
     // Relacionamentos
     private UnidadeMedida unidadeMedida;
     private Marca marca;
+    private Categoria categoria;
     
     // Nomes dos relacionamentos para DTO
     private String marcaNome;
     private String unidadeMedidaNome;
+    private String categoriaNome;
 
     // Constructors
     public Produto() {}
@@ -91,6 +94,14 @@ public class Produto {
 
     public void setMarcaId(Long marcaId) {
         this.marcaId = marcaId;
+    }
+
+    public Long getCategoriaId() {
+        return categoriaId;
+    }
+
+    public void setCategoriaId(Long categoriaId) {
+        this.categoriaId = categoriaId;
     }
 
     public Integer getQuantidadeMinima() {
@@ -189,6 +200,14 @@ public class Produto {
         this.marca = marca;
     }
 
+    public Categoria getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(Categoria categoria) {
+        this.categoria = categoria;
+    }
+
     public String getMarcaNome() {
         return marcaNome;
     }
@@ -203,6 +222,14 @@ public class Produto {
 
     public void setUnidadeMedidaNome(String unidadeMedidaNome) {
         this.unidadeMedidaNome = unidadeMedidaNome;
+    }
+
+    public String getCategoriaNome() {
+        return categoriaNome;
+    }
+
+    public void setCategoriaNome(String categoriaNome) {
+        this.categoriaNome = categoriaNome;
     }
 
     @Override

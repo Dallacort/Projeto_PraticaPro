@@ -10,7 +10,6 @@ public class Veiculo {
     private String marca;
     private Integer ano;
     private BigDecimal capacidade;
-    private Long transportadoraId;
     private Boolean ativo = true;
     private LocalDateTime dataCadastro;
     private LocalDateTime ultimaModificacao;
@@ -19,13 +18,12 @@ public class Veiculo {
     public Veiculo() {}
 
     public Veiculo(String placa, String modelo, String marca, Integer ano, 
-                   BigDecimal capacidade, Long transportadoraId, Boolean ativo) {
+                   BigDecimal capacidade, Boolean ativo) {
         this.placa = placa;
         this.modelo = modelo;
         this.marca = marca;
         this.ano = ano;
         this.capacidade = capacidade;
-        this.transportadoraId = transportadoraId;
         this.ativo = ativo;
     }
 
@@ -76,14 +74,6 @@ public class Veiculo {
 
     public void setCapacidade(BigDecimal capacidade) {
         this.capacidade = capacidade;
-    }
-
-    public Long getTransportadoraId() {
-        return transportadoraId;
-    }
-
-    public void setTransportadoraId(Long transportadoraId) {
-        this.transportadoraId = transportadoraId;
     }
 
     public Boolean getAtivo() {

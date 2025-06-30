@@ -1,74 +1,64 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
-import { getVeiculos, deleteVeiculo } from '../../services/veiculoService';
-import { getTransportadoras } from '../../services/transportadoraService';
-import { Transportadora, Veiculo } from '../../types';
+import { getCategorias, deleteCategoria } from '../../services/categoriaService';
+import { Categoria } from '../../types';
+import { toast } from 'react-toastify';
 
-const VeiculoList: React.FC = () => {
-  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
-  const [transportadoras, setTransportadoras] = useState<Map<number, Transportadora>>(new Map());
+const CategoriaList: React.FC = () => {
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const fetchVeiculos = useCallback(async () => {
+  const loadCategorias = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const [veiculosData, transportadorasData] = await Promise.all([
-        getVeiculos(),
-        getTransportadoras(),
-      ]);
-
-      setVeiculos(veiculosData);
-      
-      const transportadorasMap = new Map<number, Transportadora>();
-      transportadorasData.forEach(t => transportadorasMap.set(t.id, t));
-      setTransportadoras(transportadorasMap);
-
+      const data = await getCategorias();
+      setCategorias(data);
     } catch (err) {
-      console.error('Erro ao buscar dados:', err);
-      setError('Não foi possível carregar a lista de veículos. Tente novamente mais tarde.');
+      setError('Erro ao carregar categorias');
+      console.error('Erro ao carregar categorias:', err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    console.log('VeiculoList montado ou location alterada, carregando veículos...');
-    fetchVeiculos();
-  }, [fetchVeiculos, location.key]);
+    loadCategorias();
+  }, [loadCategorias]);
+
+  const handleView = (id: string | number) => {
+    navigate(`/categorias/${id}`);
+  };
 
   const handleEdit = (id: string | number) => {
-    navigate(`/veiculos/${id}`);
+    navigate(`/categorias/${id}/editar`);
   };
 
   const handleCreate = () => {
-    console.log('Redirecionando para criar novo veículo');
-    navigate('/veiculos/novo');
+    navigate('/categorias/novo');
   };
 
   const handleDelete = async (id: string | number) => {
-    if (window.confirm('Tem certeza que deseja excluir este veículo?')) {
+    if (window.confirm('Tem certeza que deseja excluir esta categoria?')) {
       try {
         const numericId = Number(id);
         setDeleteLoading(numericId);
-        await deleteVeiculo(numericId);
-        setVeiculos(veiculos.filter(v => v.id !== numericId));
-        alert('Veículo excluído com sucesso!');
+        await deleteCategoria(numericId);
+        toast.success('Categoria excluída com sucesso!');
+        setCategorias(categorias.filter(c => c.id !== numericId));
       } catch (err) {
-        console.error('Erro ao excluir veículo:', err);
-        alert('Erro ao excluir veículo. Verifique se não há registros dependentes.');
+        toast.error('Erro ao excluir categoria. Verifique se não há produtos vinculados.');
+        console.error('Erro ao excluir categoria:', err);
       } finally {
         setDeleteLoading(null);
       }
     }
   };
-  
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';
     try {
@@ -81,50 +71,34 @@ const VeiculoList: React.FC = () => {
 
   const columns = [
     { header: 'ID', accessor: 'id' },
-    { header: 'Placa', accessor: 'placa' },
-    { header: 'Modelo', accessor: 'modelo' },
-    { header: 'Marca', accessor: 'marca' },
     { 
-      header: 'Transportadora', 
-      accessor: 'transportadoraId',
-      cell: (item: Veiculo) => {
-        const transportadora = transportadoras.get(item.transportadoraId);
-        if (!transportadora) {
-          return <div>Não definida</div>;
-        }
-        
-        return (
-          <div>
-            <Link 
-              to={`/transportadoras/${transportadora.id}`}
-              className="text-blue-600 hover:underline"
-            >
-              {transportadora.transportadora || transportadora.apelido}
-            </Link>
-          </div>
-        );
-      }
+      header: 'Categoria', 
+      accessor: 'categoria',
     },
     { 
-      header: 'Status', 
+      header: 'Data Criação', 
+      accessor: 'dataCriacao',
+      cell: (item: Categoria) => formatDate(item.dataCriacao)
+    },
+    {
+      header: 'Status',
       accessor: 'ativo',
-      cell: (item: Veiculo) => (
+      cell: (item: Categoria) => (
         <span className={`px-2 py-1 rounded text-xs ${item.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
           {item.ativo ? 'Ativo' : 'Inativo'}
         </span>
       )
-    },
-    
+    }
   ];
 
   if (error) {
     return (
       <div className="px-4 py-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Veículos</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">Categorias</h1>
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           <p>{error}</p>
           <button 
-            onClick={fetchVeiculos}
+            onClick={loadCategorias}
             className="mt-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
           >
             Tentar novamente
@@ -137,7 +111,7 @@ const VeiculoList: React.FC = () => {
   return (
     <div className="px-4 py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Veículos</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Categorias</h1>
         <div className="flex space-x-2">
           <button
             onClick={handleCreate}
@@ -146,14 +120,14 @@ const VeiculoList: React.FC = () => {
             <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            Novo Veículo
+            Nova Categoria
           </button>
         </div>
       </div>
       
-      {veiculos.length === 0 && !loading ? (
+      {categorias.length === 0 && !loading ? (
         <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <p className="text-gray-500 mb-4">Nenhum veículo cadastrado ainda.</p>
+          <p className="text-gray-500 mb-4">Nenhuma categoria cadastrada ainda.</p>
           <button
             onClick={handleCreate}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center"
@@ -161,21 +135,22 @@ const VeiculoList: React.FC = () => {
             <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            Cadastrar Primeiro Veículo
+            Cadastrar Primeira Categoria
           </button>
         </div>
       ) : (
         <DataTable
           columns={columns}
-          data={veiculos}
+          data={categorias}
           loading={loading}
+          onView={handleView}
           onEdit={handleEdit}
           onDelete={deleteLoading === null ? handleDelete : undefined}
-          emptyMessage="Nenhum veículo cadastrado"
+          emptyMessage="Nenhuma categoria cadastrada"
         />
       )}
     </div>
   );
 };
 
-export default VeiculoList; 
+export default CategoriaList; 
