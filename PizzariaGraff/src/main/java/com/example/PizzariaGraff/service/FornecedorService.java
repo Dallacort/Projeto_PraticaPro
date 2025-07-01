@@ -103,11 +103,6 @@ public class FornecedorService {
             throw new RuntimeException("A nacionalidade é obrigatória");
         }
         
-        if (fornecedor.getRgInscricaoEstadual() == null || fornecedor.getRgInscricaoEstadual().trim().isEmpty()) {
-            String campo = fornecedor.getTipo() == 1 ? "RG" : "Inscrição Estadual";
-            throw new RuntimeException("O " + campo + " é obrigatório");
-        }
-        
         // CPF/CNPJ é obrigatório apenas para brasileiros (nacionalidadeId = 1)
         if (fornecedor.getNacionalidadeId() != null && fornecedor.getNacionalidadeId() == 1) {
             if (fornecedor.getCpfCnpj() == null || fornecedor.getCpfCnpj().trim().isEmpty()) {

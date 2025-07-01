@@ -8,6 +8,7 @@ import CidadeModal from '../../components/modals/CidadeModal';
 import CondicaoPagamentoModal from '../../components/modals/CondicaoPagamentoModal';
 import TelefonesModal from '../../components/modals/TelefonesModal';
 import EmailsModal from '../../components/modals/EmailsModal';
+import VeiculosModal from '../../components/modals/VeiculosModal';
 import { formatDate } from '../../utils/formatters';
 import { Validators } from '../../utils/validators';
 import CondicaoPagamentoService from '../../services/condicaoPagamentoService';
@@ -31,6 +32,7 @@ interface TransportadoraFormData {
   cidadeId: string;
   condicaoPagamentoId: string;
   ativo: boolean;
+  veiculoIds: number[];
 }
 
 const TransportadoraForm: React.FC = () => {
@@ -59,6 +61,7 @@ const TransportadoraForm: React.FC = () => {
     cidadeId: '',
     condicaoPagamentoId: '',
     ativo: true,
+    veiculoIds: [],
   });
   
   const [loading, setLoading] = useState(false);
@@ -72,6 +75,7 @@ const TransportadoraForm: React.FC = () => {
   const [isCondicaoPagamentoModalOpen, setIsCondicaoPagamentoModalOpen] = useState(false);
   const [isTelefonesModalOpen, setIsTelefonesModalOpen] = useState(false);
   const [isEmailsModalOpen, setIsEmailsModalOpen] = useState(false);
+  const [isVeiculosModalOpen, setIsVeiculosModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -107,6 +111,7 @@ const TransportadoraForm: React.FC = () => {
             cidadeId: transportadoraData.cidade?.id ? String(transportadoraData.cidade.id) : '',
             condicaoPagamentoId: String(transportadoraData.condicaoPagamentoId || ''),
             ativo: transportadoraData.ativo !== undefined ? transportadoraData.ativo : true,
+            veiculoIds: transportadoraData.veiculos?.map(v => v.id!) || [],
           });
           
           if (transportadoraData.cidade) {
@@ -210,6 +215,7 @@ const TransportadoraForm: React.FC = () => {
         telefonesAdicionais: getTodosTelefones(),
         emailsAdicionais: getTodosEmails(),
         cidade: cidadeSelecionada,
+        veiculoIds: formData.veiculoIds,
       };
 
       if (isNew) {
@@ -243,6 +249,12 @@ const TransportadoraForm: React.FC = () => {
     setIsCondicaoPagamentoModalOpen(false);
   };
   
+  const handleOpenVeiculosModal = () => setIsVeiculosModalOpen(true);
+  const handleCloseVeiculosModal = () => setIsVeiculosModalOpen(false);
+  const handleConfirmVeiculos = (selectedIds: number[]) => {
+    setFormData(prev => ({ ...prev, veiculoIds: selectedIds }));
+  };
+
   const getCpfCnpjLabel = () => formData.tipo === 1 ? 'CPF' : 'CNPJ';
   const getRgInscricaoLabel = () => formData.tipo === 1 ? 'RG' : 'Inscrição Estadual';
   
@@ -323,13 +335,20 @@ const TransportadoraForm: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '150px 180px 1fr' }}>
+            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '150px 180px 1fr 1fr' }}>
               <FormField key={`rg-${forceRender}`} label={getRgInscricaoLabel()} name="rgIe" value={formData.rgIe} onChange={handleChange} maxLength={14} />
               <FormField key={`cpf-${forceRender}`} label={getCpfCnpjLabel()} name="cpfCnpj" value={formData.cpfCnpj} onChange={handleChange} required maxLength={18} />
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Condição de Pagamento</label>
                 <div onClick={handleOpenCondicaoPagamentoModal} className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200">
                   <input type="text" readOnly value={condicaoPagamentoSelecionada ? condicaoPagamentoSelecionada.condicaoPagamento : 'Selecione...'} className="flex-grow bg-transparent outline-none cursor-pointer text-sm" />
+                  <FaSearch className="text-gray-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Veículos</label>
+                <div onClick={handleOpenVeiculosModal} className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200">
+                  <input type="text" readOnly value={`${formData.veiculoIds.length} veículo(s) selecionado(s)`} className="flex-grow bg-transparent outline-none cursor-pointer text-sm" />
                   <FaSearch className="text-gray-500" />
                 </div>
               </div>
@@ -359,8 +378,19 @@ const TransportadoraForm: React.FC = () => {
 
       <CidadeModal isOpen={isCidadeModalOpen} onClose={handleCloseCidadeModal} onSelect={handleSelectCidade} />
       <CondicaoPagamentoModal isOpen={isCondicaoPagamentoModalOpen} onClose={handleCloseCondicaoPagamentoModal} onSelect={handleSelectCondicaoPagamento} />
-      <TelefonesModal isOpen={isTelefonesModalOpen} onClose={() => setIsTelefonesModalOpen(false)} telefones={getTodosTelefones()} onSave={handleTelefonesAdicionais} />
-      <EmailsModal isOpen={isEmailsModalOpen} onClose={() => setIsEmailsModalOpen(false)} emails={getTodosEmails()} onSave={handleEmailsAdicionais} />
+      <TelefonesModal isOpen={isTelefonesModalOpen} onClose={() => setIsTelefonesModalOpen(false)} onSave={handleTelefonesAdicionais} telefones={getTodosTelefones()} />
+      <EmailsModal
+        isOpen={isEmailsModalOpen}
+        onClose={() => setIsEmailsModalOpen(false)}
+        onSave={handleEmailsAdicionais}
+        emails={getTodosEmails()}
+      />
+      <VeiculosModal
+        isOpen={isVeiculosModalOpen}
+        onClose={handleCloseVeiculosModal}
+        onConfirm={handleConfirmVeiculos}
+        initialSelectedIds={formData.veiculoIds}
+      />
     </div>
   );
 };

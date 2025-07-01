@@ -270,8 +270,6 @@ const ClienteForm: React.FC = () => {
       () => Validators.validateRequired(formData.tipo.toString(), "Tipo"),
       () => Validators.validateRequired(formData.limiteCredito.toString(), "Limite de Crédito"),
       () => Validators.validateRequired(formData.condicaoPagamentoId, "Condição de Pagamento"),
-      // RG/Inscrição Estadual é obrigatório
-      () => Validators.validateRequired(formData.rgInscricaoEstadual, formData.tipo === 1 ? "RG" : "Inscrição Estadual"),
       // CPF/CNPJ é obrigatório e validado apenas para brasileiros
       () => {
         if (isBrasileiro) {

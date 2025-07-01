@@ -40,6 +40,17 @@ const adaptProdutoFromApi = (produto: any): Produto => {
       dataCadastro: produto.unidadeMedida.dataCadastro || null,
       ultimaModificacao: produto.unidadeMedida.ultimaModificacao || null
     } : null,
+    categoriaId: produto.categoriaId || null,
+    categoriaNome: produto.categoriaNome || '',
+    categoria: produto.categoria ? {
+      id: produto.categoria.id || produto.categoriaId,
+      categoria: produto.categoria.categoria || produto.categoriaNome || '',
+      ativo: produto.categoria.ativo !== undefined ? produto.categoria.ativo : true,
+      dataCriacao: produto.categoria.dataCriacao || null,
+      dataAlteracao: produto.categoria.dataAlteracao || null,
+      dataCadastro: produto.categoria.dataCadastro || null,
+      ultimaModificacao: produto.categoria.ultimaModificacao || null
+    } : null,
 
     ativo: produto.ativo !== undefined ? produto.ativo : true, // Usar valor real da API
     dataCriacao: produto.dataCriacao || null,
@@ -71,6 +82,7 @@ const adaptProdutoToApi = (produto: Omit<Produto, 'id' | 'dataCriacao' | 'dataAl
   // Conversão mais tolerante de IDs
   let marcaId = null;
   let unidadeMedidaId = null;
+  let categoriaId = null;
   
   if (produto.marcaId && String(produto.marcaId).trim() !== '' && String(produto.marcaId) !== '0') {
     marcaId = Number(produto.marcaId);
@@ -78,6 +90,10 @@ const adaptProdutoToApi = (produto: Omit<Produto, 'id' | 'dataCriacao' | 'dataAl
   
   if (produto.unidadeMedidaId && String(produto.unidadeMedidaId).trim() !== '' && String(produto.unidadeMedidaId) !== '0') {
     unidadeMedidaId = Number(produto.unidadeMedidaId);
+  }
+
+  if (produto.categoriaId && String(produto.categoriaId).trim() !== '' && String(produto.categoriaId) !== '0') {
+    categoriaId = Number(produto.categoriaId);
   }
   
   const dataPayload = {
@@ -93,6 +109,7 @@ const adaptProdutoToApi = (produto: Omit<Produto, 'id' | 'dataCriacao' | 'dataAl
     quantidadeMinima: produto.quantidadeMinima || produto.estoqueMinimo || 0,
     marcaId: marcaId,
     unidadeMedidaId: unidadeMedidaId,
+    categoriaId: categoriaId,
 
     ativo: produto.ativo !== undefined ? produto.ativo : true
   };
@@ -106,6 +123,7 @@ const adaptProdutoToApi = (produto: Omit<Produto, 'id' | 'dataCriacao' | 'dataAl
   console.log('- observacoes:', observacoes);
   console.log('- marcaId:', marcaId);
   console.log('- unidadeMedidaId:', unidadeMedidaId);
+  console.log('- categoriaId:', categoriaId);
 
   
   return dataPayload;

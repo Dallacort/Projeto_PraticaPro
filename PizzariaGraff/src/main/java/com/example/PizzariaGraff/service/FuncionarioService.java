@@ -122,11 +122,6 @@ public class FuncionarioService {
             throw new RuntimeException("O tipo (Pessoa Física/Jurídica) é obrigatório");
         }
         
-        if (funcionario.getRgInscricaoEstadual() == null || funcionario.getRgInscricaoEstadual().trim().isEmpty()) {
-            String campo = funcionario.getTipo() == 1 ? "RG" : "Inscrição Estadual";
-            throw new RuntimeException("O " + campo + " é obrigatório");
-        }
-        
         if (funcionario.getObservacao() == null || funcionario.getObservacao().trim().isEmpty()) {
             throw new RuntimeException("A observação é obrigatória");
         }

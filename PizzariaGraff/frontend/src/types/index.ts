@@ -257,6 +257,7 @@ export interface Transportadora {
   ativo: boolean;
   nome?: string;
   veiculos?: any[];
+  veiculoIds?: number[];
   itens?: any[];
   emailsAdicionais?: string[];
   telefonesAdicionais?: string[];

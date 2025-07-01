@@ -2,10 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import FormField from '../../components/FormField';
 import { getVeiculo, createVeiculo, updateVeiculo } from '../../services/veiculoService';
-import { getTransportadoras } from '../../services/transportadoraService';
-import { Veiculo, Transportadora } from '../../types';
-import { FaSpinner, FaSearch } from 'react-icons/fa';
-import TransportadoraModal from '../../components/modals/TransportadoraModal';
+import { Veiculo } from '../../types';
+import { FaSpinner } from 'react-icons/fa';
 import { formatDate } from '../../utils/formatters';
 
 interface VeiculoFormData {
@@ -14,7 +12,6 @@ interface VeiculoFormData {
   marca: string;
   ano: string;
   capacidade: number;
-  transportadoraId: string;
   ativo: boolean;
 }
 
@@ -31,7 +28,6 @@ const VeiculoForm: React.FC = () => {
     marca: '',
     ano: '',
     capacidade: 0,
-    transportadoraId: '',
     ativo: true,
   });
   
@@ -40,8 +36,6 @@ const VeiculoForm: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [ultimaModificacao, setUltimaModificacao] = useState<string | undefined>(undefined);
   const [dataCadastro, setDataCadastro] = useState<string | undefined>(undefined);
-  const [transportadoraSelecionada, setTransportadoraSelecionada] = useState<Transportadora | null>(null);
-  const [isTransportadoraModalOpen, setIsTransportadoraModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,22 +55,8 @@ const VeiculoForm: React.FC = () => {
             marca: veiculoData.marca || '',
             ano: String(veiculoData.ano || ''),
             capacidade: Number(veiculoData.capacidade) || 0,
-            transportadoraId: String(veiculoData.transportadoraId || ''),
             ativo: veiculoData.ativo !== undefined ? veiculoData.ativo : true,
           });
-          
-          // Carregar transportadora selecionada
-          if (veiculoData.transportadoraId) {
-            try {
-              const transportadoras = await getTransportadoras();
-              const transportadora = transportadoras.find(t => t.id === veiculoData.transportadoraId);
-              if (transportadora) {
-                setTransportadoraSelecionada(transportadora);
-              }
-            } catch (error) {
-              console.error('Erro ao carregar transportadora:', error);
-            }
-          }
           
           setUltimaModificacao(veiculoData.ultimaModificacao);
           setDataCadastro(veiculoData.dataCadastro);
@@ -120,10 +100,6 @@ const VeiculoForm: React.FC = () => {
       errors.push('Marca é obrigatória');
     }
 
-    if (!formData.transportadoraId) {
-      errors.push('Transportadora é obrigatória');
-    }
-
     return errors;
   };
 
@@ -142,7 +118,6 @@ const VeiculoForm: React.FC = () => {
 
       const veiculoData = {
         ...formData,
-        transportadoraId: Number(formData.transportadoraId),
       };
 
       if (isNew) {
@@ -158,14 +133,6 @@ const VeiculoForm: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleOpenTransportadoraModal = () => setIsTransportadoraModalOpen(true);
-  const handleCloseTransportadoraModal = () => setIsTransportadoraModalOpen(false);
-  const handleSelectTransportadora = (transportadora: Transportadora) => {
-    setTransportadoraSelecionada(transportadora);
-    setFormData(prev => ({ ...prev, transportadoraId: String(transportadora.id) }));
-    setIsTransportadoraModalOpen(false);
   };
 
   if (loading) {
@@ -261,55 +228,27 @@ const VeiculoForm: React.FC = () => {
               <FormField
                 label="Ano"
                 name="ano"
+                type="number"
                 value={formData.ano}
                 onChange={handleChange}
-                maxLength={4}
-                placeholder="2024"
+                placeholder="Ex: 2023"
               />
 
               <FormField
                 label="Capacidade (kg)"
                 name="capacidade"
                 type="number"
-                value={String(formData.capacidade)}
+                value={formData.capacidade}
                 onChange={handleChange}
-                placeholder="5000"
+                placeholder="Ex: 10000"
               />
-            </div>
-
-            {/* Terceira linha: Transportadora */}
-            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '1fr' }}>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Transportadora <span className="text-red-500">*</span>
-                </label>
-                <div 
-                  onClick={handleOpenTransportadoraModal} 
-                  className="flex items-center gap-2 p-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 relative"
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && handleOpenTransportadoraModal()}
-                >
-                  <input
-                    type="text"
-                    readOnly
-                    value={transportadoraSelecionada ? transportadoraSelecionada.transportadora : 'Selecione...'}
-                    className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
-                    placeholder="Selecione..."
-                  />
-                  <FaSearch className="text-gray-500" />
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Rodapé do formulário com informações de registro e botões */}
         <div className="flex justify-between items-end pt-6 border-t mt-6">
-          {/* Informações do Registro (sempre que existirem datas) */}
           {(dataCadastro || ultimaModificacao) && (
             <div className="text-sm text-gray-600">
-              <h3 className="font-semibold text-gray-700 mb-1">Informações do Registro:</h3>
               {dataCadastro && (
                 <p>
                   Cadastrado em: {formatDate(dataCadastro)}
@@ -322,26 +261,24 @@ const VeiculoForm: React.FC = () => {
               )}
             </div>
           )}
-
-          {/* Botões de Ação - Sempre à direita */}
           <div className="flex gap-3 ml-auto">
             <button
               type="button"
               onClick={() => navigate('/veiculos')}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none"
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={saving}
-              className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50`}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               {saving ? (
-                <span className="inline-flex items-center">
+                <>
                   <FaSpinner className="animate-spin mr-2" />
                   Salvando...
-                </span>
+                </>
               ) : (
                 'Salvar'
               )}
@@ -349,12 +286,6 @@ const VeiculoForm: React.FC = () => {
           </div>
         </div>
       </form>
-
-      <TransportadoraModal
-        isOpen={isTransportadoraModalOpen}
-        onClose={handleCloseTransportadoraModal}
-        onSelect={handleSelectTransportadora}
-      />
     </div>
   );
 };

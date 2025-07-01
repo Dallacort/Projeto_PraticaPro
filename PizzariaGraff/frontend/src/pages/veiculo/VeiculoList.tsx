@@ -85,27 +85,6 @@ const VeiculoList: React.FC = () => {
     { header: 'Modelo', accessor: 'modelo' },
     { header: 'Marca', accessor: 'marca' },
     { 
-      header: 'Transportadora', 
-      accessor: 'transportadoraId',
-      cell: (item: Veiculo) => {
-        const transportadora = transportadoras.get(item.transportadoraId);
-        if (!transportadora) {
-          return <div>Não definida</div>;
-        }
-        
-        return (
-          <div>
-            <Link 
-              to={`/transportadoras/${transportadora.id}`}
-              className="text-blue-600 hover:underline"
-            >
-              {transportadora.transportadora || transportadora.apelido}
-            </Link>
-          </div>
-        );
-      }
-    },
-    { 
       header: 'Status', 
       accessor: 'ativo',
       cell: (item: Veiculo) => (

@@ -31,6 +31,8 @@ export const adaptTransportadoraFromApi = (transportadora: any): Transportadora 
     razaoSocial: transportadora.transportadora || transportadora.razaoSocial,
     nomeFantasia: transportadora.apelido || transportadora.nomeFantasia,
     cnpj: transportadora.cpfCnpj || transportadora.cnpj,
+    veiculos: transportadora.veiculos || [],
+    veiculoIds: transportadora.veiculoIds || (transportadora.veiculos || []).map((v: any) => v.id),
   };
   
   return result;
@@ -56,6 +58,7 @@ export const adaptTransportadoraToApi = (transportadora: Partial<Transportadora>
     tipo: transportadora.tipo,
     emailsAdicionais: transportadora.emailsAdicionais,
     telefonesAdicionais: transportadora.telefonesAdicionais,
+    veiculoIds: transportadora.veiculoIds,
   };
 };
 
