@@ -192,6 +192,7 @@ const App: React.FC = () => {
             
             {/* Rotas para Produtos */}
             <Route path="produtos/novo" element={<ProdutoForm />} />
+            <Route path="produtos/:id/visualizar" element={<ProdutoForm />} />
             <Route path="produtos/:id" element={<ProdutoForm />} />
             <Route path="produtos" element={<ProdutoList />} />
             

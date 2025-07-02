@@ -166,16 +166,28 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
     } else if (name === 'formaPagamentoPadraoId') {
       newValue = value === '' ? null : parseInt(value, 10);
     } else if (name.includes('percentual')) {
-      // Permitir digitar a vírgula mantendo o valor anterior
-      if (value === '' || value === ',') {
+      // Permitir apenas números, vírgula e ponto
+      const validInput = /^[0-9,.]$/.test(value[value.length - 1] || '');
+      const hasOneDecimalSeparator = (value.match(/[,.]/g) || []).length <= 1;
+      
+      if (value === '') {
         newValue = 0;
-      } else {
-        // Converter vírgula para ponto e tratar como número decimal
+      } else if (validInput && hasOneDecimalSeparator) {
+        // Manter o valor como string durante a edição
+        newValue = value;
+        
+        // Se for um número válido, verificar os limites
         const processedValue = value.replace(',', '.');
-        // Se for um número válido, usa ele, senão mantém o valor anterior
-        const currentValue = formData[name as keyof typeof formData] as number;
-        const floatValue = !isNaN(parseFloat(processedValue)) ? parseFloat(processedValue) : currentValue;
-        newValue = Math.max(0, Math.min(100, floatValue)); // Limitar entre 0 e 100
+        if (!isNaN(parseFloat(processedValue))) {
+          const floatValue = parseFloat(processedValue);
+          if (floatValue < 0 || floatValue > 100) {
+            // Se estiver fora dos limites, manter o valor anterior
+            newValue = formData[name as keyof typeof formData];
+          }
+        }
+      } else {
+        // Se não for um input válido, manter o valor anterior
+        newValue = formData[name as keyof typeof formData];
       }
     } else {
       newValue = value;
@@ -262,15 +274,28 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
       const parcela = { ...parcelas[index] };
 
       if (field === 'percentual') {
-        // Permitir digitar a vírgula mantendo o valor anterior
-        if (value === '' || value === ',') {
+        // Permitir apenas números, vírgula e ponto
+        const validInput = /^[0-9,.]$/.test(value[value.length - 1] || '');
+        const hasOneDecimalSeparator = (value.match(/[,.]/g) || []).length <= 1;
+        
+        if (value === '') {
           parcela.percentual = 0;
-        } else {
-          // Converter vírgula para ponto e tratar como número decimal
+        } else if (validInput && hasOneDecimalSeparator) {
+          // Manter o valor como string durante a edição
+          parcela.percentual = value;
+          
+          // Se for um número válido, verificar os limites
           const processedValue = value.replace(',', '.');
-          // Se for um número válido, usa ele, senão mantém o valor anterior
-          const floatValue = !isNaN(parseFloat(processedValue)) ? parseFloat(processedValue) : parcela.percentual;
-          parcela.percentual = Math.max(0, Math.min(100, floatValue));
+          if (!isNaN(parseFloat(processedValue))) {
+            const floatValue = parseFloat(processedValue);
+            if (floatValue < 0 || floatValue > 100) {
+              // Se estiver fora dos limites, manter o valor anterior
+              parcela.percentual = formData.parcelas[index].percentual;
+            }
+          }
+        } else {
+          // Se não for um input válido, manter o valor anterior
+          parcela.percentual = formData.parcelas[index].percentual;
         }
       } else if (field === 'numero') {
         parcela.numero = parseInt(value) || 1;
@@ -453,8 +478,9 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
       });
       
       // Verificar se o total é exatamente 100%
-      if (Math.abs(totalPercent - 100) > 0.01) {
-        errors.parcelas = `A soma dos percentuais das parcelas deve ser 100%. Atual: ${totalPercent.toFixed(2)}%`;
+      const totalPercentFormatted = Number(totalPercent.toFixed(2));
+      if (Math.abs(totalPercentFormatted - 100) > 0.01) {
+        errors.parcelas = `A soma dos percentuais das parcelas deve ser 100%. Atual: ${totalPercentFormatted}%`;
       }
       
       // Verificar se o número de parcelas configuradas bate com o número informado
@@ -496,13 +522,25 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
     setSaving(true);
     
     try {
+      // Formatar os números com 2 casas decimais antes de enviar
+      const formattedData = {
+        ...formData,
+        percentualJuros: Number(Number(formData.percentualJuros).toFixed(2)),
+        percentualMulta: Number(Number(formData.percentualMulta).toFixed(2)),
+        percentualDesconto: Number(Number(formData.percentualDesconto).toFixed(2)),
+        parcelas: formData.parcelas.map(parcela => ({
+          ...parcela,
+          percentual: Number(Number(parcela.percentual).toFixed(2))
+        }))
+      };
+
       if (id && id !== 'novo') {
         // Atualizar condição existente
-        await CondicaoPagamentoService.update(Number(id), formData);
+        await CondicaoPagamentoService.update(Number(id), formattedData);
         toast.success('Condição de pagamento atualizada com sucesso!');
       } else {
         // Criar nova condição
-        await CondicaoPagamentoService.create(formData);
+        await CondicaoPagamentoService.create(formattedData);
         toast.success('Condição de pagamento criada com sucesso!');
       }
       
@@ -729,7 +767,7 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   name="percentualJuros"
                   label="Percentual de Juros (%)"
                   type="text"
-                  value={formData.percentualJuros.toString().replace('.', ',')}
+                  value={typeof formData.percentualJuros === 'string' ? formData.percentualJuros : String(formData.percentualJuros).replace('.', ',')}
                   onChange={handleChange}
                   error={errors.percentualJuros}
                   disabled={isViewMode}
@@ -741,7 +779,7 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   name="percentualMulta"
                   label="Percentual de Multa (%)"
                   type="text"
-                  value={formData.percentualMulta.toString().replace('.', ',')}
+                  value={typeof formData.percentualMulta === 'string' ? formData.percentualMulta : String(formData.percentualMulta).replace('.', ',')}
                   onChange={handleChange}
                   error={errors.percentualMulta}
                   disabled={isViewMode}
@@ -753,7 +791,7 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   name="percentualDesconto"
                   label="Percentual de Desconto (%)"
                   type="text"
-                  value={formData.percentualDesconto.toString().replace('.', ',')}
+                  value={typeof formData.percentualDesconto === 'string' ? formData.percentualDesconto : String(formData.percentualDesconto).replace('.', ',')}
                   onChange={handleChange}
                   error={errors.percentualDesconto}
                   disabled={isViewMode}
@@ -867,7 +905,7 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <input
                               type="text"
-                              value={parcela.percentual.toString().replace('.', ',')}
+                              value={typeof parcela.percentual === 'string' ? parcela.percentual : String(parcela.percentual).replace('.', ',')}
                               onChange={(e) => handleParcelaChange(index, 'percentual', e.target.value)}
                               className="block w-24 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                               disabled={isViewMode}
