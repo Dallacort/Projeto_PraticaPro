@@ -1,15 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
-import { getFuncionarios, deleteFuncionario } from '../../services/funcionarioService';
+import { getFuncionarios, deleteFuncionario, getFuncionario } from '../../services/funcionarioService';
 import { Funcionario } from '../../types';
 import { FaPlus } from 'react-icons/fa';
+import FuncionarioViewModal from '../../components/modals/FuncionarioViewModal';
 
 const FuncionarioList: React.FC = () => {
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+  const [selectedFuncionario, setSelectedFuncionario] = useState<Funcionario | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -30,6 +33,17 @@ const FuncionarioList: React.FC = () => {
   useEffect(() => {
     fetchFuncionarios();
   }, [fetchFuncionarios, location.key]);
+
+  const handleView = async (id: string | number) => {
+    try {
+      const funcionario = await getFuncionario(Number(id));
+      setSelectedFuncionario(funcionario);
+      setIsViewModalOpen(true);
+    } catch (error) {
+      console.error('Erro ao carregar funcionário:', error);
+      alert('Erro ao carregar dados do funcionário');
+    }
+  };
 
   const handleEdit = (id: string | number) => {
     navigate(`/funcionarios/${id}`);
@@ -156,12 +170,19 @@ const FuncionarioList: React.FC = () => {
           columns={columns}
           data={funcionarios}
           loading={loading}
+          onView={handleView}
           onEdit={handleEdit}
           onDelete={deleteLoading === null ? handleDelete : undefined}
           emptyMessage="Nenhum funcionário cadastrado"
         />
       )}
       </div>
+
+      <FuncionarioViewModal
+        funcionario={selectedFuncionario}
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+      />
     </div>
   );
 };

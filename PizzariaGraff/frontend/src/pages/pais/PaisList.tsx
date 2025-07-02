@@ -1,20 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
-import { getPaises, deletePais, getPais } from '../../services/paisService';
+import { getPaises, deletePais } from '../../services/paisService';
 import { Pais } from '../../types';
 import { toast } from 'react-toastify';
 import { formatDate } from '../../utils/formatters';
-import PaisViewModal from '../../components/modals/PaisViewModal';
 
 const PaisList: React.FC = () => {
   const [paises, setPaises] = useState<Pais[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<{ [key: string]: boolean }>({});
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalLoading, setModalLoading] = useState(false);
-  const [selectedPais, setSelectedPais] = useState<Pais | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -39,20 +35,6 @@ const PaisList: React.FC = () => {
     console.log('PaisList montado ou location alterada, carregando países...');
     fetchPaises();
   }, [fetchPaises, location.key]);
-
-  const handleView = async (id: string | number) => {
-    try {
-      setModalLoading(true);
-      const paisData = await getPais(Number(id));
-      setSelectedPais(paisData);
-      setModalOpen(true);
-    } catch (error) {
-      console.error('Erro ao carregar país:', error);
-      toast.error('Erro ao carregar dados do país');
-    } finally {
-      setModalLoading(false);
-    }
-  };
 
   const handleEdit = (id: string | number) => {
     navigate(`/paises/${id}`);
@@ -80,11 +62,6 @@ const PaisList: React.FC = () => {
     }
   };
 
-  const closeModal = () => {
-    setModalOpen(false);
-    setSelectedPais(null);
-  };
-
   const columns = [
     { header: 'ID', accessor: 'id' },
     { header: 'País', accessor: 'nome' },
@@ -100,7 +77,6 @@ const PaisList: React.FC = () => {
         </span>
       )
     },
-    
   ];
 
   return (
@@ -129,21 +105,12 @@ const PaisList: React.FC = () => {
           columns={columns}
           data={paises}
           loading={loading}
-          onView={handleView}
           onEdit={handleEdit}
           onDelete={handleDelete}
           emptyMessage="Nenhum país cadastrado"
           title="Lista de Países"
         />
       </div>
-
-      {/* Modal de visualização */}
-      <PaisViewModal
-        isOpen={modalOpen}
-        onClose={closeModal}
-        pais={selectedPais}
-        loading={modalLoading}
-      />
     </div>
   );
 };

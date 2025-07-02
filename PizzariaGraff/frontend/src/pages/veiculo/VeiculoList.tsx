@@ -84,6 +84,8 @@ const VeiculoList: React.FC = () => {
     { header: 'Placa', accessor: 'placa' },
     { header: 'Modelo', accessor: 'modelo' },
     { header: 'Marca', accessor: 'marca' },
+    { header: 'Ano', accessor: 'ano' },
+    { header: 'Capacidade', accessor: 'capacidade' },
     { 
       header: 'Status', 
       accessor: 'ativo',

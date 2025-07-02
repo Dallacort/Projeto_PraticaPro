@@ -36,7 +36,6 @@ import FuncaoFuncionarioForm from './pages/funcao-funcionario/FuncaoFuncionarioF
 // Páginas de fornecedor
 import FornecedorList from './pages/fornecedor/FornecedorList';
 import FornecedorForm from './pages/fornecedor/FornecedorForm';
-import FornecedorView from './pages/fornecedor/FornecedorView';
 
 // Páginas de transportadora
 import TransportadoraList from './pages/transportadora/TransportadoraList';
@@ -173,7 +172,6 @@ const App: React.FC = () => {
             
             {/* Rotas para Fornecedores */}
             <Route path="fornecedores/novo" element={<FornecedorForm />} />
-            <Route path="fornecedores/:id/visualizar" element={<FornecedorView />} />
             <Route path="fornecedores/:id" element={<FornecedorForm />} />
             <Route path="fornecedores" element={<FornecedorList />} />
             
@@ -194,7 +192,6 @@ const App: React.FC = () => {
             
             {/* Rotas para Produtos */}
             <Route path="produtos/novo" element={<ProdutoForm />} />
-            <Route path="produtos/:id/visualizar" element={<ProdutoForm />} />
             <Route path="produtos/:id" element={<ProdutoForm />} />
             <Route path="produtos" element={<ProdutoList />} />
             

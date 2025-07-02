@@ -33,10 +33,6 @@ const MarcaList: React.FC = () => {
     fetchMarcas();
   }, [fetchMarcas, location.key]);
 
-  const handleView = (id: string | number) => {
-    navigate(`/marcas/${id}/visualizar`);
-  };
-
   const handleEdit = (id: string | number) => {
     navigate(`/marcas/${id}`);
   };
@@ -83,7 +79,6 @@ const MarcaList: React.FC = () => {
       )
     },
     
-
     { 
       header: 'Data Criação', 
       accessor: 'dataCriacao',
@@ -153,7 +148,6 @@ const MarcaList: React.FC = () => {
           columns={columns}
           data={marcas}
           loading={loading}
-          onView={handleView}
           onEdit={handleEdit}
           onDelete={deleteLoading === null ? handleDelete : undefined}
           emptyMessage="Nenhuma marca cadastrada"

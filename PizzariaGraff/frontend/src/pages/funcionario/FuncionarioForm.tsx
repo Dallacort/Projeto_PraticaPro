@@ -173,43 +173,45 @@ const FuncionarioForm: React.FC = () => {
     const checked = (e.target as HTMLInputElement).checked;
     
     let newData = {
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value,
+      ...formData
     };
 
-    // Tratamento especial para select "tipo" - limpar campos quando mudar
-    if (name === 'tipo') {
+    if (type === 'checkbox') {
+      newData[name] = checked;
+    } else if (name === 'dataNascimento') {
+      // Validar se a data não é futura
+      const dataInformada = new Date(value);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0); // Zerar horas para comparar apenas as datas
+      
+      if (dataInformada > hoje) {
+        // Se for data futura, manter a data anterior
+        return;
+      }
+      newData[name] = value;
+    } else if (name === 'tipo') {
       // Limpar campos CPF/CNPJ e RG/Inscrição Estadual quando tipo mudar
-      newData.cpfCpnj = '';
-      newData.rgInscricaoEstadual = '';
+      newData = {
+        ...newData,
+        [name]: value,
+        cpfCpnj: '',
+        rgInscricaoEstadual: ''
+      };
       // Forçar re-renderização
       setForceRender(prev => prev + 1);
-    }
-
-    // Tratamento especial para CPF/CNPJ
-    if (name === 'cpfCpnj') {
+    } else if (name === 'cpfCpnj') {
       const cleanValue = value.replace(/[^\d]/g, '');
       const maxLength = newData.tipo === '1' ? 11 : 14;
       
       if (cleanValue.length <= maxLength) {
-        newData.cpfCpnj = cleanValue;
+        newData[name] = cleanValue;
       } else {
-        newData.cpfCpnj = cleanValue.substring(0, maxLength);
+        newData[name] = cleanValue.substring(0, maxLength);
       }
+    } else {
+      newData[name] = value;
     }
 
-    // Tratamento especial para RG/Inscrição Estadual
-    if (name === 'rgInscricaoEstadual') {
-      const cleanValue = value.replace(/[^\d]/g, '');
-      const maxLength = newData.tipo === '1' ? 12 : 14;
-      
-      if (cleanValue.length <= maxLength) {
-        newData.rgInscricaoEstadual = cleanValue;
-      } else {
-        newData.rgInscricaoEstadual = cleanValue.substring(0, maxLength);
-      }
-    }
-    
     setFormData(newData);
   };
 
@@ -241,79 +243,87 @@ const FuncionarioForm: React.FC = () => {
   };
 
   const validateForm = () => {
-    const errors: string[] = [];
-    
+    const errors: Record<string, string> = {};
+
+    // Validar data de nascimento
+    if (formData.dataNascimento) {
+      const dataInformada = new Date(formData.dataNascimento);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0); // Zerar horas para comparar apenas as datas
+      
+      if (dataInformada > hoje) {
+        errors.dataNascimento = 'A data de nascimento não pode ser uma data futura';
+      }
+    }
+
     // Campos obrigatórios
     if (!formData.funcionario?.trim()) {
-      errors.push("Nome do funcionário é obrigatório");
+      errors.funcionario = "Nome do funcionário é obrigatório";
     }
     if (!formData.email?.trim()) {
-      errors.push("Email é obrigatório");
+      errors.email = "Email é obrigatório";
     }
     if (!formData.telefone?.trim()) {
-      errors.push("Telefone é obrigatório");
+      errors.telefone = "Telefone é obrigatório";
     }
     if (!formData.endereco?.trim()) {
-      errors.push("Endereço é obrigatório");
+      errors.endereco = "Endereço é obrigatório";
     }
     if (!formData.numero?.trim()) {
-      errors.push("Número é obrigatório");
+      errors.numero = "Número é obrigatório";
     }
     if (!formData.bairro?.trim()) {
-      errors.push("Bairro é obrigatório");
+      errors.bairro = "Bairro é obrigatório";
     }
     if (!formData.cep?.trim()) {
-      errors.push("CEP é obrigatório");
+      errors.cep = "CEP é obrigatório";
     }
     if (!formData.sexo?.trim()) {
-      errors.push("Sexo é obrigatório");
+      errors.sexo = "Sexo é obrigatório";
     }
     if (!formData.estadoCivil?.trim()) {
-      errors.push("Estado civil é obrigatório");
+      errors.estadoCivil = "Estado civil é obrigatório";
     }
     if (!formData.salario?.trim()) {
-      errors.push("Salário é obrigatório");
-    }
-    if (!formData.dataNascimento?.trim()) {
-      errors.push("Data de nascimento é obrigatória");
+      errors.salario = "Salário é obrigatório";
     }
     if (!formData.dataAdmissao?.trim()) {
-      errors.push("Data de admissão é obrigatória");
+      errors.dataAdmissao = "Data de admissão é obrigatória";
     }
     if (!cidadeSelecionada || !formData.cidadeId) {
-      errors.push("Cidade é obrigatória");
+      errors.cidadeId = "Cidade é obrigatória";
     }
     if (!funcaoSelecionada || !formData.funcaoFuncionarioId) {
-      errors.push("Função é obrigatória");
+      errors.funcaoFuncionarioId = "Função é obrigatória";
     }
     if (!nacionalidadeSelecionada || !formData.nacionalidadeId) {
-      errors.push("Nacionalidade é obrigatória");
+      errors.nacionalidadeId = "Nacionalidade é obrigatória";
     }
     if (!formData.tipo?.trim()) {
-      errors.push("Tipo (Pessoa Física/Jurídica) é obrigatório");
+      errors.tipo = "Tipo (Pessoa Física/Jurídica) é obrigatório";
     }
     
     // CPF/CNPJ é obrigatório apenas para brasileiros (nacionalidadeId = 1)
     const isBrasileiro = nacionalidadeSelecionada?.id === 1;
     if (isBrasileiro && !formData.cpfCpnj?.trim()) {
       const documento = formData.tipo === '1' ? "CPF" : "CNPJ";
-      errors.push(`${documento} é obrigatório para funcionários brasileiros`);
+      errors.cpfCpnj = `${documento} é obrigatório para funcionários brasileiros`;
     }
     
     // Validação condicional CNH: obrigatório se a função requer CNH
     const funcaoRequerCNH = funcaoSelecionada?.requerCNH === true;
     if (funcaoRequerCNH) {
       if (!formData.cnh?.trim()) {
-        errors.push("CNH é obrigatória para esta função");
+        errors.cnh = "CNH é obrigatória para esta função";
       }
       if (!formData.dataValidadeCnh?.trim()) {
-        errors.push("Validade da CNH é obrigatória para esta função");
+        errors.dataValidadeCnh = "Validade da CNH é obrigatória para esta função";
       }
     }
     
     // Validação de formato de email
     if (formData.email && !formData.email.includes('@')) {
-      errors.push("Email deve ter formato válido");
+      errors.email = "Email deve ter formato válido";
     }
     
     // Campos opcionais: apelido, complemento, dataDemissao
@@ -325,8 +335,8 @@ const FuncionarioForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validationErrors = validateForm();
-    if (validationErrors.length > 0) {
-      setError(validationErrors.join(". "));
+    if (Object.keys(validationErrors).length > 0) {
+      setError(Object.values(validationErrors).join(". "));
       return;
     }
 

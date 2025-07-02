@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
-import { getCidades, deleteCidade, getCidade } from '../../services/cidadeService';
+import { getCidades, deleteCidade } from '../../services/cidadeService';
 import { Cidade } from '../../types';
-import { FaEye, FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import CidadeViewModal from '../../components/modals/CidadeViewModal';
 
 const CidadeList: React.FC = () => {
   const [cidades, setCidades] = useState<Cidade[]>([]);
@@ -14,10 +13,6 @@ const CidadeList: React.FC = () => {
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
-
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [selectedCidadeView, setSelectedCidadeView] = useState<Cidade | null>(null);
-  const [viewModalLoading, setViewModalLoading] = useState(false);
 
   const fetchCidades = useCallback(async () => {
     try {
@@ -37,26 +32,6 @@ const CidadeList: React.FC = () => {
   useEffect(() => {
     fetchCidades();
   }, [fetchCidades, location.key]);
-
-  const handleView = async (id: string | number) => {
-    setViewModalLoading(true);
-    setIsViewModalOpen(true);
-    try {
-      const cidadeData = await getCidade(Number(id));
-      setSelectedCidadeView(cidadeData);
-    } catch (err) {
-      console.error('Erro ao buscar cidade para visualização:', err);
-      toast.error('Erro ao carregar detalhes da cidade.');
-      setIsViewModalOpen(false);
-    } finally {
-      setViewModalLoading(false);
-    }
-  };
-
-  const closeViewModal = () => {
-    setIsViewModalOpen(false);
-    setSelectedCidadeView(null);
-  };
 
   const handleEdit = (id: string | number) => {
     navigate(`/cidades/${id}`);
@@ -170,20 +145,12 @@ const CidadeList: React.FC = () => {
             columns={columns}
             data={cidades}
             loading={loading}
-            onView={handleView}
             onEdit={handleEdit}
             onDelete={deleteLoading === null ? handleDelete : undefined}
             emptyMessage="Nenhuma cidade encontrada."
           />
         )}
       </div>
-
-      <CidadeViewModal 
-        isOpen={isViewModalOpen}
-        onClose={closeViewModal}
-        cidade={selectedCidadeView}
-        loading={viewModalLoading}
-      />
     </div>
   );
 };

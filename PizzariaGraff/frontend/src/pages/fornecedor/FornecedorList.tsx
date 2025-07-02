@@ -1,15 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
-import { getFornecedores, deleteFornecedor } from '../../services/fornecedorService';
+import { getFornecedores, deleteFornecedor, getFornecedor } from '../../services/fornecedorService';
 import { Fornecedor } from '../../types';
 import { FaPlus } from 'react-icons/fa';
+import FornecedorViewModal from '../../components/modals/FornecedorViewModal';
 
 const FornecedorList: React.FC = () => {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+  const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewLoading, setViewLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,8 +35,23 @@ const FornecedorList: React.FC = () => {
     fetchFornecedores();
   }, [fetchFornecedores, location.key]);
 
-  const handleView = (id: string | number) => {
-    navigate(`/fornecedores/${id}/visualizar`);
+  const handleView = async (id: string | number) => {
+    try {
+      setViewLoading(true);
+      const fornecedor = await getFornecedor(Number(id));
+      setSelectedFornecedor(fornecedor);
+      setIsViewModalOpen(true);
+    } catch (error) {
+      console.error('Erro ao carregar fornecedor:', error);
+      alert('Erro ao carregar os dados do fornecedor');
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
+  const handleCloseViewModal = () => {
+    setIsViewModalOpen(false);
+    setSelectedFornecedor(null);
   };
 
   const handleEdit = (id: string | number) => {
@@ -69,13 +88,7 @@ const FornecedorList: React.FC = () => {
         <span>{item.fornecedor || item.razaoSocial}</span>
       )
     },
-    { 
-      header: 'CPF/CNPJ', 
-      accessor: 'cpfCnpj',
-      cell: (item: Fornecedor) => (
-        <span>{item.cpfCnpj || item.cnpj || 'N/A'}</span>
-      )
-    },
+    
     { header: 'Telefone', accessor: 'telefone' },
     { header: 'E-mail', accessor: 'email' },
     { 
@@ -91,7 +104,6 @@ const FornecedorList: React.FC = () => {
         </div>
       )
     },
-
     {
       header: 'Status',
       accessor: 'ativo',
@@ -157,6 +169,13 @@ const FornecedorList: React.FC = () => {
           />
         )}
       </div>
+
+      <FornecedorViewModal
+        isOpen={isViewModalOpen}
+        onClose={handleCloseViewModal}
+        fornecedor={selectedFornecedor}
+        loading={viewLoading}
+      />
     </div>
   );
 };

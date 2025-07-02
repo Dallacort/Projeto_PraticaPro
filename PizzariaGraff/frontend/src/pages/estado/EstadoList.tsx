@@ -2,20 +2,16 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
 import EntityLink from '../../components/EntityLink';
-import { getEstados, deleteEstado, getEstado } from '../../services/estadoService';
+import { getEstados, deleteEstado } from '../../services/estadoService';
 import { Estado } from '../../types';
 import { toast } from 'react-toastify';
 import { formatDate } from '../../utils/formatters';
-import EstadoViewModal from '../../components/modals/EstadoViewModal';
 
 const EstadoList: React.FC = () => {
   const [estados, setEstados] = useState<Estado[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<{ [key: string]: boolean }>({});
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalLoading, setModalLoading] = useState(false);
-  const [selectedEstado, setSelectedEstado] = useState<Estado | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -54,21 +50,6 @@ const EstadoList: React.FC = () => {
     fetchEstados();
   }, [fetchEstados, location.key]);
 
-  const handleView = async (id: string | number) => {
-    setModalLoading(true);
-    setModalOpen(true);
-    try {
-      const estado = await getEstado(Number(id));
-      setSelectedEstado(estado);
-    } catch (error) {
-      console.error('Erro ao carregar estado:', error);
-      toast.error('Erro ao carregar detalhes do estado');
-      setModalOpen(false);
-    } finally {
-      setModalLoading(false);
-    }
-  };
-
   const handleEdit = (id: string | number) => {
     navigate(`/estados/${id}`);
   };
@@ -92,11 +73,6 @@ const EstadoList: React.FC = () => {
 
   const handleCreate = () => {
     navigate('/estados/novo');
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    setSelectedEstado(null);
   };
 
   const columns = [
@@ -127,7 +103,6 @@ const EstadoList: React.FC = () => {
         </span>
       )
     },
-  
   ];
 
   return (
@@ -156,21 +131,12 @@ const EstadoList: React.FC = () => {
           columns={columns}
           data={estados}
           loading={loading}
-          onView={handleView}
           onEdit={handleEdit}
           onDelete={handleDelete}
           emptyMessage="Nenhum estado cadastrado"
           title="Lista de Estados"
         />
       </div>
-
-      {/* Modal de visualização */}
-      <EstadoViewModal
-        isOpen={modalOpen}
-        onClose={closeModal}
-        estado={selectedEstado}
-        loading={modalLoading}
-      />
     </div>
   );
 };

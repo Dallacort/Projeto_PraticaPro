@@ -33,10 +33,6 @@ const UnidadeMedidaList: React.FC = () => {
     fetchUnidadesMedida();
   }, [fetchUnidadesMedida, location.key]);
 
-  const handleView = (id: string | number) => {
-    navigate(`/unidades-medida/${id}/visualizar`);
-  };
-
   const handleEdit = (id: string | number) => {
     navigate(`/unidades-medida/${id}`);
   };
@@ -151,7 +147,6 @@ const UnidadeMedidaList: React.FC = () => {
           columns={columns}
           data={unidadesMedida}
           loading={loading}
-          onView={handleView}
           onEdit={handleEdit}
           onDelete={deleteLoading === null ? handleDelete : undefined}
           emptyMessage="Nenhuma unidade de medida cadastrada"

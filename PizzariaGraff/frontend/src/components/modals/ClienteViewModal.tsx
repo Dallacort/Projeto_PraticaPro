@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Cliente } from '../../types';
 import ViewModal from './ViewModal';
+import { getNacionalidades } from '../../services/nacionalidadeService';
+import CondicaoPagamentoService from '../../services/condicaoPagamentoService';
+import { getCidade } from '../../services/cidadeService';
 
 interface ClienteViewModalProps {
   isOpen: boolean;
@@ -19,6 +22,42 @@ const ClienteViewModal: React.FC<ClienteViewModalProps> = ({
   cliente,
   loading = false
 }) => {
+  const [nacionalidadeNome, setNacionalidadeNome] = useState<string>('');
+  const [condicaoPagamentoNome, setCondicaoPagamentoNome] = useState<string>('');
+  const [cidadeNome, setCidadeNome] = useState<string>('');
+
+  useEffect(() => {
+    const carregarDadosRelacionados = async () => {
+      if (cliente) {
+        try {
+          // Carregar nacionalidade
+          if (cliente.nacionalidadeId) {
+            const nacionalidades = await getNacionalidades();
+            const nacionalidade = nacionalidades.find(n => n.id === cliente.nacionalidadeId);
+            setNacionalidadeNome(nacionalidade?.nome || 'N/A');
+          }
+
+          // Carregar condição de pagamento
+          if (cliente.condicaoPagamentoId) {
+            const condicoes = await CondicaoPagamentoService.list();
+            const condicao = condicoes.find(c => c.id === cliente.condicaoPagamentoId);
+            setCondicaoPagamentoNome(condicao?.condicaoPagamento || 'N/A');
+          }
+
+          // Carregar cidade
+          if (cliente.cidadeId) {
+            const cidade = await getCidade(cliente.cidadeId);
+            setCidadeNome(cidade ? `${cidade.nome} - ${cidade.estado.uf}` : 'N/A');
+          }
+        } catch (error) {
+          console.error('Erro ao carregar dados relacionados:', error);
+        }
+      }
+    };
+
+    carregarDadosRelacionados();
+  }, [cliente]);
+
   const renderField = (label: string, value: any, required: boolean = false) => (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -53,7 +92,7 @@ const ClienteViewModal: React.FC<ClienteViewModalProps> = ({
           {/* Primeira linha */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {renderField('Código', cliente.id)}
-            {renderField('Tipo', cliente.tipo, true)}
+            {renderField('Tipo', cliente.tipo === 1 ? 'Pessoa Física' : 'Pessoa Jurídica', true)}
             {renderField('Cliente', cliente.nome, true)}
             {renderField('Apelido', cliente.apelido)}
             {renderField('Estado Civil', cliente.estadoCivil)}
@@ -66,7 +105,7 @@ const ClienteViewModal: React.FC<ClienteViewModalProps> = ({
             {renderField('Complemento', cliente.complemento)}
             {renderField('Bairro', cliente.bairro)}
             {renderField('CEP', cliente.cep)}
-            {renderField('Cidade', cliente.cidadeId, true)}
+            {renderField('Cidade', cidadeNome, true)}
           </div>
 
           {/* Terceira linha */}
@@ -75,15 +114,15 @@ const ClienteViewModal: React.FC<ClienteViewModalProps> = ({
             {renderField('Email', cliente.email)}
             {renderField('Sexo', cliente.sexo)}
             {renderField('Data Nascimento', cliente.dataNascimento)}
-            {renderField('Nacionalidade', cliente.nacionalidadeId)}
+            {renderField('Nacionalidade', nacionalidadeNome)}
           </div>
 
           {/* Quarta linha */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {renderField('RG/Inscrição Estadual', cliente.rgInscricaoEstadual)}
             {renderField('CPF/CNPJ', cliente.cpfCnpj)}
-            {renderField('Limite de Crédito', cliente.limiteCredito, true)}
-            {renderField('Condição de Pagamento', cliente.condicaoPagamentoId, true)}
+            {renderField('Limite de Crédito', cliente.limiteCredito ? `R$ ${Number(cliente.limiteCredito).toFixed(2)}` : 'R$ 0,00', true)}
+            {renderField('Condição de Pagamento', condicaoPagamentoNome, true)}
           </div>
 
           {/* Observação */}

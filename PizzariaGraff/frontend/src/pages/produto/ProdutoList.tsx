@@ -1,14 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
 import { getProdutos, deleteProduto } from '../../services/produtoService';
-import { Fornecedor, Produto } from '../../types';
+import { Produto } from '../../types';
+import ProdutoViewModal from '../../components/modals/ProdutoViewModal';
 
 const ProdutoList: React.FC = () => {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+  const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,7 +37,11 @@ const ProdutoList: React.FC = () => {
   }, [fetchProdutos, location.key]);
 
   const handleView = (id: string | number) => {
-    navigate(`/produtos/${id}/visualizar`);
+    const produto = produtos.find(p => p.id === Number(id));
+    if (produto) {
+      setSelectedProduto(produto);
+      setIsViewModalOpen(true);
+    }
   };
 
   const handleEdit = (id: string | number) => {
@@ -87,14 +94,7 @@ const ProdutoList: React.FC = () => {
         <div>{item.produto || item.nome}</div>
       )
     },
-    { 
-      header: 'Código/Referência', 
-      accessor: 'codigoBarras',
-      cell: (item: Produto) => {
-        const codigo = item.codigoBarras || item.codigo || item.referencia;
-        return <div className="text-sm">{codigo || '-'}</div>;
-      }
-    },
+
     { 
       header: 'Marca', 
       accessor: 'marcaNome',
@@ -198,6 +198,12 @@ const ProdutoList: React.FC = () => {
           emptyMessage="Nenhum produto cadastrado"
         />
       )}
+
+      <ProdutoViewModal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        produto={selectedProduto}
+      />
     </div>
   );
 };

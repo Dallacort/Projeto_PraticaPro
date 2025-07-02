@@ -152,10 +152,25 @@ const ProdutoForm: React.FC = () => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     
-    setFormData(prev => ({
-      ...prev,
+    let newFormData = {
+      ...formData,
       [name]: type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value),
-    }));
+    };
+
+    // Se o valor alterado for de compra ou venda, recalcula o lucro
+    if (name === 'valorCompra' || name === 'valorVenda') {
+      const valorCompra = name === 'valorCompra' ? Number(value) : formData.valorCompra;
+      const valorVenda = name === 'valorVenda' ? Number(value) : formData.valorVenda;
+      
+      if (valorCompra > 0) {
+        const lucro = ((valorVenda - valorCompra) / valorCompra) * 100;
+        newFormData.percentualLucro = Number(lucro.toFixed(2));
+      } else {
+        newFormData.percentualLucro = 0;
+      }
+    }
+    
+    setFormData(newFormData);
   };
 
   const handleOpenMarcaModal = () => setIsMarcaModalOpen(true);
@@ -210,24 +225,49 @@ const ProdutoForm: React.FC = () => {
     if (!formData.categoriaId || formData.categoriaId === '') {
       errors.push("Categoria é obrigatória");
     }
+
+    // Validação de tamanho dos campos de texto
+    if (formData.produto?.length > 50) {
+      errors.push("Nome do produto não pode ter mais que 50 caracteres");
+    }
+    if (formData.codigoBarras?.length > 50) {
+      errors.push("Código de barras não pode ter mais que 50 caracteres");
+    }
+    if (formData.referencia?.length > 50) {
+      errors.push("Referência não pode ter mais que 50 caracteres");
+    }
+    if (formData.descricao?.length > 50) {
+      errors.push("Descrição não pode ter mais que 50 caracteres");
+    }
+    if (formData.observacoes?.length > 50) {
+      errors.push("Observações não podem ter mais que 50 caracteres");
+    }
+
+    // Validação de valores numéricos
     if (formData.valorCompra <= 0) {
       errors.push("Valor de compra deve ser maior que zero");
+    }
+    if (formData.valorCompra > 99999999) {
+      errors.push("Valor de compra não pode ser maior que 99.999.999");
     }
     if (formData.valorVenda <= 0) {
       errors.push("Valor de venda deve ser maior que zero");
     }
-    if (formData.percentualLucro < 0) {
-      errors.push("Percentual de lucro não pode ser negativo");
+    if (formData.valorVenda > 99999999) {
+      errors.push("Valor de venda não pode ser maior que 99.999.999");
     }
     if (formData.quantidade < 0) {
       errors.push("Quantidade não pode ser negativa");
     }
+    if (formData.quantidade > 99999999) {
+      errors.push("Quantidade não pode ser maior que 99.999.999");
+    }
     if (formData.quantidadeMinima < 0) {
       errors.push("Quantidade mínima não pode ser negativa");
     }
-    
-    // Campos opcionais: codigoBarras, referencia, descricao, observacoes
-    // Não precisam de validação de obrigatoriedade
+    if (formData.quantidadeMinima > 99999999) {
+      errors.push("Quantidade mínima não pode ser maior que 99.999.999");
+    }
     
     return errors;
   };
@@ -358,7 +398,7 @@ const ProdutoForm: React.FC = () => {
                 onChange={handleChange}
                 required
                 disabled={isView}
-                maxLength={100}
+                maxLength={50}
                 placeholder="Ex: Refrigerante Coca-Cola 350ml"
               />
 
@@ -457,7 +497,7 @@ const ProdutoForm: React.FC = () => {
                 value={formData.descricao}
                 onChange={handleChange}
                 disabled={isView}
-                maxLength={255}
+                maxLength={50}
                 placeholder="Descrição do produto"
               />
             </div>
@@ -472,7 +512,7 @@ const ProdutoForm: React.FC = () => {
                 value={formData.valorCompra}
                 onChange={handleChange}
                 required
-                maxLength={8}
+                max={99999999}
                 disabled={isView}
                 placeholder="0,00"
               />
@@ -485,7 +525,7 @@ const ProdutoForm: React.FC = () => {
                 value={formData.valorVenda}
                 onChange={handleChange}
                 required
-                maxLength={8}
+                max={99999999}
                 disabled={isView}
                 placeholder="0,00"
               />
@@ -496,9 +536,9 @@ const ProdutoForm: React.FC = () => {
                 type="number"
                 step="0.01"
                 value={formData.percentualLucro}
-                onChange={handleChange}
-                required
-                disabled={isView}
+                onChange={() => {}}
+                disabled={true}
+                max={99999999}
                 placeholder="0,00"
               />
 
@@ -506,42 +546,40 @@ const ProdutoForm: React.FC = () => {
                 label="Quantidade"
                 name="quantidade"
                 type="number"
+                step="1"
                 value={formData.quantidade}
                 onChange={handleChange}
                 required
-                maxLength={8}
+                max={99999999}
                 disabled={isView}
                 placeholder="0"
               />
 
               <FormField
-                label="Qtd. Mínima"
+                label="Quantidade Mínima"
                 name="quantidadeMinima"
                 type="number"
+                step="1"
                 value={formData.quantidadeMinima}
                 onChange={handleChange}
                 required
-                maxLength={8}
+                max={99999999}
                 disabled={isView}
                 placeholder="0"
               />
             </div>
 
-            {/* Quarta linha: Observações */}
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
-                <textarea
-                  name="observacoes"
-                  value={formData.observacoes}
-                  onChange={handleChange}
-                  disabled={isView}
-                  maxLength={500}
-                  placeholder="Observações sobre o produto..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  rows={3}
-                />
-              </div>
+            {/* Observações */}
+            <div className="mt-4">
+              <FormField
+                label="Observações"
+                name="observacoes"
+                value={formData.observacoes}
+                onChange={handleChange}
+                disabled={isView}
+                maxLength={250}
+                placeholder="Observações adicionais"
+              />
             </div>
           </div>
         </div>

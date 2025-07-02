@@ -14,6 +14,8 @@ export interface FormFieldProps {
   disabled?: boolean;
   step?: string;
   maxLength?: number;
+  max?: number;
+  min?: number;
 }
 
 const FormField: React.FC<FormFieldProps> = ({
@@ -29,8 +31,37 @@ const FormField: React.FC<FormFieldProps> = ({
   displayKey = 'nome',
   disabled = false,
   step,
-  maxLength
+  maxLength,
+  max,
+  min
 }) => {
+  // Função para limitar o número de dígitos em campos numéricos
+  const handleNumberInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    // Se o campo for numérico e tiver um valor
+    if (type === 'number' && value !== '') {
+      const numValue = Number(value);
+      
+      // Se o valor exceder o máximo permitido, ajusta para o valor máximo
+      if (max && numValue > max) {
+        e.target.value = String(max);
+      }
+      
+      // Se o valor for menor que o mínimo permitido, ajusta para o valor mínimo
+      if (min !== undefined && numValue < min) {
+        e.target.value = String(min);
+      }
+      
+      // Limita a 8 dígitos
+      if (value.length > 8) {
+        e.target.value = value.slice(0, 8);
+      }
+    }
+    
+    onChange(e);
+  };
+
   return (
     <div className="mb-4">
       {label && (
@@ -76,15 +107,29 @@ const FormField: React.FC<FormFieldProps> = ({
           type={type}
           name={name}
           value={value}
-          onChange={onChange}
+          onChange={type === 'number' ? handleNumberInput : onChange}
           disabled={disabled}
           placeholder={placeholder}
           maxLength={maxLength}
+          max={max}
+          min={min}
           className={`w-full px-3 py-2 h-10 border rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm ${
             error ? 'border-red-500' : 'border-gray-300'
           }`}
           required={required}
           step={step}
+          onKeyPress={(e) => {
+            if (type === 'number') {
+              // Previne a entrada de 'e', '+', '-' em campos numéricos
+              if (!/[\d.]/.test(e.key)) {
+                e.preventDefault();
+              }
+              // Previne múltiplos pontos decimais
+              if (e.key === '.' && (e.target as HTMLInputElement).value.includes('.')) {
+                e.preventDefault();
+              }
+            }
+          }}
         />
       )}
       

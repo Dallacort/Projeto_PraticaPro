@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Fornecedor } from '../../types';
 import ViewModal from './ViewModal';
+import { getNacionalidades } from '../../services/nacionalidadeService';
+import { getTransportadoras } from '../../services/transportadoraService';
+import CondicaoPagamentoService from '../../services/condicaoPagamentoService';
 
 interface FornecedorViewModalProps {
   isOpen: boolean;
@@ -19,6 +22,54 @@ const FornecedorViewModal: React.FC<FornecedorViewModalProps> = ({
   fornecedor,
   loading = false
 }) => {
+  const [nacionalidadeNome, setNacionalidadeNome] = useState<string>('');
+  const [transportadoraNome, setTransportadoraNome] = useState<string>('');
+  const [condicaoPagamentoNome, setCondicaoPagamentoNome] = useState<string>('');
+
+  useEffect(() => {
+    const carregarDadosRelacionados = async () => {
+      if (fornecedor) {
+        try {
+          // Carregar nacionalidade
+          if (fornecedor.nacionalidadeId) {
+            const nacionalidades = await getNacionalidades();
+            const nacionalidade = nacionalidades.find(n => n.id === fornecedor.nacionalidadeId);
+            setNacionalidadeNome(nacionalidade?.nome || 'N/A');
+          }
+
+          // Carregar transportadora
+          if (fornecedor.transportadoraId) {
+            const transportadoras = await getTransportadoras();
+            const transportadora = transportadoras.find(t => t.id === fornecedor.transportadoraId);
+            setTransportadoraNome(transportadora?.razaoSocial || transportadora?.nome || 'N/A');
+          }
+
+          // Carregar condição de pagamento
+          if (fornecedor.condicaoPagamentoId) {
+            const condicoes = await CondicaoPagamentoService.list();
+            const condicao = condicoes.find(c => c.id === fornecedor.condicaoPagamentoId);
+            setCondicaoPagamentoNome(condicao?.condicaoPagamento || 'N/A');
+          }
+        } catch (error) {
+          console.error('Erro ao carregar dados relacionados:', error);
+        }
+      }
+    };
+
+    carregarDadosRelacionados();
+  }, [fornecedor]);
+
+  const renderField = (label: string, value: any, required: boolean = false) => (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <div className="p-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm">
+        {value || 'N/A'}
+      </div>
+    </div>
+  );
+
   return (
     <ViewModal
       isOpen={isOpen}
@@ -27,142 +78,70 @@ const FornecedorViewModal: React.FC<FornecedorViewModalProps> = ({
       loading={loading}
     >
       {fornecedor ? (
-        <div className="space-y-6">
-          {/* Dados básicos */}
-          <div className="border-b pb-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Dados Básicos</h3>
-              {fornecedor.ativo !== undefined && (
-                <span className={`px-2 py-1 rounded text-xs ${fornecedor.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {fornecedor.ativo ? 'Ativo' : 'Inativo'}
-                </span>
-              )}
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">ID</p>
-                <p className="font-semibold">{fornecedor.id}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Fornecedor</p>
-                <p className="font-semibold">{fornecedor.fornecedor || fornecedor.razaoSocial}</p>
-              </div>
-              {(fornecedor.apelido || fornecedor.nomeFantasia) && (
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Apelido</p>
-                  <p className="font-semibold">{fornecedor.apelido || fornecedor.nomeFantasia}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-sm font-medium text-gray-500">CPF/CNPJ</p>
-                <p className="font-semibold">{fornecedor.cpfCnpj || fornecedor.cnpj || 'N/A'}</p>
-              </div>
-              {fornecedor.rgInscricaoEstadual && (
-                <div>
-                  <p className="text-sm font-medium text-gray-500">RG/Inscrição Estadual</p>
-                  <p className="font-semibold">{fornecedor.rgInscricaoEstadual}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-sm font-medium text-gray-500">Email</p>
-                <p className="font-semibold">{fornecedor.email || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Telefone</p>
-                <p className="font-semibold">{fornecedor.telefone || 'N/A'}</p>
-              </div>
-
-              {fornecedor.tipo && (
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Tipo de Fornecedor</p>
-                  <p className="font-semibold">{fornecedor.tipo === 1 ? 'Pessoa Física' : 'Pessoa Jurídica'}</p>
-                </div>
-              )}
-              {fornecedor.limiteCredito !== undefined && (
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Limite de Crédito</p>
-                  <p className="font-semibold">R$ {Number(fornecedor.limiteCredito).toFixed(2)}</p>
-                </div>
-              )}
-
+        <div className="space-y-4">
+          {/* Cabeçalho com status de ativo */}
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-800">Dados do Fornecedor</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Status:</span>
+              <span className={`px-2 py-1 rounded-full text-xs ${fornecedor.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                {fornecedor.ativo ? 'Ativo' : 'Inativo'}
+              </span>
             </div>
           </div>
 
-          {/* Endereço */}
-          <div className="border-b pb-4">
-            <h3 className="text-lg font-semibold mb-4">Endereço</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Cidade</p>
-                <p className="font-semibold">
-                  {fornecedor.cidade?.nome || 'N/A'}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Estado</p>
-                <p className="font-semibold">
-                  {fornecedor.cidade?.estado?.nome || 'N/A'} ({fornecedor.cidade?.estado?.uf || 'N/A'})
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">País</p>
-                <p className="font-semibold">
-                  {fornecedor.cidade?.estado?.pais?.nome || 'N/A'}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">CEP</p>
-                <p className="font-semibold">{fornecedor.cep || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Endereço</p>
-                <p className="font-semibold">{fornecedor.endereco || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Número</p>
-                <p className="font-semibold">{fornecedor.numero || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Complemento</p>
-                <p className="font-semibold">{fornecedor.complemento || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Bairro</p>
-                <p className="font-semibold">{fornecedor.bairro || 'N/A'}</p>
-              </div>
-            </div>
+          {/* Primeira linha: Código, Tipo, Fornecedor, Apelido */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {renderField('Código', fornecedor.id)}
+            {renderField('Tipo', fornecedor.tipo === 1 ? 'Pessoa Física' : 'Pessoa Jurídica', true)}
+            {renderField('Fornecedor', fornecedor.fornecedor || fornecedor.razaoSocial, true)}
+            {renderField('Apelido', fornecedor.apelido || fornecedor.nomeFantasia)}
+          </div>
+
+          {/* Segunda linha: Endereço, Número, Complemento, Bairro, CEP, Cidade */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            {renderField('Endereço', fornecedor.endereco, true)}
+            {renderField('Número', fornecedor.numero)}
+            {renderField('Complemento', fornecedor.complemento)}
+            {renderField('Bairro', fornecedor.bairro)}
+            {renderField('CEP', fornecedor.cep)}
+            {renderField('Cidade', fornecedor.cidade?.nome, true)}
+          </div>
+
+          {/* Terceira linha: Telefone, Email, Nacionalidade, Transportadora */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {renderField('Telefone', fornecedor.telefone)}
+            {renderField('Email', fornecedor.email)}
+            {renderField('Nacionalidade', nacionalidadeNome)}
+            {renderField('Transportadora', transportadoraNome)}
+          </div>
+
+          {/* Quarta linha: RG/Inscrição Estadual, CPF/CNPJ, Limite de Crédito, Condição de Pagamento */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {renderField('RG/Inscrição Estadual', fornecedor.rgInscricaoEstadual)}
+            {renderField('CPF/CNPJ', fornecedor.cpfCnpj)}
+            {renderField('Limite de Crédito', fornecedor.limiteCredito ? `R$ ${Number(fornecedor.limiteCredito).toFixed(2)}` : 'R$ 0,00', true)}
+            {renderField('Condição de Pagamento', condicaoPagamentoNome, true)}
           </div>
 
           {/* Observações */}
-          {fornecedor.observacoes && (
-            <div className="border-b pb-4">
-              <h3 className="text-lg font-semibold mb-4">Observações</h3>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{fornecedor.observacoes}</p>
-            </div>
-          )}
+          <div className="mt-4">
+            {renderField('Observações', fornecedor.observacoes)}
+          </div>
 
-          {/* Informações do registro com datas */}
-          <div className="col-span-1 md:col-span-2 mt-4 pt-4 border-t">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Informações do Registro</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Data Criação</label>
-                <p className="text-gray-900">{fornecedor.dataCriacao || fornecedor.dataCadastro || 'N/A'}</p>
+          {/* Informações do Registro */}
+          <div className="mt-8 border-t pt-4">
+            <div className="grid grid-cols-1 gap-2">
+              <div className="text-sm text-gray-500">
+                <span className="font-medium">Data de Cadastro:</span> {fornecedor.dataCadastro || 'N/A'}
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Última Modificação</label>
-                <p className="text-gray-900">{fornecedor.dataAlteracao || fornecedor.ultimaModificacao || 'N/A'}</p>
+              <div className="text-sm text-gray-500">
+                <span className="font-medium">Última Alteração:</span> {fornecedor.ultimaModificacao || fornecedor.dataAlteracao || 'N/A'}
               </div>
             </div>
           </div>
         </div>
-      ) : (
-        <div className="text-center py-8">
-          <p className="text-gray-500">Nenhum fornecedor selecionado</p>
-        </div>
-      )}
+      ) : null}
     </ViewModal>
   );
 };

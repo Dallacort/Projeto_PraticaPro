@@ -92,13 +92,7 @@ const ClienteList: React.FC = () => {
         <span>{item.cliente || item.nome}</span>
       )
     },
-    { 
-      header: 'CPF/CNPJ', 
-      accessor: 'cpfCpnj',
-      cell: (item: Cliente) => (
-        <span>{item.cpfCpnj || item.cpfCnpj || 'N/A'}</span>
-      )
-    },
+   
     { header: 'Telefone', accessor: 'telefone' },
     { header: 'E-mail', accessor: 'email' },
     { 

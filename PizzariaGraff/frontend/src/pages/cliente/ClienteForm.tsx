@@ -182,6 +182,17 @@ const ClienteForm: React.FC = () => {
       } else if (name === 'tipo') {
         // Garantir que o campo tipo seja sempre um número
         newValue = Number(value);
+      } else if (name === 'dataNascimento') {
+        // Validar se a data não é futura
+        const dataInformada = new Date(value);
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0); // Zerar horas para comparar apenas as datas
+        
+        if (dataInformada > hoje) {
+          // Se for data futura, manter a data anterior
+          return prev;
+        }
+        newValue = value;
       } else {
         newValue = value;
       }
@@ -257,6 +268,24 @@ const ClienteForm: React.FC = () => {
 
   // Funções de validação usando a classe Validators
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    // Validar data de nascimento
+    if (formData.dataNascimento) {
+      const dataInformada = new Date(formData.dataNascimento);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0); // Zerar horas para comparar apenas as datas
+      
+      if (dataInformada > hoje) {
+        errors.dataNascimento = 'A data de nascimento não pode ser uma data futura';
+      }
+    }
+
+    // ... outras validações existentes ...
+
+    return errors;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

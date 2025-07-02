@@ -30,10 +30,6 @@ const CategoriaList: React.FC = () => {
     loadCategorias();
   }, [loadCategorias]);
 
-  const handleView = (id: string | number) => {
-    navigate(`/categorias/${id}`);
-  };
-
   const handleEdit = (id: string | number) => {
     navigate(`/categorias/${id}/editar`);
   };
@@ -143,7 +139,6 @@ const CategoriaList: React.FC = () => {
           columns={columns}
           data={categorias}
           loading={loading}
-          onView={handleView}
           onEdit={handleEdit}
           onDelete={deleteLoading === null ? handleDelete : undefined}
           emptyMessage="Nenhuma categoria cadastrada"

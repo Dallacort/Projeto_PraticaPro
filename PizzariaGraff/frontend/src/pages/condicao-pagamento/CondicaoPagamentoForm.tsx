@@ -156,18 +156,27 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
       // Tratamento específico para cada campo numérico
       if (name === 'numeroParcelas') {
         const intValue = parseInt(value) || 0;
-        newValue = Math.max(0, Math.min(999, intValue)); // Limitar entre 0 e 999
+        newValue = Math.max(1, Math.min(60, intValue)); // Limitar entre 1 e 60 parcelas
       } else if (name === 'diasPrimeiraParcela' || name === 'diasEntreParcelas') {
         const intValue = parseInt(value) || 0;
         newValue = Math.max(0, Math.min(9999, intValue)); // Limitar entre 0 e 9999
-      } else if (name.includes('percentual')) {
-        const floatValue = parseFloat(value) || 0;
-        newValue = Math.max(0, Math.min(100, floatValue)); // Limitar entre 0 e 100
       } else {
         newValue = parseFloat(value) || 0;
       }
     } else if (name === 'formaPagamentoPadraoId') {
       newValue = value === '' ? null : parseInt(value, 10);
+    } else if (name.includes('percentual')) {
+      // Permitir digitar a vírgula mantendo o valor anterior
+      if (value === '' || value === ',') {
+        newValue = 0;
+      } else {
+        // Converter vírgula para ponto e tratar como número decimal
+        const processedValue = value.replace(',', '.');
+        // Se for um número válido, usa ele, senão mantém o valor anterior
+        const currentValue = formData[name as keyof typeof formData] as number;
+        const floatValue = !isNaN(parseFloat(processedValue)) ? parseFloat(processedValue) : currentValue;
+        newValue = Math.max(0, Math.min(100, floatValue)); // Limitar entre 0 e 100
+      }
     } else {
       newValue = value;
     }
@@ -180,7 +189,6 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
       if (name === 'formaPagamentoPadraoId' && newValue) {
         const formaPagamentoSelecionada = formasPagamento.find(fp => fp.id === newValue);
         if (formaPagamentoSelecionada) {
-          // Podemos armazenar a descrição separadamente se necessário
           console.log(`Forma de pagamento padrão selecionada: ${formaPagamentoSelecionada.descricao}`);
         }
       }
@@ -198,7 +206,7 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
         // Criar objeto temporário com os dados atualizados para gerar parcelas
         const tempCondicao: CondicaoPagamento = {
           ...updatedData,
-          id: parseInt(id || '0'), // Usar o ID atual ou 0 para novas condições
+          id: parseInt(id || '0'),
           ativo: updatedData.ativo
         };
         
@@ -216,13 +224,11 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
         // Preservar as formas de pagamento das parcelas existentes se possível
         if (prev.parcelas && Array.isArray(prev.parcelas) && prev.parcelas.length > 0) {
           novasParcelas.forEach((novaParcela, index) => {
-            // Se existe uma parcela correspondente no array anterior, tentar manter a forma de pagamento
             if (index < prev.parcelas!.length) {
               const parcelaAnterior = prev.parcelas![index];
               if (parcelaAnterior.formaPagamentoId) {
                 novaParcela.formaPagamentoId = parcelaAnterior.formaPagamentoId;
                 
-                // Manter a descrição da forma de pagamento também
                 const formaPagamento = formasPagamento.find(fp => fp.id === parcelaAnterior.formaPagamentoId);
                 if (formaPagamento) {
                   novaParcela.formaPagamentoDescricao = formaPagamento.descricao;
@@ -234,77 +240,48 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
           });
         }
         
-        // Atualizar com as novas parcelas
         return { ...updatedData, parcelas: novasParcelas };
       }
+      
+      return updatedData;
+    });
     
     // Limpar erros relacionados ao campo editado
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[name];
-        
-        // Se for campo que afeta parcelas, limpar erros de parcelas também
-        if (['numeroParcelas', 'diasPrimeiraParcela', 'diasEntreParcelas'].includes(name)) {
-          Object.keys(newErrors).forEach(key => {
-            if (key === 'parcelas' || key.startsWith('parcelas[')) {
-              delete newErrors[key];
-            }
-          });
-        }
-        
         return newErrors;
       });
     }
-      
-      return updatedData;
-    });
   };
 
   const handleParcelaChange = (index: number, field: keyof ParcelaCondicaoPagamento, value: any) => {
     setFormData(prev => {
-      const updatedParcelas = [...prev.parcelas];
-      const parcela = { ...updatedParcelas[index] };
-      
-      // Processar o valor conforme o tipo do campo com validações
-      if (field === 'numero') {
-        const intValue = parseInt(value, 10) || 0;
-        parcela[field] = Math.max(1, Math.min(999, intValue)); // Limitar entre 1 e 999
-      } else if (field === 'dias') {
-        const intValue = parseInt(value, 10) || 0;
-        parcela[field] = Math.max(0, Math.min(9999, intValue)); // Limitar entre 0 e 9999
-      } else if (field === 'percentual') {
-        const floatValue = parseFloat(value) || 0;
-        parcela[field] = Math.max(0, Math.min(100, floatValue)); // Limitar entre 0 e 100
-      } else if (field === 'formaPagamentoId') {
-        if (value === '') {
-          parcela[field] = null;
-          parcela.formaPagamentoDescricao = '';
+      const parcelas = [...prev.parcelas];
+      const parcela = { ...parcelas[index] };
+
+      if (field === 'percentual') {
+        // Permitir digitar a vírgula mantendo o valor anterior
+        if (value === '' || value === ',') {
+          parcela.percentual = 0;
         } else {
-          parcela[field] = parseInt(value, 10);
-          // Buscar descrição se disponível
-          const formaPagamento = formasPagamento.find(fp => fp.id === parseInt(value, 10));
-          if (formaPagamento) {
-            parcela.formaPagamentoDescricao = formaPagamento.descricao;
-          }
+          // Converter vírgula para ponto e tratar como número decimal
+          const processedValue = value.replace(',', '.');
+          // Se for um número válido, usa ele, senão mantém o valor anterior
+          const floatValue = !isNaN(parseFloat(processedValue)) ? parseFloat(processedValue) : parcela.percentual;
+          parcela.percentual = Math.max(0, Math.min(100, floatValue));
         }
-      } else {
-        // Tratar o campo como uma string para evitar o erro de tipo
-        (parcela as any)[field] = value;
+      } else if (field === 'numero') {
+        parcela.numero = parseInt(value) || 1;
+      } else if (field === 'dias') {
+        parcela.dias = parseInt(value) || 0;
+      } else if (field === 'formaPagamentoId') {
+        parcela.formaPagamentoId = value === '' ? null : parseInt(value);
       }
-      
-      updatedParcelas[index] = parcela;
-      
-      // Limpar erros relacionados a esta parcela
-      const newErrors = { ...errors };
-      Object.keys(newErrors).forEach(key => {
-        if (key.startsWith(`parcelas[${index}]`)) {
-          delete newErrors[key];
-        }
-      });
-      setErrors(newErrors);
-      
-      return { ...prev, parcelas: updatedParcelas };
+
+      parcelas[index] = parcela;
+      return { ...prev, parcelas };
     });
   };
 
@@ -699,26 +676,26 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   value={formData.condicaoPagamento || ''}
                   onChange={handleChange}
                   required
+                  maxLength={50}
                   error={errors.condicaoPagamento}
                   disabled={isViewMode}
                 />
-                
-            
               </div>
               
               {/* Segunda linha: Dias 1ª Parcela, Dias Entre Parcelas */}
               <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-              <FormField
+                <FormField
                   name="numeroParcelas"
                   label="Número de Parcelas"
                   type="number"
                   value={formData.numeroParcelas || 1}
                   onChange={handleChange}
                   required
+                  min={1}
+                  max={60}
                   error={errors.numeroParcelas}
                   disabled={isViewMode}
                   step="1"
-                  maxLength={3}
                 />
 
                 <FormField
@@ -730,9 +707,9 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   error={errors.diasPrimeiraParcela}
                   disabled={isViewMode}
                   step="1"
-                  maxLength={4}
+                  min={0}
                 />
-                
+
                 <FormField
                   name="diasEntreParcelas"
                   label="Dias Entre Parcelas"
@@ -742,10 +719,8 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   disabled={formData.numeroParcelas <= 1 || isViewMode}
                   error={errors.diasEntreParcelas}
                   step="1"
-                  maxLength={4}
+                  min={0}
                 />
-                
-                <div></div> {/* Espaço vazio para manter o grid */}
               </div>
               
               {/* Terceira linha: Percentuais */}
@@ -753,34 +728,37 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                 <FormField
                   name="percentualJuros"
                   label="Percentual de Juros (%)"
-                  type="number"
-                  value={formData.percentualJuros || 0}
+                  type="text"
+                  value={formData.percentualJuros.toString().replace('.', ',')}
                   onChange={handleChange}
-                  step="0.01"
                   error={errors.percentualJuros}
                   disabled={isViewMode}
+                  min={0}
+                  max={100}
                 />
-                
+
                 <FormField
                   name="percentualMulta"
                   label="Percentual de Multa (%)"
-                  type="number"
-                  value={formData.percentualMulta || 0}
+                  type="text"
+                  value={formData.percentualMulta.toString().replace('.', ',')}
                   onChange={handleChange}
-                  step="0.01"
                   error={errors.percentualMulta}
                   disabled={isViewMode}
+                  min={0}
+                  max={100}
                 />
-                
+
                 <FormField
                   name="percentualDesconto"
                   label="Percentual de Desconto (%)"
-                  type="number"
-                  value={formData.percentualDesconto || 0}
+                  type="text"
+                  value={formData.percentualDesconto.toString().replace('.', ',')}
                   onChange={handleChange}
-                  step="0.01"
                   error={errors.percentualDesconto}
                   disabled={isViewMode}
+                  min={0}
+                  max={100}
                 />
               </div>
               
@@ -792,7 +770,7 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   </label>
                   {!isViewMode ? (
                     <div 
-                      className="flex-1 border border-gray-300 rounded-md p-2 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
+                      className="flex-1 border rounded-md p-2 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
                       onClick={handleOpenFormaPagamentoPadraoModal}
                     >
                       {formData.formaPagamentoPadraoId ? 
@@ -834,7 +812,7 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                   </button>
                 )}
               </div>
-              
+
               {errors.parcelas && (
                 <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 mb-4 rounded">
                   <p>{errors.parcelas}</p>
@@ -842,9 +820,9 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
               )}
               
               {formData.parcelas && formData.parcelas.length > 0 ? (
-                <div className="overflow-x-auto">
+                <div className="overflow-auto" style={{ maxHeight: '400px' }}>
                   <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
                       <tr>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Nº
@@ -888,13 +866,10 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <input
-                              type="number"
-                              value={parcela.percentual}
+                              type="text"
+                              value={parcela.percentual.toString().replace('.', ',')}
                               onChange={(e) => handleParcelaChange(index, 'percentual', e.target.value)}
                               className="block w-24 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                              step="0.01"
-                              min="0"
-                              max="100"
                               disabled={isViewMode}
                             />
                           </td>
@@ -955,51 +930,51 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
           </div>
           
           {/* Rodapé do formulário com informações de registro e botões */}
-        <div className="flex justify-between items-end pt-6 border-t mt-6">
-          {/* Informações do Registro (sempre que existirem datas) */}
-          {(entityData.dataCadastro || entityData.ultimaModificacao) && (
-            <div className="text-sm text-gray-600">
-              <h3 className="font-semibold text-gray-700 mb-1">Informações do Registro:</h3>
-              {entityData.dataCadastro && (
-                <p>
-                  Cadastrado em: {formatDate(entityData.dataCadastro)}
-                </p>
-              )}
-              {entityData.ultimaModificacao && (
-                <p>
-                  Última modificação: {formatDate(entityData.ultimaModificacao)}
-                </p>
+          <div className="flex justify-between items-end pt-6 border-t mt-6">
+            {/* Informações do Registro (sempre que existirem datas) */}
+            {(entityData.dataCadastro || entityData.ultimaModificacao) && (
+              <div className="text-sm text-gray-600">
+                <h3 className="font-semibold text-gray-700 mb-1">Informações do Registro:</h3>
+                {entityData.dataCadastro && (
+                  <p>
+                    Cadastrado em: {formatDate(entityData.dataCadastro)}
+                  </p>
+                )}
+                {entityData.ultimaModificacao && (
+                  <p>
+                    Última modificação: {formatDate(entityData.ultimaModificacao)}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Botões de Ação - Sempre à direita */}
+            <div className="flex gap-3 ml-auto">
+              <button
+                type="button"
+                onClick={() => navigate('/condicoes-pagamento')}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none"
+              >
+                {isViewMode ? 'Voltar' : 'Cancelar'}
+              </button>
+              {!isViewMode && (
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50"
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <span className="inline-flex items-center">
+                      <FaSpinner className="animate-spin mr-2" />
+                      Salvando...
+                    </span>
+                  ) : (
+                    'Salvar'
+                  )}
+                </button>
               )}
             </div>
-          )}
-
-          {/* Botões de Ação - Sempre à direita */}
-          <div className="flex gap-3 ml-auto">
-            <button
-              type="button"
-              onClick={() => navigate('/condicoes-pagamento')}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none"
-            >
-              {isViewMode ? 'Voltar' : 'Cancelar'}
-            </button>
-            {!isViewMode && (
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50"
-                disabled={saving}
-              >
-                {saving ? (
-                  <span className="inline-flex items-center">
-                    <FaSpinner className="animate-spin mr-2" />
-                    Salvando...
-                  </span>
-                ) : (
-                  'Salvar'
-                )}
-              </button>
-            )}
           </div>
-        </div>
         </form>
       )}
 

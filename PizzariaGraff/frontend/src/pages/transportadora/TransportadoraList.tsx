@@ -1,14 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
-import { getTransportadoras, deleteTransportadora } from '../../services/transportadoraService';
+import { getTransportadoras, deleteTransportadora, getTransportadora } from '../../services/transportadoraService';
 import { Pais, Transportadora } from '../../types';
+import { FaPlus } from 'react-icons/fa';
+import TransportadoraViewModal from '../../components/modals/TransportadoraViewModal';
 
 const TransportadoraList: React.FC = () => {
   const [transportadoras, setTransportadoras] = useState<Transportadora[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+  const [selectedTransportadora, setSelectedTransportadora] = useState<Transportadora | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -32,6 +36,17 @@ const TransportadoraList: React.FC = () => {
     console.log('TransportadoraList montado ou location alterada, carregando transportadoras...');
     fetchTransportadoras();
   }, [fetchTransportadoras, location.key]);
+
+  const handleView = async (id: string | number) => {
+    try {
+      const transportadora = await getTransportadora(Number(id));
+      setSelectedTransportadora(transportadora);
+      setIsViewModalOpen(true);
+    } catch (error) {
+      console.error('Erro ao carregar transportadora:', error);
+      alert('Erro ao carregar dados da transportadora');
+    }
+  };
 
   const handleEdit = (id: string | number) => {
     navigate(`/transportadoras/${id}`);
@@ -89,16 +104,7 @@ const TransportadoraList: React.FC = () => {
         if (!item.cidade.estado || !item.cidade.estado.uf) {
           return (
             <div>
-              {item.cidade.id ? (
-                <Link 
-                  to={`/cidades/${item.cidade.id}`}
-                  className="text-blue-600 hover:underline"
-                >
-                  {item.cidade.nome}
-                </Link>
-              ) : (
-                item.cidade.nome
-              )}
+              {item.cidade.nome}
             </div>
           );
         }
@@ -157,45 +163,48 @@ const TransportadoraList: React.FC = () => {
   }
 
   return (
-    <div className="px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Transportadoras</h1>
-        <div className="flex space-x-2">
-          <button
-            onClick={handleCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Nova Transportadora
-          </button>
-        </div>
+    <div className="flex flex-col h-full w-full p-4">
+      <div className="flex justify-between items-center mb-6 pb-4 border-b">
+        <h1 className="text-xl font-bold text-gray-800">Transportadoras</h1>
+        <button
+          onClick={handleCreate}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center text-sm"
+        >
+          <FaPlus className="mr-2" />
+          Nova Transportadora
+        </button>
       </div>
       
-      {transportadoras.length === 0 && !loading ? (
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <p className="text-gray-500 mb-4">Nenhuma transportadora cadastrada ainda.</p>
-          <button
-            onClick={handleCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Cadastrar Primeira Transportadora
-          </button>
-        </div>
-      ) : (
-        <DataTable
-          columns={columns}
-          data={transportadoras}
-          loading={loading}
-          onEdit={handleEdit}
-          onDelete={deleteLoading === null ? handleDelete : undefined}
-          emptyMessage="Nenhuma transportadora cadastrada"
-        />
-      )}
+      <div className="flex-grow overflow-auto">
+        {transportadoras.length === 0 && !loading && !error ? (
+          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+            <p className="text-gray-500 mb-4">Nenhuma transportadora cadastrada ainda.</p>
+            <button
+              onClick={handleCreate}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md inline-flex items-center text-sm"
+            >
+              <FaPlus className="mr-2" />
+              Cadastrar Primeira Transportadora
+            </button>
+          </div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={transportadoras}
+            loading={loading}
+            onView={handleView}
+            onEdit={handleEdit}
+            onDelete={deleteLoading === null ? handleDelete : undefined}
+            emptyMessage="Nenhuma transportadora cadastrada"
+          />
+        )}
+      </div>
+
+      <TransportadoraViewModal
+        transportadora={selectedTransportadora}
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+      />
     </div>
   );
 };

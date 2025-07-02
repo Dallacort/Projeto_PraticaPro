@@ -1,15 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
-import { getFuncoesFuncionario, deleteFuncaoFuncionario } from '../../services/funcaoFuncionarioService';
+import { getFuncoesFuncionario, deleteFuncaoFuncionario, getFuncaoFuncionario } from '../../services/funcaoFuncionarioService';
 import { FuncaoFuncionario } from '../../types';
 import { FaPlus } from 'react-icons/fa';
+import FuncaoFuncionarioViewModal from '../../components/modals/FuncaoFuncionarioViewModal';
 
 const FuncaoFuncionarioList: React.FC = () => {
   const [funcoes, setFuncoes] = useState<FuncaoFuncionario[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+  const [selectedFuncao, setSelectedFuncao] = useState<FuncaoFuncionario | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -30,6 +33,17 @@ const FuncaoFuncionarioList: React.FC = () => {
   useEffect(() => {
     fetchFuncoes();
   }, [fetchFuncoes, location.key]);
+
+  const handleView = async (id: string | number) => {
+    try {
+      const funcao = await getFuncaoFuncionario(Number(id));
+      setSelectedFuncao(funcao);
+      setIsViewModalOpen(true);
+    } catch (error) {
+      console.error('Erro ao carregar função:', error);
+      alert('Erro ao carregar dados da função');
+    }
+  };
 
   const handleEdit = (id: string | number) => {
     navigate(`/funcoes-funcionario/${id}`);
@@ -147,12 +161,19 @@ const FuncaoFuncionarioList: React.FC = () => {
             columns={columns}
             data={funcoes}
             loading={loading}
+            onView={handleView}
             onEdit={handleEdit}
             onDelete={deleteLoading === null ? handleDelete : undefined}
             emptyMessage="Nenhuma função cadastrada"
           />
         )}
       </div>
+
+      <FuncaoFuncionarioViewModal
+        funcaoFuncionario={selectedFuncao}
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+      />
     </div>
   );
 };
