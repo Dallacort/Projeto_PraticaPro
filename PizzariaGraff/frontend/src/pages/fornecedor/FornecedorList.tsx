@@ -84,12 +84,7 @@ const FornecedorList: React.FC = () => {
       cell: (item: Fornecedor) => (
         <div className="flex items-center">
           {item.cidade && item.cidade.id ? (
-            <Link 
-              to={`/cidades/${item.cidade.id}`}
-              className="text-blue-600 hover:underline"
-            >
-              {item.cidade.nome}
-            </Link>
+            <span>{item.cidade.nome}</span>
           ) : (
             <span>{item.cidade?.nome || 'N/A'}</span>
           )}

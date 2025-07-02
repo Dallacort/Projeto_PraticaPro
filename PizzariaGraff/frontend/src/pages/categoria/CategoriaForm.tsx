@@ -199,7 +199,7 @@ const CategoriaForm: React.FC = () => {
 
             <div>
               <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 mb-1">
-                Nome da Categoria <span className="text-red-500">*</span>
+                Categoria <span className="text-red-500">*</span>
               </label>
               <input
                 id="categoria"

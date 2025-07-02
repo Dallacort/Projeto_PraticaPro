@@ -24,7 +24,7 @@ const ViewModal: React.FC<ViewModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-      <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col">
         <div className="flex justify-between items-center p-4 border-b bg-gray-50">
           <h2 className="text-xl font-semibold text-gray-800">
             {title}
@@ -38,7 +38,7 @@ const ViewModal: React.FC<ViewModalProps> = ({
           </button>
         </div>
 
-        <div className="overflow-y-auto p-4 flex-grow">
+        <div className="overflow-y-auto p-6 flex-grow">
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <FaSpinner className="animate-spin text-blue-600 text-2xl" />

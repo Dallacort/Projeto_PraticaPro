@@ -199,7 +199,7 @@ const UnidadeMedidaForm: React.FC = () => {
 
               <div>
                 <label htmlFor="unidadeMedida" className="block text-sm font-medium text-gray-700 mb-1">
-                  Nome da Unidade de Medida *
+                  Unidade de Medida <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"

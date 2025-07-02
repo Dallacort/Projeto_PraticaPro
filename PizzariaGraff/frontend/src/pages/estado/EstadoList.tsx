@@ -101,7 +101,7 @@ const EstadoList: React.FC = () => {
 
   const columns = [
     { header: 'ID', accessor: 'id' },
-    { header: 'Nome', accessor: 'nome' },
+    { header: 'Estado', accessor: 'nome' },
     { header: 'UF', accessor: 'uf' },
     { 
       header: 'País', 
@@ -113,16 +113,7 @@ const EstadoList: React.FC = () => {
         }
         return (
           <div className="flex items-center">
-            {item.pais.id ? (
-              <Link 
-                to={`/paises/${item.pais.id}`}
-                className="text-blue-600 hover:underline"
-              >
-                {item.pais.nome || 'Nome não disponível'}
-              </Link>
-            ) : (
-              <span>{item.pais.nome || 'Nome não disponível'}</span>
-            )}
+            <span>{item.pais.nome}</span>
           </div>
         );
       }

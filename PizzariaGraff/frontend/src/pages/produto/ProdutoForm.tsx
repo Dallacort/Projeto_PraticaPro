@@ -352,7 +352,7 @@ const ProdutoForm: React.FC = () => {
               />
 
               <FormField
-                label="Nome do Produto"
+                label="Produto"
                 name="produto"
                 value={formData.produto}
                 onChange={handleChange}

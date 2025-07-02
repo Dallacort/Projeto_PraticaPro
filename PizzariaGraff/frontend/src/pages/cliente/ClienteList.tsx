@@ -86,7 +86,7 @@ const ClienteList: React.FC = () => {
   const columns = [
     { header: 'ID', accessor: 'id' },
     { 
-      header: 'Nome', 
+      header: 'Cliente', 
       accessor: 'cliente',
       cell: (item: Cliente) => (
         <span>{item.cliente || item.nome}</span>
@@ -107,12 +107,7 @@ const ClienteList: React.FC = () => {
       cell: (item: Cliente) => (
         <div className="flex items-center">
           {item.cidade && item.cidade.id ? (
-            <Link 
-              to={`/cidades/${item.cidade.id}`}
-              className="text-blue-600 hover:underline"
-            >
-              {item.cidade.nome}
-            </Link>
+            <span>{item.cidade.nome}</span>
           ) : (
             <span>{item.cidade?.nome || 'N/A'}</span>
           )}

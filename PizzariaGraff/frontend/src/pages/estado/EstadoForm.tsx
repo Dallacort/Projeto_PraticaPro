@@ -276,7 +276,7 @@ const EstadoForm: React.FC = () => {
               />
               
               <FormField
-                label="Nome"
+                label="Estado"
                 name="nome"
                 value={formData.nome}
                 onChange={handleChange}

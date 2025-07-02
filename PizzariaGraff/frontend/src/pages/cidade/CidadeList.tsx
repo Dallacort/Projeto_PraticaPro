@@ -85,21 +85,16 @@ const CidadeList: React.FC = () => {
 
   const columns = [
     { header: 'ID', accessor: 'id' },
-    { header: 'Nome', accessor: 'nome' },
+    { header: 'Cidade', accessor: 'nome' },
     { 
       header: 'Estado', 
       accessor: 'estado.nome',
       cell: (item: Cidade) => (
         <div className="flex items-center">
           {item.estado && item.estado.id ? (
-            <Link 
-              to={`/estados/${item.estado.id}`}
-              className="text-blue-600 hover:underline"
-            >
-              {item.estado.nome} ({item.estado.uf})
-            </Link>
+            <span>{item.estado.nome}</span>
           ) : (
-            <span>{item.estado?.nome || 'N/A'} {item.estado?.uf ? `(${item.estado.uf})` : ''}</span>
+            <span>{item.estado?.nome || 'N/A'}</span>
           )}
         </div>
       )
@@ -110,12 +105,7 @@ const CidadeList: React.FC = () => {
       cell: (item: Cidade) => (
         <div className="flex items-center">
           {item.estado?.pais && item.estado.pais.id ? (
-            <Link 
-              to={`/paises/${item.estado.pais.id}`}
-              className="text-blue-600 hover:underline"
-            >
-              {item.estado.pais.nome}
-            </Link>
+            <span>{item.estado.pais.nome}</span>
           ) : (
             <span>{item.estado?.pais?.nome || 'N/A'}</span>
           )}

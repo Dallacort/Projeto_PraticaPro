@@ -295,7 +295,7 @@ const TransportadoraForm: React.FC = () => {
                   <option value={2}>Pessoa Jurídica</option>
                 </select>
               </div>
-              <FormField label="Razão Social / Nome" name="transportadora" value={formData.transportadora} onChange={handleChange} required maxLength={50} placeholder="Nome completo" />
+              <FormField label="transportadora" name="transportadora" value={formData.transportadora} onChange={handleChange} required maxLength={50} placeholder="Nome completo" />
               <FormField label="Nome Fantasia / Apelido" name="apelido" value={formData.apelido} onChange={handleChange} required maxLength={50} placeholder="Como é conhecido" />
             </div>
 

@@ -59,7 +59,7 @@ const FuncionarioList: React.FC = () => {
   const columns = [
     { header: 'ID', accessor: 'id' },
     { 
-      header: 'Nome', 
+      header: 'funcionario', 
       accessor: 'funcionario',
       cell: (item: Funcionario) => (
         <span>{item.funcionario || item.nome}</span>
@@ -90,12 +90,7 @@ const FuncionarioList: React.FC = () => {
       cell: (item: Funcionario) => (
         <div className="flex items-center">
           {item.cidade && item.cidade.id ? (
-                <Link 
-                  to={`/cidades/${item.cidade.id}`}
-                  className="text-blue-600 hover:underline"
-                >
-                  {item.cidade.nome}
-                </Link>
+            <span>{item.cidade.nome}</span>
               ) : (
             <span>{item.cidade?.nome || 'N/A'}</span>
               )}

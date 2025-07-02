@@ -87,7 +87,7 @@ const PaisList: React.FC = () => {
 
   const columns = [
     { header: 'ID', accessor: 'id' },
-    { header: 'Nome', accessor: 'nome' },
+    { header: 'País', accessor: 'nome' },
     { header: 'Sigla', accessor: 'sigla' },
     { header: 'Código', accessor: 'codigo' },
     { header: 'Nacionalidade', accessor: 'nacionalidade' },

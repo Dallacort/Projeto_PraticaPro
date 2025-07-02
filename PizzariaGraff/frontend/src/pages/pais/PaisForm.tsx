@@ -229,7 +229,7 @@ const PaisForm: React.FC = () => {
               />
               
               <FormField
-                label="Nome"
+                label="País"
                 name="nome"
                 value={formData.nome}
                 onChange={handleChange}

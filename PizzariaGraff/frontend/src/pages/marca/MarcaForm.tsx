@@ -199,7 +199,7 @@ const MarcaForm: React.FC = () => {
 
               <div>
                 <label htmlFor="marca" className="block text-sm font-medium text-gray-700 mb-1">
-                  Nome da Marca *
+                  Marca <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
