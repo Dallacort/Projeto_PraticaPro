@@ -176,14 +176,15 @@ public class FuncionarioDTO {
         funcionario.setCnh(this.cnh);
         funcionario.setDataValidadeCnh(this.dataValidadeCnh);
         funcionario.setSexo(this.sexo);
-        funcionario.setObservacao(this.observacao);
+        funcionario.setObservacao(this.observacao != null ? this.observacao : "");
         funcionario.setEstadoCivil(this.estadoCivil);
         funcionario.setSalario(this.salario);
         funcionario.setNacionalidadeId(this.nacionalidadeId);
         funcionario.setDataNascimento(this.dataNascimento);
         funcionario.setFuncaoFuncionarioId(this.funcaoFuncionarioId);
         funcionario.setCpfCpnj(this.cpfCpnj);
-        funcionario.setAtivo(this.ativo);
+        // Se ativo for null, definir como true por padrão
+        funcionario.setAtivo(this.ativo != null ? this.ativo : true);
         funcionario.setTipo(this.tipo);
         return funcionario;
     }

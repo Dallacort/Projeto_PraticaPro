@@ -94,12 +94,62 @@ public class FuncionarioController {
     @Operation(summary = "Cadastra um novo funcionário")
     public ResponseEntity<FuncionarioDTO> criar(@RequestBody FuncionarioDTO funcionarioDTO) {
         try {
+            System.out.println("=== CONTROLLER POST FUNCIONARIO DEBUG ===");
+            System.out.println("DTO recebido:");
+            System.out.println("Funcionario: " + funcionarioDTO.getFuncionario());
+            System.out.println("Apelido: " + funcionarioDTO.getApelido());
+            System.out.println("Email: " + funcionarioDTO.getEmail());
+            System.out.println("Telefone: " + funcionarioDTO.getTelefone());
+            System.out.println("CidadeId: " + funcionarioDTO.getCidadeId());
+            System.out.println("DataAdmissao: " + funcionarioDTO.getDataAdmissao());
+            System.out.println("DataNascimento: " + funcionarioDTO.getDataNascimento());
+            System.out.println("NacionalidadeId: " + funcionarioDTO.getNacionalidadeId());
+            System.out.println("FuncaoFuncionarioId: " + funcionarioDTO.getFuncaoFuncionarioId());
+            System.out.println("Sexo: " + funcionarioDTO.getSexo());
+            System.out.println("EstadoCivil: " + funcionarioDTO.getEstadoCivil());
+            System.out.println("Salario: " + funcionarioDTO.getSalario());
+            System.out.println("Tipo: " + funcionarioDTO.getTipo());
+            System.out.println("Ativo: " + funcionarioDTO.getAtivo());
+            System.out.println("Observacao: " + funcionarioDTO.getObservacao());
+            System.out.println("CpfCpnj: " + funcionarioDTO.getCpfCpnj());
+            
+            // Converter DTO para Entity
             Funcionario funcionario = funcionarioDTO.toEntity();
             
+            // Configurar campos obrigatórios que podem não vir do frontend
+            if (funcionario.getAtivo() == null) {
+                funcionario.setAtivo(true);
+            }
+            
+            // Definir datas de controle
+            funcionario.setDataCriacao(java.time.LocalDateTime.now());
+            funcionario.setDataAlteracao(java.time.LocalDateTime.now());
+            
+            System.out.println("=== ENTITY CRIADA ===");
+            System.out.println("Ativo: " + funcionario.getAtivo());
+            System.out.println("DataCriacao: " + funcionario.getDataCriacao());
+            System.out.println("DataAlteracao: " + funcionario.getDataAlteracao());
+            
+            // Salvar funcionário
             Funcionario funcionarioSalvo = funcionarioService.save(funcionario);
+            System.out.println("Funcionário salvo com sucesso! ID: " + funcionarioSalvo.getId());
+            
             return new ResponseEntity<>(new FuncionarioDTO(funcionarioSalvo), HttpStatus.CREATED);
-        } catch (RuntimeException e) {
+            
+        } catch (IllegalArgumentException e) {
+            System.err.println("ERRO DE VALIDAÇÃO no POST: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().build();
+        } catch (RuntimeException e) {
+            System.err.println("ERRO RUNTIME no POST: " + e.getMessage());
+            System.err.println("Tipo do erro: " + e.getClass().getSimpleName());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            System.err.println("ERRO GERAL no POST: " + e.getMessage());
+            System.err.println("Tipo do erro: " + e.getClass().getSimpleName());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
         }
     }
 

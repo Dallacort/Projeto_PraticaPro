@@ -376,4 +376,44 @@ export interface Funcionario {
   dataAlteracao?: string;
   dataCadastro?: string;
   ultimaModificacao?: string;
+}
+
+export interface ProdutoNota {
+  produtoId: number;
+  produtoNome?: string;
+  produtoCodigo?: string;
+  sequencia: number;
+  quantidade: number;
+  valorUnitario: number;
+  valorDesconto?: number;
+  percentualDesconto?: number;
+  valorTotal: number;
+  rateioFrete?: number;
+  rateioSeguro?: number;
+  rateioOutras?: number;
+  custoPrecoFinal?: number;
+}
+
+export interface NotaEntrada {
+  numero: string;
+  modelo: string;
+  serie: string;
+  fornecedorId: number;
+  fornecedorNome?: string;
+  dataEmissao: string;
+  dataChegada?: string;
+  tipoFrete: string;
+  valorProdutos: number;
+  valorFrete?: number;
+  valorSeguro?: number;
+  outrasDespesas?: number;
+  valorDesconto?: number;
+  valorTotal: number;
+  condicaoPagamentoId?: number;
+  condicaoPagamentoNome?: string;
+  observacoes?: string;
+  situacao?: string;
+  dataCriacao?: string;
+  dataAlteracao?: string;
+  produtos: ProdutoNota[];
 } 

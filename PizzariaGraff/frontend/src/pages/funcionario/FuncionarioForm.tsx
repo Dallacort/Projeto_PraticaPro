@@ -208,6 +208,61 @@ const FuncionarioForm: React.FC = () => {
       } else {
         newData[name] = cleanValue.substring(0, maxLength);
       }
+    } else if (name === 'telefone') {
+      // Limpar caracteres não numéricos e limitar tamanho
+      const cleanValue = value.replace(/[^\d]/g, '');
+      if (cleanValue.length <= 11) {
+        newData[name] = cleanValue;
+      } else {
+        newData[name] = cleanValue.substring(0, 11);
+      }
+    } else if (name === 'cep') {
+      // Limpar caracteres não numéricos e limitar a 8 dígitos
+      const cleanValue = value.replace(/[^\d]/g, '');
+      if (cleanValue.length <= 8) {
+        newData[name] = cleanValue;
+      } else {
+        newData[name] = cleanValue.substring(0, 8);
+      }
+    } else if (name === 'cnh') {
+      // Limpar caracteres não numéricos e limitar a 11 dígitos
+      const cleanValue = value.replace(/[^\d]/g, '');
+      if (cleanValue.length <= 11) {
+        newData[name] = cleanValue;
+      } else {
+        newData[name] = cleanValue.substring(0, 11);
+      }
+    } else if (name === 'email') {
+      // Converter para minúsculas e limitar tamanho
+      newData[name] = value.toLowerCase().substring(0, 50);
+    } else if (name === 'funcionario' || name === 'apelido' || name === 'endereco' || name === 'bairro') {
+      // Limitar tamanho dos campos de texto
+      const maxLength = name === 'funcionario' || name === 'endereco' || name === 'bairro' ? 50 : 50;
+      newData[name] = value.substring(0, maxLength);
+    } else if (name === 'numero') {
+      // Limitar tamanho do número
+      newData[name] = value.substring(0, 10);
+    } else if (name === 'complemento') {
+      // Limitar tamanho do complemento
+      newData[name] = value.substring(0, 50);
+    } else if (name === 'rgInscricaoEstadual') {
+      // Limpar caracteres não numéricos e limitar tamanho
+      const cleanValue = value.replace(/[^\d]/g, '');
+      const maxLength = newData.tipo === '1' ? 12 : 14;
+      if (cleanValue.length <= maxLength) {
+        newData[name] = cleanValue;
+      } else {
+        newData[name] = cleanValue.substring(0, maxLength);
+      }
+    } else if (name === 'observacao') {
+      // Limitar tamanho da observação
+      newData[name] = value.substring(0, 250);
+    } else if (name === 'salario') {
+      // Validar se é um número válido
+      const numValue = parseFloat(value);
+      if (value === '' || (!isNaN(numValue) && numValue >= 0 && numValue <= 100000)) {
+        newData[name] = value;
+      }
     } else {
       newData[name] = value;
     }
@@ -254,51 +309,144 @@ const FuncionarioForm: React.FC = () => {
       if (dataInformada > hoje) {
         errors.dataNascimento = 'A data de nascimento não pode ser uma data futura';
       }
+      
+      
+      // Validar se a pessoa não é muito velha (mais de 100 anos)
+      const idadeMaxima = new Date();
+      idadeMaxima.setFullYear(idadeMaxima.getFullYear() - 100);
+      if (dataInformada < idadeMaxima) {
+        errors.dataNascimento = 'Data de nascimento inválida';
+      }
+    }
+
+    // Validar data de admissão
+    if (formData.dataAdmissao) {
+      const dataAdmissao = new Date(formData.dataAdmissao);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      
+      if (dataAdmissao > hoje) {
+        errors.dataAdmissao = 'A data de admissão não pode ser uma data futura';
+      }
+      
+      // Validar se não é muito antiga (mais de 10 anos atrás)
+      const dataLimite = new Date();
+      dataLimite.setFullYear(dataLimite.getFullYear() - 10);
+      if (dataAdmissao < dataLimite) {
+        errors.dataAdmissao = 'Data de admissão muito antiga';
+      }
+    }
+
+    // Validar data de demissão (se preenchida)
+    if (formData.dataDemissao) {
+      const dataDemissao = new Date(formData.dataDemissao);
+      const dataAdmissao = formData.dataAdmissao ? new Date(formData.dataAdmissao) : null;
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      
+      if (dataDemissao > hoje) {
+        errors.dataDemissao = 'A data de demissão não pode ser uma data futura';
+      }
+      
+      if (dataAdmissao && dataDemissao < dataAdmissao) {
+        errors.dataDemissao = 'A data de demissão deve ser posterior à data de admissão';
+      }
+    }
+
+    // Validar data de validade da CNH (se preenchida)
+    if (formData.dataValidadeCnh) {
+      const dataValidade = new Date(formData.dataValidadeCnh);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      
+      if (dataValidade < hoje) {
+        errors.dataValidadeCnh = 'A CNH está vencida';
+      }
     }
 
     // Campos obrigatórios
     if (!formData.funcionario?.trim()) {
       errors.funcionario = "Nome do funcionário é obrigatório";
+    } else if (formData.funcionario.trim().length < 3) {
+      errors.funcionario = "Nome deve ter pelo menos 3 caracteres";
+    } else if (formData.funcionario.trim().length > 50) {
+      errors.funcionario = "Nome deve ter no máximo 50 caracteres";
     }
+
     if (!formData.email?.trim()) {
       errors.email = "Email é obrigatório";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "Email deve ter formato válido (exemplo@dominio.com)";
+    } else if (formData.email.length > 50) {
+      errors.email = "Email deve ter no máximo 50 caracteres";
     }
+
     if (!formData.telefone?.trim()) {
       errors.telefone = "Telefone é obrigatório";
     }
+
     if (!formData.endereco?.trim()) {
       errors.endereco = "Endereço é obrigatório";
+    } else if (formData.endereco.trim().length > 50) {
+      errors.endereco = "Endereço deve ter no máximo 50 caracteres";
     }
+
     if (!formData.numero?.trim()) {
       errors.numero = "Número é obrigatório";
+    } else if (formData.numero.trim().length > 10) {
+      errors.numero = "Número deve ter no máximo 10 caracteres";
     }
+
     if (!formData.bairro?.trim()) {
       errors.bairro = "Bairro é obrigatório";
+    } else if (formData.bairro.trim().length > 50) {
+      errors.bairro = "Bairro deve ter no máximo 50 caracteres";
     }
+
     if (!formData.cep?.trim()) {
       errors.cep = "CEP é obrigatório";
+    } else {
+      const cleanCep = formData.cep.replace(/[^\d]/g, '');
+      if (cleanCep.length !== 8) {
+        errors.cep = "CEP deve ter 8 dígitos";
+      }
     }
+
     if (!formData.sexo?.trim()) {
       errors.sexo = "Sexo é obrigatório";
     }
+
     if (!formData.estadoCivil?.trim()) {
       errors.estadoCivil = "Estado civil é obrigatório";
     }
+
     if (!formData.salario?.trim()) {
       errors.salario = "Salário é obrigatório";
+    } else {
+      const salario = parseFloat(formData.salario);
+      if (isNaN(salario) || salario < 1000) {
+        errors.salario = "Salário deve ser pelo menos R$ 1.000,00";
+      } else if (salario > 100000) {
+        errors.salario = "Salário muito alto (máximo R$ 100.000,00)";
+      }
     }
+
     if (!formData.dataAdmissao?.trim()) {
       errors.dataAdmissao = "Data de admissão é obrigatória";
     }
+
     if (!cidadeSelecionada || !formData.cidadeId) {
       errors.cidadeId = "Cidade é obrigatória";
     }
+
     if (!funcaoSelecionada || !formData.funcaoFuncionarioId) {
       errors.funcaoFuncionarioId = "Função é obrigatória";
     }
+
     if (!nacionalidadeSelecionada || !formData.nacionalidadeId) {
       errors.nacionalidadeId = "Nacionalidade é obrigatória";
     }
+
     if (!formData.tipo?.trim()) {
       errors.tipo = "Tipo (Pessoa Física/Jurídica) é obrigatório";
     }
@@ -315,19 +463,57 @@ const FuncionarioForm: React.FC = () => {
     if (funcaoRequerCNH) {
       if (!formData.cnh?.trim()) {
         errors.cnh = "CNH é obrigatória para esta função";
+      } else if (formData.cnh.trim().length !== 11) {
+        errors.cnh = "CNH deve ter 11 dígitos";
       }
       if (!formData.dataValidadeCnh?.trim()) {
         errors.dataValidadeCnh = "Validade da CNH é obrigatória para esta função";
       }
     }
     
-    // Validação de formato de email
-    if (formData.email && !formData.email.includes('@')) {
-      errors.email = "Email deve ter formato válido";
+    // Validação de CPF/CNPJ
+    if (formData.cpfCpnj && formData.cpfCpnj.trim()) {
+      const cleanCpfCnpj = formData.cpfCpnj.replace(/[^\d]/g, '');
+      
+      if (formData.tipo === '1') { // Pessoa Física - CPF
+        if (cleanCpfCnpj.length !== 11) {
+          errors.cpfCpnj = "CPF deve ter 11 dígitos";
+        } else if (cleanCpfCnpj === '00000000000' || cleanCpfCnpj === '11111111111' || 
+                   cleanCpfCnpj === '22222222222' || cleanCpfCnpj === '33333333333' ||
+                   cleanCpfCnpj === '44444444444' || cleanCpfCnpj === '55555555555' ||
+                   cleanCpfCnpj === '66666666666' || cleanCpfCnpj === '77777777777' ||
+                   cleanCpfCnpj === '88888888888' || cleanCpfCnpj === '99999999999') {
+          errors.cpfCpnj = "CPF inválido";
+        }
+      } else { // Pessoa Jurídica - CNPJ
+        if (cleanCpfCnpj.length !== 14) {
+          errors.cpfCpnj = "CNPJ deve ter 14 dígitos";
+        } else if (cleanCpfCnpj === '00000000000000' || cleanCpfCnpj === '11111111111111' ||
+                   cleanCpfCnpj === '22222222222222' || cleanCpfCnpj === '33333333333333' ||
+                   cleanCpfCnpj === '44444444444444' || cleanCpfCnpj === '55555555555555' ||
+                   cleanCpfCnpj === '66666666666666' || cleanCpfCnpj === '77777777777777' ||
+                   cleanCpfCnpj === '88888888888888' || cleanCpfCnpj === '99999999999999') {
+          errors.cpfCpnj = "CNPJ inválido";
+        }
+      }
     }
     
-    // Campos opcionais: apelido, complemento, dataDemissao
-    // CNH e dataValidadeCnh são condicionalmente obrigatórios baseado na função
+    // Validação de campos opcionais com limites
+    if (formData.apelido && formData.apelido.trim().length > 50) {
+      errors.apelido = "Apelido deve ter no máximo 50 caracteres";
+    }
+
+    if (formData.complemento && formData.complemento.trim().length > 50) {
+      errors.complemento = "Complemento deve ter no máximo 50 caracteres";
+    }
+
+    if (formData.rgInscricaoEstadual && formData.rgInscricaoEstadual.trim().length > 14) {
+      errors.rgInscricaoEstadual = "RG/Inscrição deve ter no máximo 14 caracteres";
+    }
+
+    if (formData.observacao && formData.observacao.trim().length > 250) {
+      errors.observacao = "Observação deve ter no máximo 250 caracteres";
+    }
     
     return errors;
   };
@@ -336,7 +522,33 @@ const FuncionarioForm: React.FC = () => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
-      setError(Object.values(validationErrors).join(". "));
+      // Mostrar erros de forma mais detalhada
+      const errorMessages = Object.entries(validationErrors).map(([field, message]) => {
+        const fieldNames: Record<string, string> = {
+          'funcionario': 'Nome do Funcionário',
+          'email': 'Email',
+          'telefone': 'Telefone',
+          'endereco': 'Endereço',
+          'numero': 'Número',
+          'bairro': 'Bairro',
+          'cep': 'CEP',
+          'sexo': 'Sexo',
+          'estadoCivil': 'Estado Civil',
+          'salario': 'Salário',
+          'dataAdmissao': 'Data de Admissão',
+          'cidadeId': 'Cidade',
+          'funcaoFuncionarioId': 'Função',
+          'nacionalidadeId': 'Nacionalidade',
+          'tipo': 'Tipo',
+          'cpfCpnj': 'CPF/CNPJ',
+          'cnh': 'CNH',
+          'dataValidadeCnh': 'Validade da CNH',
+          'dataNascimento': 'Data de Nascimento'
+        };
+        return `${fieldNames[field] || field}: ${message}`;
+      });
+      
+      setError(`Por favor, corrija os seguintes erros:\n• ${errorMessages.join('\n• ')}`);
       return;
     }
 
@@ -420,7 +632,71 @@ const FuncionarioForm: React.FC = () => {
       console.error('URL tentada:', err?.config?.url);
       console.error('Método:', err?.config?.method);
       
-      const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao salvar funcionário. Tente novamente.';
+      // Log específico para debug de mensagens do backend
+      if (err?.response?.data) {
+        console.log('=== DEBUG MENSAGEM BACKEND ===');
+        console.log('Tipo da resposta:', typeof err.response.data);
+        console.log('Conteúdo da resposta:', JSON.stringify(err.response.data, null, 2));
+        
+        // Tentar extrair mensagem de diferentes formatos possíveis
+        const data = err.response.data;
+        if (data.message) console.log('Mensagem encontrada em .message:', data.message);
+        if (data.error) console.log('Mensagem encontrada em .error:', data.error);
+        if (data.details) console.log('Mensagem encontrada em .details:', data.details);
+        if (data.description) console.log('Mensagem encontrada em .description:', data.description);
+        if (data.reason) console.log('Mensagem encontrada em .reason:', data.reason);
+        if (typeof data === 'string') console.log('Resposta é string:', data);
+      }
+      
+      let errorMessage = 'Erro ao salvar funcionário. Tente novamente.';
+      
+      if (err?.response?.status === 400) {
+        // Erro de validação do backend
+        const serverData = err?.response?.data;
+        console.log('=== DADOS DO ERRO 400 ===');
+        console.log('Server Data:', serverData);
+        console.log('Server Data Type:', typeof serverData);
+        console.log('Server Data Keys:', serverData ? Object.keys(serverData) : 'N/A');
+        
+        if (serverData?.message) {
+          errorMessage = serverData.message;
+        } else if (serverData?.error) {
+          errorMessage = serverData.error;
+        } else if (serverData?.errors) {
+          // Se o backend retorna erros estruturados
+          const errorList = Object.entries(serverData.errors)
+            .map(([field, message]) => `${field}: ${message}`)
+            .join('\n• ');
+          errorMessage = `Erros de validação:\n• ${errorList}`;
+        } else if (typeof serverData === 'string') {
+          errorMessage = serverData;
+        } else if (serverData && Object.keys(serverData).length > 0) {
+          // Tentar extrair qualquer mensagem útil dos dados
+          const possibleMessages = [];
+          if (serverData.details) possibleMessages.push(serverData.details);
+          if (serverData.description) possibleMessages.push(serverData.description);
+          if (serverData.reason) possibleMessages.push(serverData.reason);
+          
+          if (possibleMessages.length > 0) {
+            errorMessage = possibleMessages.join('; ');
+          } else {
+            errorMessage = 'Dados inválidos. Verifique os campos obrigatórios e tente novamente.';
+          }
+        } else {
+          errorMessage = 'Dados inválidos. Verifique os campos obrigatórios e tente novamente.';
+        }
+      } else if (err?.response?.status === 409) {
+        errorMessage = 'Já existe um funcionário com este CPF/CNPJ ou email.';
+      } else if (err?.response?.status === 404) {
+        errorMessage = 'Recurso não encontrado. Verifique se a cidade, função ou nacionalidade selecionadas existem.';
+      } else if (err?.response?.status === 500) {
+        errorMessage = 'Erro interno do servidor. Tente novamente em alguns minutos.';
+      } else if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+      
       setError(`Erro ${err?.response?.status || 'desconhecido'}: ${errorMessage}`);
     } finally {
       setSaving(false);
@@ -485,7 +761,7 @@ const FuncionarioForm: React.FC = () => {
       <form onSubmit={handleSubmit} className="p-4 space-y-6">
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+            <div className="whitespace-pre-line">{error}</div>
           </div>
         )}
 
@@ -818,13 +1094,12 @@ const FuncionarioForm: React.FC = () => {
             <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Observação <span className="text-red-500">*</span>
+                  Observação
                 </label>
                 <textarea
                   name="observacao"
                   value={formData.observacao}
                   onChange={handleChange}
-                  required
                   maxLength={250}
                   placeholder="Observações gerais sobre o funcionário"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"

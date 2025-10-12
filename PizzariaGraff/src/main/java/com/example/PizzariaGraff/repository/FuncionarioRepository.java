@@ -19,11 +19,13 @@ public class FuncionarioRepository {
     private final DatabaseConnection databaseConnection;
     private final CidadeRepository cidadeRepository;
     private final FuncaoFuncionarioRepository funcaoFuncionarioRepository;
+    private final PaisRepository paisRepository;
     
-    public FuncionarioRepository(DatabaseConnection databaseConnection, CidadeRepository cidadeRepository, FuncaoFuncionarioRepository funcaoFuncionarioRepository) {
+    public FuncionarioRepository(DatabaseConnection databaseConnection, CidadeRepository cidadeRepository, FuncaoFuncionarioRepository funcaoFuncionarioRepository, PaisRepository paisRepository) {
         this.databaseConnection = databaseConnection;
         this.cidadeRepository = cidadeRepository;
         this.funcaoFuncionarioRepository = funcaoFuncionarioRepository;
+        this.paisRepository = paisRepository;
     }
 
     public List<Funcionario> findAll() {
@@ -182,7 +184,7 @@ public class FuncionarioRepository {
             stmt.setString(14, funcionario.getCnh());
             stmt.setDate(15, funcionario.getDataValidadeCnh() != null ? Date.valueOf(funcionario.getDataValidadeCnh()) : null);
             stmt.setObject(16, funcionario.getSexo());
-            stmt.setString(17, funcionario.getObservacao());
+            stmt.setString(17, funcionario.getObservacao() != null ? funcionario.getObservacao() : "");
             stmt.setObject(18, funcionario.getEstadoCivil());
             stmt.setObject(19, funcionario.getSalario());
             stmt.setObject(20, funcionario.getNacionalidadeId());
@@ -253,7 +255,7 @@ public class FuncionarioRepository {
             stmt.setString(14, funcionario.getCnh());
             stmt.setDate(15, funcionario.getDataValidadeCnh() != null ? Date.valueOf(funcionario.getDataValidadeCnh()) : null);
             stmt.setObject(16, funcionario.getSexo());
-            stmt.setString(17, funcionario.getObservacao());
+            stmt.setString(17, funcionario.getObservacao() != null ? funcionario.getObservacao() : "");
             stmt.setObject(18, funcionario.getEstadoCivil());
             stmt.setObject(19, funcionario.getSalario());
             stmt.setObject(20, funcionario.getNacionalidadeId());
@@ -377,6 +379,18 @@ public class FuncionarioRepository {
                 funcao.ifPresent(funcionario::setFuncaoFuncionario);
             } catch (Exception e) {
                 System.err.println("Erro ao buscar função: " + e.getMessage());
+            }
+        }
+
+        // Carregar a nacionalidade (país) se o ID estiver presente
+        Long nacionalidadeId = rs.getObject("nacionalidade_id", Long.class);
+        if (nacionalidadeId != null) {
+            try {
+                // Buscar o país como nacionalidade
+                Optional<com.example.PizzariaGraff.model.Pais> pais = paisRepository.findById(nacionalidadeId);
+                pais.ifPresent(funcionario::setNacionalidade);
+            } catch (Exception e) {
+                System.err.println("Erro ao buscar nacionalidade: " + e.getMessage());
             }
         }
 

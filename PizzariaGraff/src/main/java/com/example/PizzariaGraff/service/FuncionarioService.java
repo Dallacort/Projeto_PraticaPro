@@ -42,6 +42,19 @@ public class FuncionarioService {
     }
     
     public Funcionario save(Funcionario funcionario) {
+        // Configurar campos padrão
+        if (funcionario.getAtivo() == null) {
+            funcionario.setAtivo(true);
+        }
+        
+        if (funcionario.getDataCriacao() == null) {
+            funcionario.setDataCriacao(java.time.LocalDateTime.now());
+        }
+        
+        if (funcionario.getDataAlteracao() == null) {
+            funcionario.setDataAlteracao(java.time.LocalDateTime.now());
+        }
+        
         // Validações obrigatórias
         validarCamposObrigatorios(funcionario);
         
@@ -122,17 +135,19 @@ public class FuncionarioService {
             throw new RuntimeException("O tipo (Pessoa Física/Jurídica) é obrigatório");
         }
         
-        if (funcionario.getObservacao() == null || funcionario.getObservacao().trim().isEmpty()) {
-            throw new RuntimeException("A observação é obrigatória");
-        }
+        // Observação não é obrigatória - pode ser null ou vazia
+        // if (funcionario.getObservacao() == null || funcionario.getObservacao().trim().isEmpty()) {
+        //     throw new RuntimeException("A observação é obrigatória");
+        // }
         
         // CPF/CNPJ é obrigatório apenas para brasileiros (nacionalidadeId = 1)
-        if (funcionario.getNacionalidadeId() != null && funcionario.getNacionalidadeId() == 1) {
-            if (funcionario.getCpfCpnj() == null || funcionario.getCpfCpnj().trim().isEmpty()) {
-                String documento = funcionario.getTipo() == 1 ? "CPF" : "CNPJ";
-                throw new RuntimeException("O " + documento + " é obrigatório para funcionários brasileiros");
-            }
-        }
+        // Comentando temporariamente para permitir cadastro sem CPF/CNPJ
+        // if (funcionario.getNacionalidadeId() != null && funcionario.getNacionalidadeId() == 1) {
+        //     if (funcionario.getCpfCpnj() == null || funcionario.getCpfCpnj().trim().isEmpty()) {
+        //         String documento = funcionario.getTipo() == 1 ? "CPF" : "CNPJ";
+        //         throw new RuntimeException("O " + documento + " é obrigatório para funcionários brasileiros");
+        //     }
+        // }
         
         // Campos opcionais: apelido, complemento, cnh, dataValidadeCnh, dataDemissao
         // Não precisam de validação de obrigatoriedade

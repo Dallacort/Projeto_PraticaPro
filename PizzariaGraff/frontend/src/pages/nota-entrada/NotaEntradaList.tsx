@@ -1,0 +1,145 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getNotasEntrada, deleteNotaEntrada } from '../../services/notaEntradaService';
+import { NotaEntrada } from '../../types';
+import DataTable from '../../components/DataTable';
+import { FaPlus } from 'react-icons/fa';
+
+const NotaEntradaList: React.FC = () => {
+  const navigate = useNavigate();
+  const [notas, setNotas] = useState<NotaEntrada[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadNotas();
+  }, []);
+
+  const loadNotas = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getNotasEntrada();
+      setNotas(data);
+    } catch (err) {
+      console.error('Erro ao carregar notas:', err);
+      setError('Erro ao carregar as notas de entrada. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (nota: NotaEntrada) => {
+    if (window.confirm(`Deseja realmente excluir a nota ${nota.numero}/${nota.modelo}/${nota.serie}?`)) {
+      try {
+        await deleteNotaEntrada(nota.numero, nota.modelo, nota.serie, nota.fornecedorId);
+        alert('Nota excluída com sucesso!');
+        loadNotas();
+      } catch (err) {
+        console.error('Erro ao excluir nota:', err);
+        alert('Erro ao excluir a nota. Tente novamente.');
+      }
+    }
+  };
+
+  const handleEdit = (nota: NotaEntrada) => {
+    navigate(`/notas-entrada/editar/${nota.numero}/${nota.modelo}/${nota.serie}/${nota.fornecedorId}`);
+  };
+
+  const handleView = (nota: NotaEntrada) => {
+    navigate(`/notas-entrada/visualizar/${nota.numero}/${nota.modelo}/${nota.serie}/${nota.fornecedorId}`);
+  };
+
+  const columns = [
+    { header: 'Número', accessor: 'numero' },
+    { header: 'Modelo', accessor: 'modelo' },
+    { header: 'Série', accessor: 'serie' },
+    { 
+      header: 'Fornecedor',
+      accessor: 'fornecedorNome',
+      cell: (item: NotaEntrada) => item.fornecedorNome || '-'
+    },
+    { 
+      header: 'Data Emissão',
+      accessor: 'dataEmissao',
+      cell: (item: NotaEntrada) => item.dataEmissao || '-'
+    },
+    { 
+      header: 'Valor Total',
+      accessor: 'valorTotal',
+      cell: (item: NotaEntrada) => `R$ ${parseFloat(String(item.valorTotal || 0)).toFixed(2).replace('.', ',')}`
+    },
+    { 
+      header: 'Situação',
+      accessor: 'situacao',
+      cell: (item: NotaEntrada) => {
+        const situacao = item.situacao || 'PENDENTE';
+        const colors: any = {
+          'PENDENTE': 'bg-yellow-100 text-yellow-800',
+          'CONFIRMADA': 'bg-green-100 text-green-800',
+          'CANCELADA': 'bg-red-100 text-red-800'
+        };
+        return (
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[situacao] || 'bg-gray-100 text-gray-800'}`}>
+            {situacao}
+          </span>
+        );
+      }
+    }
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-gray-600">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        {error}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="flex justify-between items-center bg-gray-50 p-4 border-b">
+        <h1 className="text-xl font-bold text-gray-800">Notas de Entrada</h1>
+        <button
+          onClick={() => navigate('/notas-entrada/novo')}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+        >
+          <FaPlus />
+          Nova Nota
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-auto p-4">
+        <DataTable
+          data={notas}
+          columns={columns}
+          onView={(id) => {
+            const nota = notas.find(n => n.numero === id);
+            if (nota) handleView(nota);
+          }}
+          onEdit={(id) => {
+            const nota = notas.find(n => n.numero === id);
+            if (nota) handleEdit(nota);
+          }}
+          onDelete={(id) => {
+            const nota = notas.find(n => n.numero === id);
+            if (nota) handleDelete(nota);
+          }}
+          keyExtractor={(item) => `${item.numero}-${item.modelo}-${item.serie}-${item.fornecedorId}`}
+          emptyMessage="Nenhuma nota de entrada cadastrada"
+        />
+      </div>
+    </div>
+  );
+};
+
+export default NotaEntradaList;
+

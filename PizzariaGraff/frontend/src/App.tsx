@@ -77,6 +77,10 @@ import ModalidadeNfeForm from './pages/modalidade-nfe/ModalidadeNfeForm';
 import NfeList from './pages/nota-fiscal/NfeList';
 import NfeForm from './pages/nota-fiscal/NfeForm';
 
+// Páginas de nota de entrada
+import NotaEntradaList from './pages/nota-entrada/NotaEntradaList';
+import NotaEntradaForm from './pages/nota-entrada/NotaEntradaForm';
+
 // Página de login temporária
 const LoginPage: React.FC = () => (
   <div className="flex justify-center items-center h-screen bg-gray-100">
@@ -220,6 +224,12 @@ const App: React.FC = () => {
             <Route path="notas-fiscais/novo" element={<NfeForm />} />
             <Route path="notas-fiscais/:id" element={<NfeForm />} />
             <Route path="notas-fiscais" element={<NfeList />} />
+            
+            {/* Notas de Entrada */}
+            <Route path="notas-entrada/novo" element={<NotaEntradaForm />} />
+            <Route path="notas-entrada/editar/:numero/:modelo/:serie/:fornecedorId" element={<NotaEntradaForm />} />
+            <Route path="notas-entrada/visualizar/:numero/:modelo/:serie/:fornecedorId" element={<NotaEntradaForm />} />
+            <Route path="notas-entrada" element={<NotaEntradaList />} />
             
             {/* Rotas para Marcas */}
             <Route path="marcas/novo" element={<MarcaForm />} />
