@@ -153,6 +153,40 @@ const NotaEntradaForm: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
+    // Validar data de emissão
+    if (name === 'dataEmissao') {
+      const dataEmissao = new Date(value);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      
+      if (dataEmissao > hoje) {
+        alert('A data de emissão não pode ser futura!');
+        return;
+      }
+      
+      // Validar se data de chegada não é anterior à nova data de emissão
+      if (formData.dataChegada) {
+        const dataChegada = new Date(formData.dataChegada);
+        if (dataChegada < dataEmissao) {
+          alert('A data de chegada não pode ser anterior à data de emissão!');
+          setFormData(prev => ({ ...prev, [name]: value, dataChegada: value }));
+          return;
+        }
+      }
+    }
+    
+    // Validar data de chegada
+    if (name === 'dataChegada') {
+      const dataChegada = new Date(value);
+      const dataEmissao = new Date(formData.dataEmissao);
+      
+      if (dataChegada < dataEmissao) {
+        alert('A data de chegada não pode ser anterior à data de emissão!');
+        return;
+      }
+    }
+    
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -267,6 +301,26 @@ const NotaEntradaForm: React.FC = () => {
       return;
     }
 
+    // Validar data de emissão
+    const dataEmissao = new Date(formData.dataEmissao);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    if (dataEmissao > hoje) {
+      alert('A data de emissão não pode ser futura!');
+      return;
+    }
+
+    // Validar data de chegada
+    if (formData.dataChegada) {
+      const dataChegada = new Date(formData.dataChegada);
+      
+      if (dataChegada < dataEmissao) {
+        alert('A data de chegada não pode ser anterior à data de emissão!');
+        return;
+      }
+    }
+
     try {
       setSaving(true);
       setError(null);
@@ -341,31 +395,49 @@ const NotaEntradaForm: React.FC = () => {
           <h2 className="text-lg font-semibold mb-4">Dados da Nota</h2>
           
           <div className="grid grid-cols-4 gap-4 mb-4">
-            <FormField
-              label="Número *"
-              name="numero"
-              value={formData.numero}
-              onChange={handleChange}
-              required
-              disabled={!isNew}
-              placeholder="22232"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Número *
+              </label>
+              <input
+                type="text"
+                name="numero"
+                value={formData.numero}
+                onChange={handleChange}
+                required
+                disabled={!isNew}
+                placeholder="22232"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right disabled:bg-gray-100"
+              />
+            </div>
             
-            <FormField
-              label="Modelo"
-              name="modelo"
-              value={formData.modelo}
-              onChange={handleChange}
-              placeholder="55"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Modelo
+              </label>
+              <input
+                type="text"
+                name="modelo"
+                value={formData.modelo}
+                onChange={handleChange}
+                placeholder="55"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+              />
+            </div>
             
-            <FormField
-              label="Série"
-              name="serie"
-              value={formData.serie}
-              onChange={handleChange}
-              placeholder="1"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Série
+              </label>
+              <input
+                type="text"
+                name="serie"
+                value={formData.serie}
+                onChange={handleChange}
+                placeholder="1"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+              />
+            </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -388,23 +460,35 @@ const NotaEntradaForm: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <FormField
-              label="Data Emissão *"
-              name="dataEmissao"
-              type="date"
-              value={formData.dataEmissao}
-              onChange={handleChange}
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Data Emissão *
+              </label>
+              <input
+                type="date"
+                name="dataEmissao"
+                value={formData.dataEmissao}
+                onChange={handleChange}
+                max={new Date().toISOString().split('T')[0]}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-10"
+              />
+            </div>
             
-            <FormField
-              label="Data Chegada *"
-              name="dataChegada"
-              type="date"
-              value={formData.dataChegada}
-              onChange={handleChange}
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Data Chegada *
+              </label>
+              <input
+                type="date"
+                name="dataChegada"
+                value={formData.dataChegada}
+                onChange={handleChange}
+                min={formData.dataEmissao}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-10"
+              />
+            </div>
           </div>
         </div>
 
@@ -412,14 +496,14 @@ const NotaEntradaForm: React.FC = () => {
         <div className="border-b pb-4">
           <h2 className="text-lg font-semibold mb-4">Produtos</h2>
           
-          <div className="grid grid-cols-6 gap-4 mb-4">
+          <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: '60px 1fr 80px 100px 120px 120px' }}>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cód. Produto *
+                Cód *
               </label>
               <div 
                 onClick={() => setShowProdutoModal(true)}
-                className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 h-10"
+                className="flex items-center justify-center px-2 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 h-10"
               >
                 <FaSearch className="text-gray-500" />
               </div>
@@ -433,54 +517,74 @@ const NotaEntradaForm: React.FC = () => {
                 type="text"
                 value={produtoSelecionado?.produto || ''}
                 readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm h-10"
+                className="w-full px-2 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm h-10"
                 placeholder=""
               />
             </div>
             
-            <FormField
-              label="Unidade"
-              name="unidade"
-              value="1"
-              onChange={() => {}}
-              disabled
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Unidade
+              </label>
+              <input
+                type="text"
+                value="UN"
+                readOnly
+                disabled
+                className="w-full px-2 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm h-10 text-center"
+              />
+            </div>
             
-            <FormField
-              label="Quantidade *"
-              name="quantidade"
-              type="number"
-              value={produtoTemp.quantidade}
-              onChange={handleProdutoTempChange}
-              placeholder="1"
-              step="0.01"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Qtd *
+              </label>
+              <input
+                type="number"
+                name="quantidade"
+                value={produtoTemp.quantidade}
+                onChange={handleProdutoTempChange}
+                placeholder="1"
+                step="0.01"
+                min="0"
+                className="w-full px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+              />
+            </div>
             
-            <FormField
-              label="Preço *"
-              name="valorUnitario"
-              type="number"
-              value={produtoTemp.valorUnitario}
-              onChange={handleProdutoTempChange}
-              placeholder="0"
-              step="0.01"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Preço Unit. *
+              </label>
+              <input
+                type="number"
+                name="valorUnitario"
+                value={produtoTemp.valorUnitario}
+                onChange={handleProdutoTempChange}
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                className="w-full px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+              />
+            </div>
             
-            <FormField
-              label="R$ Desconto"
-              name="valorDesconto"
-              type="number"
-              value={produtoTemp.valorDesconto}
-              onChange={handleProdutoTempChange}
-              placeholder="0"
-              step="0.01"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Desconto R$
+              </label>
+              <input
+                type="number"
+                name="valorDesconto"
+                value={produtoTemp.valorDesconto}
+                onChange={handleProdutoTempChange}
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                className="w-full px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+              />
+            </div>
           </div>
 
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-sm font-medium">
-              Total: R$ {totais.totalProdutos.toFixed(2).replace('.', ',')}
-            </div>
+          <div className="flex justify-end mb-4">
             <button
               type="button"
               onClick={handleAdicionarProduto}
@@ -499,15 +603,10 @@ const NotaEntradaForm: React.FC = () => {
                   <tr>
                     <th className="px-3 py-2 text-left">CODIGO</th>
                     <th className="px-3 py-2 text-left">PRODUTO</th>
-                    <th className="px-3 py-2 text-left">UNIDADE</th>
+                    <th className="px-3 py-2 text-left">UND</th>
                     <th className="px-3 py-2 text-right">QTD</th>
                     <th className="px-3 py-2 text-right">PREÇO UN</th>
-                    <th className="px-3 py-2 text-right">DESC UN</th>
-                    <th className="px-3 py-2 text-right">LIQUIDO UN</th>
                     <th className="px-3 py-2 text-right">TOTAL</th>
-                    <th className="px-3 py-2 text-right">RATEIO</th>
-                    <th className="px-3 py-2 text-right">CUSTO FINAL UN</th>
-                    <th className="px-3 py-2 text-right">CUSTO FINAL</th>
                     <th className="px-3 py-2 text-center">AÇÕES</th>
                   </tr>
                 </thead>
@@ -534,12 +633,7 @@ const NotaEntradaForm: React.FC = () => {
                         <td className="px-3 py-2">UN</td>
                         <td className="px-3 py-2 text-right">{produto.quantidade.toFixed(2)}</td>
                         <td className="px-3 py-2 text-right">R$ {produto.valorUnitario.toFixed(2)}</td>
-                        <td className="px-3 py-2 text-right">R$ {(produto.valorDesconto || 0).toFixed(2)}</td>
-                        <td className="px-3 py-2 text-right">R$ {produto.valorUnitario.toFixed(2)}</td>
                         <td className="px-3 py-2 text-right">R$ {produto.valorTotal.toFixed(2)}</td>
-                        <td className="px-3 py-2 text-right">R$ {rateioTotal.toFixed(2)}</td>
-                        <td className="px-3 py-2 text-right">R$ {custoFinalUnitario.toFixed(2)}</td>
-                        <td className="px-3 py-2 text-right">R$ {custoFinalTotal.toFixed(2)}</td>
                         <td className="px-3 py-2 text-center">
                           <button
                             type="button"
@@ -555,14 +649,21 @@ const NotaEntradaForm: React.FC = () => {
                 </tbody>
               </table>
               
-              <button
-                type="button"
-                onClick={handleLimparProdutos}
-                className="mt-2 flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-              >
-                <FaTrash />
-                Limpar Todos os Produtos
-              </button>
+              <div className="mt-2 flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={handleLimparProdutos}
+                  className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+                >
+                  <FaTrash />
+                  Limpar Todos os Produtos
+                </button>
+                
+                {/* Total dos Produtos */}
+                <div className="text-lg font-semibold">
+                  Total Produtos: R$ {totais.totalProdutos.toFixed(2).replace('.', ',')}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -571,83 +672,98 @@ const NotaEntradaForm: React.FC = () => {
         <div className="border-b pb-4">
           <h2 className="text-lg font-semibold mb-4">Frete e Outras Despesas</h2>
           
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Tipo Frete</label>
-            <div className="flex gap-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="tipoFrete"
-                  value="CIF"
-                  checked={formData.tipoFrete === 'CIF'}
-                  onChange={handleChange}
-                  className="mr-2"
-                />
-                CIF
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="tipoFrete"
-                  value="FOB"
-                  checked={formData.tipoFrete === 'FOB'}
-                  onChange={handleChange}
-                  className="mr-2"
-                />
-                FOB
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="tipoFrete"
-                  value="SEM"
-                  checked={formData.tipoFrete === 'SEM'}
-                  onChange={handleChange}
-                  className="mr-2"
-                />
-                SEM
-              </label>
+          <div className="flex items-end gap-6">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tipo Frete</label>
+              <div className="flex gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="tipoFrete"
+                    value="CIF"
+                    checked={formData.tipoFrete === 'CIF'}
+                    onChange={handleChange}
+                    className="mr-2"
+                  />
+                  CIF
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="tipoFrete"
+                    value="FOB"
+                    checked={formData.tipoFrete === 'FOB'}
+                    onChange={handleChange}
+                    className="mr-2"
+                  />
+                  FOB
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="tipoFrete"
+                    value="SEM"
+                    checked={formData.tipoFrete === 'SEM'}
+                    onChange={handleChange}
+                    className="mr-2"
+                  />
+                  SEM
+                </label>
+              </div>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <FormField
-              label="Valor Frete"
-              name="valorFrete"
-              type="number"
-              value={formData.valorFrete}
-              onChange={handleChange}
-              placeholder="0"
-              step="0.01"
-            />
             
-            <FormField
-              label="Valor Seguro"
-              name="valorSeguro"
-              type="number"
-              value={formData.valorSeguro}
-              onChange={handleChange}
-              placeholder="100"
-              step="0.01"
-            />
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Valor Frete
+              </label>
+              <input
+                type="number"
+                name="valorFrete"
+                value={formData.valorFrete}
+                onChange={handleChange}
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+              />
+            </div>
             
-            <FormField
-              label="Outras Despesas"
-              name="outrasDespesas"
-              type="number"
-              value={formData.outrasDespesas}
-              onChange={handleChange}
-              placeholder="0"
-              step="0.01"
-            />
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Valor Seguro
+              </label>
+              <input
+                type="number"
+                name="valorSeguro"
+                value={formData.valorSeguro}
+                onChange={handleChange}
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+              />
+            </div>
+            
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Outras Despesas
+              </label>
+              <input
+                type="number"
+                name="outrasDespesas"
+                value={formData.outrasDespesas}
+                onChange={handleChange}
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-lg font-semibold">
-              Total Produtos: R$ {totais.totalProdutos.toFixed(2).replace('.', ',')}
-            </div>
+          <div className="mt-6 grid grid-cols-1 gap-4">
             <div className="text-lg font-semibold text-right">
-              Total a Pagar: R$ {totais.totalPagar.toFixed(2).replace('.', ',')}
+              Total da Nota: R$ {totais.totalPagar.toFixed(2).replace('.', ',')}
             </div>
           </div>
         </div>
@@ -657,21 +773,33 @@ const NotaEntradaForm: React.FC = () => {
           <h2 className="text-lg font-semibold mb-4">Condição de Pagamento</h2>
           
           <div className="grid grid-cols-2 gap-4 mb-4">
-            <FormField
-              label="Cód. Cond. Pgto"
-              name="condicaoPagamentoId"
-              value={formData.condicaoPagamentoId}
-              onChange={handleChange}
-              disabled
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cód. Cond. Pgto
+              </label>
+              <input
+                type="text"
+                name="condicaoPagamentoId"
+                value={formData.condicaoPagamentoId}
+                onChange={handleChange}
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm h-10 text-right"
+              />
+            </div>
             
-            <FormField
-              label="Condição de Pagamento"
-              name="condicaoPagamentoNome"
-              value={condicaoPagamentoSelecionada?.condicaoPagamento || ''}
-              onChange={() => {}}
-              disabled
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Condição de Pagamento
+              </label>
+              <input
+                type="text"
+                name="condicaoPagamentoNome"
+                value={condicaoPagamentoSelecionada?.condicaoPagamento || ''}
+                onChange={() => {}}
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm h-10"
+              />
+            </div>
           </div>
 
           {/* Parcelas de Pagamento */}
@@ -692,8 +820,8 @@ const NotaEntradaForm: React.FC = () => {
                     <td className="px-3 py-2">1</td>
                     <td className="px-3 py-2">1</td>
                     <td className="px-3 py-2">PIX</td>
-                    <td className="px-3 py-2">{formData.dataEmissao}</td>
-                    <td className="px-3 py-2 text-right text-green-600 font-semibold">
+                    <td className="px-3 py-2">{new Date(formData.dataEmissao).toLocaleDateString('pt-BR')}</td>
+                    <td className="px-3 py-2 text-right font-semibold">
                       R$ {totais.totalPagar.toFixed(2).replace('.', ',')}
                     </td>
                   </tr>
@@ -716,29 +844,31 @@ const NotaEntradaForm: React.FC = () => {
           />
         </div>
 
-        {/* Botões */}
-        <div className="flex justify-end gap-3 pt-6 border-t">
-          <button
-            type="button"
-            onClick={() => navigate('/notas-entrada')}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-          >
-            Sair
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-          >
-            {saving ? (
-              <span className="inline-flex items-center">
-                <FaSpinner className="animate-spin mr-2" />
-                Salvando...
-              </span>
-            ) : (
-              'Salvar'
-            )}
-          </button>
+        <div className="flex justify-between items-end pt-6 border-t mt-6">
+          {/* Botões de Ação */}
+          <div className="flex gap-3 ml-auto">
+            <button
+              type="button"
+              onClick={() => navigate('/notas-entrada')}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50"
+            >
+              {saving ? (
+                <span className="inline-flex items-center">
+                  <FaSpinner className="animate-spin mr-2" />
+                  Salvando...
+                </span>
+              ) : (
+                'Salvar'
+              )}
+            </button>
+          </div>
         </div>
       </form>
 

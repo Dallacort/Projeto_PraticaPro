@@ -50,10 +50,28 @@ const NotaEntradaList: React.FC = () => {
     navigate(`/notas-entrada/visualizar/${nota.numero}/${nota.modelo}/${nota.serie}/${nota.fornecedorId}`);
   };
 
+  // Função para formatar data no padrão brasileiro
+  const formatDateBR = (dateString: string | undefined) => {
+    if (!dateString) return '-';
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '-';
+      
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch {
+      return '-';
+    }
+  };
+
   const columns = [
-    { header: 'Número', accessor: 'numero' },
     { header: 'Modelo', accessor: 'modelo' },
     { header: 'Série', accessor: 'serie' },
+    { header: 'Número', accessor: 'numero' },
     { 
       header: 'Fornecedor',
       accessor: 'fornecedorNome',
@@ -62,7 +80,7 @@ const NotaEntradaList: React.FC = () => {
     { 
       header: 'Data Emissão',
       accessor: 'dataEmissao',
-      cell: (item: NotaEntrada) => item.dataEmissao || '-'
+      cell: (item: NotaEntrada) => formatDateBR(item.dataEmissao)
     },
     { 
       header: 'Valor Total',
