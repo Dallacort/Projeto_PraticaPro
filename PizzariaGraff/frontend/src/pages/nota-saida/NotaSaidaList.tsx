@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getNotasEntrada } from '../../services/notaEntradaService';
-import { NotaEntrada } from '../../types';
+import { getNotasSaida } from '../../services/notaSaidaService';
+import { NotaSaida } from '../../types';
 import DataTable from '../../components/DataTable';
-import NotaEntradaViewModal from '../../components/modals/NotaEntradaViewModal';
+import { NotaSaidaViewModal } from '../../components/modals';
 import { FaPlus } from 'react-icons/fa';
 
-const NotaEntradaList: React.FC = () => {
+const NotaSaidaList: React.FC = () => {
   const navigate = useNavigate();
-  const [notas, setNotas] = useState<NotaEntrada[]>([]);
+  const [notas, setNotas] = useState<NotaSaida[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedNota, setSelectedNota] = useState<NotaEntrada | null>(null);
+  const [selectedNota, setSelectedNota] = useState<NotaSaida | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
 
   useEffect(() => {
@@ -22,17 +22,17 @@ const NotaEntradaList: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getNotasEntrada();
+      const data = await getNotasSaida();
       setNotas(data);
     } catch (err) {
       console.error('Erro ao carregar notas:', err);
-      setError('Erro ao carregar as notas de entrada. Tente novamente.');
+      setError('Erro ao carregar as notas de saída. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleView = (nota: NotaEntrada) => {
+  const handleView = (nota: NotaSaida) => {
     setSelectedNota(nota);
     setShowViewModal(true);
   };
@@ -69,24 +69,24 @@ const NotaEntradaList: React.FC = () => {
     { header: 'Série', accessor: 'serie' },
     { header: 'Número', accessor: 'numero' },
     { 
-      header: 'Fornecedor',
-      accessor: 'fornecedorNome',
-      cell: (item: NotaEntrada) => item.fornecedorNome || '-'
+      header: 'Cliente',
+      accessor: 'clienteNome',
+      cell: (item: NotaSaida) => item.clienteNome || '-'
     },
     { 
       header: 'Data Emissão',
       accessor: 'dataEmissao',
-      cell: (item: NotaEntrada) => formatDateBR(item.dataEmissao)
+      cell: (item: NotaSaida) => formatDateBR(item.dataEmissao)
     },
     { 
       header: 'Valor Total',
       accessor: 'valorTotal',
-      cell: (item: NotaEntrada) => `R$ ${parseFloat(String(item.valorTotal || 0)).toFixed(2).replace('.', ',')}`
+      cell: (item: NotaSaida) => `R$ ${parseFloat(String(item.valorTotal || 0)).toFixed(2).replace('.', ',')}`
     },
     { 
       header: 'Situação',
       accessor: 'situacao',
-      cell: (item: NotaEntrada) => {
+      cell: (item: NotaSaida) => {
         const situacao = item.situacao || 'PENDENTE';
         const colors: any = {
           'PENDENTE': 'bg-yellow-100 text-yellow-800',
@@ -121,9 +121,9 @@ const NotaEntradaList: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-white shadow-md rounded-lg overflow-hidden">
       <div className="flex justify-between items-center bg-gray-50 p-4 border-b">
-        <h1 className="text-xl font-bold text-gray-800">Notas de Entrada</h1>
+        <h1 className="text-xl font-bold text-gray-800">Notas de Saída</h1>
         <button
-          onClick={() => navigate('/notas-entrada/novo')}
+          onClick={() => navigate('/notas-saida/novo')}
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
         >
           <FaPlus />
@@ -136,17 +136,17 @@ const NotaEntradaList: React.FC = () => {
           data={notas}
           columns={columns}
           onView={(id) => {
-            const nota = notas.find(n => `${n.numero}-${n.modelo}-${n.serie}-${n.fornecedorId}` === id);
+            const nota = notas.find(n => `${n.numero}-${n.modelo}-${n.serie}-${n.clienteId}` === id);
             if (nota) handleView(nota);
           }}
-          keyExtractor={(item) => `${item.numero}-${item.modelo}-${item.serie}-${item.fornecedorId}`}
-          emptyMessage="Nenhuma nota de entrada cadastrada"
+          keyExtractor={(item) => `${item.numero}-${item.modelo}-${item.serie}-${item.clienteId}`}
+          emptyMessage="Nenhuma nota de saída cadastrada"
         />
       </div>
 
       {/* Modal de Visualização */}
       {selectedNota && showViewModal && (
-        <NotaEntradaViewModal
+        <NotaSaidaViewModal
           nota={selectedNota}
           isOpen={showViewModal}
           onClose={handleCloseModal}
@@ -158,5 +158,5 @@ const NotaEntradaList: React.FC = () => {
   );
 };
 
-export default NotaEntradaList;
+export default NotaSaidaList;
 

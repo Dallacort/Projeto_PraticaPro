@@ -130,7 +130,7 @@ const DataTable: React.FC<DataTableProps> = ({
                       <div className="flex justify-end space-x-3">
                         {onView && (
                           <button
-                            onClick={() => onView(item.id)}
+                            onClick={() => onView(keyExtractor(item))}
                             className="text-gray-500 hover:text-indigo-600 transition-colors duration-150"
                             title="Visualizar"
                           >
@@ -158,7 +158,7 @@ const DataTable: React.FC<DataTableProps> = ({
                         )}
                         {onEdit && (
                           <button
-                            onClick={() => onEdit(item.id)}
+                            onClick={() => onEdit(keyExtractor(item))}
                             className="text-gray-500 hover:text-indigo-600 transition-colors duration-150"
                             title="Editar"
                           >
@@ -180,7 +180,7 @@ const DataTable: React.FC<DataTableProps> = ({
                         )}
                         {onDelete && (
                           <button
-                            onClick={() => onDelete(item.id)}
+                            onClick={() => onDelete(keyExtractor(item))}
                             className="text-gray-500 hover:text-red-600 transition-colors duration-150"
                             title="Excluir"
                           >

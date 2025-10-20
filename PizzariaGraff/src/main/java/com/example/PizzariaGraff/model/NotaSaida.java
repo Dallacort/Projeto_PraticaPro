@@ -6,13 +6,13 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NotaEntrada {
+public class NotaSaida {
     private String numero;
     private String modelo;
     private String serie;
-    private Long fornecedorId;
+    private Long clienteId;
     private LocalDate dataEmissao;
-    private LocalDate dataChegada;
+    private LocalDate dataSaida;
     private String tipoFrete; // CIF, FOB, SEM
     private BigDecimal valorProdutos;
     private BigDecimal valorFrete;
@@ -29,19 +29,19 @@ public class NotaEntrada {
     private LocalDateTime dataAlteracao;
     
     // Relacionamentos
-    private Fornecedor fornecedor;
+    private Cliente cliente;
     private CondicaoPagamento condicaoPagamento;
     private Transportadora transportadora;
-    private List<ProdutoNota> produtos = new ArrayList<>();
+    private List<ProdutoNotaSaida> produtos = new ArrayList<>();
     
     // Constructors
-    public NotaEntrada() {}
+    public NotaSaida() {}
     
-    public NotaEntrada(String numero, String modelo, String serie, Long fornecedorId) {
+    public NotaSaida(String numero, String modelo, String serie, Long clienteId) {
         this.numero = numero;
         this.modelo = modelo;
         this.serie = serie;
-        this.fornecedorId = fornecedorId;
+        this.clienteId = clienteId;
         this.situacao = "PENDENTE";
         this.tipoFrete = "CIF";
         this.valorProdutos = BigDecimal.ZERO;
@@ -77,12 +77,12 @@ public class NotaEntrada {
         this.serie = serie;
     }
     
-    public Long getFornecedorId() {
-        return fornecedorId;
+    public Long getClienteId() {
+        return clienteId;
     }
     
-    public void setFornecedorId(Long fornecedorId) {
-        this.fornecedorId = fornecedorId;
+    public void setClienteId(Long clienteId) {
+        this.clienteId = clienteId;
     }
     
     public LocalDate getDataEmissao() {
@@ -93,12 +93,12 @@ public class NotaEntrada {
         this.dataEmissao = dataEmissao;
     }
     
-    public LocalDate getDataChegada() {
-        return dataChegada;
+    public LocalDate getDataSaida() {
+        return dataSaida;
     }
     
-    public void setDataChegada(LocalDate dataChegada) {
-        this.dataChegada = dataChegada;
+    public void setDataSaida(LocalDate dataSaida) {
+        this.dataSaida = dataSaida;
     }
     
     public String getTipoFrete() {
@@ -213,12 +213,12 @@ public class NotaEntrada {
         this.dataAlteracao = dataAlteracao;
     }
     
-    public Fornecedor getFornecedor() {
-        return fornecedor;
+    public Cliente getCliente() {
+        return cliente;
     }
     
-    public void setFornecedor(Fornecedor fornecedor) {
-        this.fornecedor = fornecedor;
+    public void setCliente(Cliente cliente) {
+        this.cliente = cliente;
     }
     
     public CondicaoPagamento getCondicaoPagamento() {
@@ -237,15 +237,15 @@ public class NotaEntrada {
         this.transportadora = transportadora;
     }
     
-    public List<ProdutoNota> getProdutos() {
+    public List<ProdutoNotaSaida> getProdutos() {
         return produtos;
     }
     
-    public void setProdutos(List<ProdutoNota> produtos) {
+    public void setProdutos(List<ProdutoNotaSaida> produtos) {
         this.produtos = produtos;
     }
     
-    public void addProduto(ProdutoNota produto) {
+    public void addProduto(ProdutoNotaSaida produto) {
         this.produtos.add(produto);
     }
 }

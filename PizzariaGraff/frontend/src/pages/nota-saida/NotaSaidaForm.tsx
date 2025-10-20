@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { NotaEntrada, ProdutoNota, Fornecedor, Produto, CondicaoPagamento, Transportadora } from '../../types';
-import { createNotaEntrada, getNotaEntrada, updateNotaEntrada } from '../../services/notaEntradaService';
-import { getFornecedores } from '../../services/fornecedorService';
+import { NotaSaida, ProdutoNotaSaida, Cliente, Produto, CondicaoPagamento, Transportadora } from '../../types';
+import { createNotaSaida, getNotaSaida, updateNotaSaida } from '../../services/notaSaidaService';
+import { getClientes } from '../../services/clienteService';
 import { getProdutos } from '../../services/produtoService';
 import CondicaoPagamentoService from '../../services/condicaoPagamentoService';
 import { getTransportadoras } from '../../services/transportadoraService';
 import { FaSpinner, FaSearch, FaPlus, FaTrash } from 'react-icons/fa';
 import FormField from '../../components/FormField';
 
-interface NotaEntradaFormData {
+interface NotaSaidaFormData {
   numero: string;
   modelo: string;
   serie: string;
-  fornecedorId: string;
+  clienteId: string;
   dataEmissao: string;
-  dataChegada: string;
+  dataSaida: string;
   tipoFrete: string;
   valorFrete: string;
   valorSeguro: string;
@@ -38,18 +38,18 @@ interface ProdutoTemp {
   valorTotal: number;
 }
 
-const NotaEntradaForm: React.FC = () => {
-  const { numero, modelo, serie, fornecedorId } = useParams<{ numero: string; modelo: string; serie: string; fornecedorId: string }>();
+const NotaSaidaForm: React.FC = () => {
+  const { numero, modelo, serie, clienteId } = useParams<{ numero: string; modelo: string; serie: string; clienteId: string }>();
   const navigate = useNavigate();
   const isNew = !numero;
 
-  const [formData, setFormData] = useState<NotaEntradaFormData>({
+  const [formData, setFormData] = useState<NotaSaidaFormData>({
     numero: '',
     modelo: '55',
     serie: '1',
-    fornecedorId: '',
+    clienteId: '',
     dataEmissao: new Date().toISOString().split('T')[0],
-    dataChegada: new Date().toISOString().split('T')[0],
+    dataSaida: new Date().toISOString().split('T')[0],
     tipoFrete: 'CIF',
     valorFrete: '0',
     valorSeguro: '0',
@@ -70,13 +70,13 @@ const NotaEntradaForm: React.FC = () => {
     valorTotal: 0
   });
 
-  const [produtosNota, setProdutosNota] = useState<ProdutoNota[]>([]);
-  const [fornecedorSelecionado, setFornecedorSelecionado] = useState<Fornecedor | null>(null);
+  const [produtosNota, setProdutosNota] = useState<ProdutoNotaSaida[]>([]);
+  const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null);
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null);
   const [condicaoPagamentoSelecionada, setCondicaoPagamentoSelecionada] = useState<CondicaoPagamento | null>(null);
   const [transportadoraSelecionada, setTransportadoraSelecionada] = useState<Transportadora | null>(null);
   
-  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [condicoesPagamento, setCondicoesPagamento] = useState<CondicaoPagamento[]>([]);
   const [transportadoras, setTransportadoras] = useState<Transportadora[]>([]);
@@ -86,7 +86,7 @@ const NotaEntradaForm: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const [showFornecedorModal, setShowFornecedorModal] = useState(false);
+  const [showClienteModal, setShowClienteModal] = useState(false);
   const [showProdutoModal, setShowProdutoModal] = useState(false);
   const [showTransportadoraModal, setShowTransportadoraModal] = useState(false);
   const [showVeiculoModal, setShowVeiculoModal] = useState(false);
@@ -95,29 +95,29 @@ const NotaEntradaForm: React.FC = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const [fornecedoresData, produtosData, condicoesData, transportadorasData] = await Promise.all([
-          getFornecedores(),
+        const [clientesData, produtosData, condicoesData, transportadorasData] = await Promise.all([
+          getClientes(),
           getProdutos(),
           CondicaoPagamentoService.list(),
           getTransportadoras()
         ]);
         
-        setFornecedores(fornecedoresData);
+        setClientes(clientesData);
         setProdutos(produtosData);
         setCondicoesPagamento(condicoesData);
         setTransportadoras(transportadorasData);
 
         // Carregar nota se for edição
-        if (!isNew && numero && modelo && serie && fornecedorId) {
-          const notaData = await getNotaEntrada(numero, modelo, serie, parseInt(fornecedorId));
+        if (!isNew && numero && modelo && serie && clienteId) {
+          const notaData = await getNotaSaida(numero, modelo, serie, parseInt(clienteId));
           
           setFormData({
             numero: notaData.numero,
             modelo: notaData.modelo,
             serie: notaData.serie,
-            fornecedorId: String(notaData.fornecedorId),
+            clienteId: String(notaData.clienteId),
             dataEmissao: notaData.dataEmissao,
-            dataChegada: notaData.dataChegada || '',
+            dataSaida: notaData.dataSaida || '',
             tipoFrete: notaData.tipoFrete,
             valorFrete: String(notaData.valorFrete || 0),
             valorSeguro: String(notaData.valorSeguro || 0),
@@ -131,11 +131,11 @@ const NotaEntradaForm: React.FC = () => {
 
           setProdutosNota(notaData.produtos || []);
           
-          const fornecedor = fornecedoresData.find(f => f.id === notaData.fornecedorId);
-          if (fornecedor) {
-            setFornecedorSelecionado(fornecedor);
-            if (fornecedor.condicaoPagamentoId) {
-              const condicao = condicoesData.find(c => c.id === fornecedor.condicaoPagamentoId);
+          const cliente = clientesData.find(c => c.id === notaData.clienteId);
+          if (cliente) {
+            setClienteSelecionado(cliente);
+            if (cliente.condicaoPagamentoId) {
+              const condicao = condicoesData.find(c => c.id === cliente.condicaoPagamentoId);
               if (condicao) {
                 setCondicaoPagamentoSelecionada(condicao);
                 setFormData(prev => ({ ...prev, condicaoPagamentoId: String(condicao.id) }));
@@ -160,11 +160,11 @@ const NotaEntradaForm: React.FC = () => {
     };
 
     loadData();
-  }, [isNew, numero, modelo, serie, fornecedorId]);
+  }, [isNew, numero, modelo, serie, clienteId]);
 
   // Funções de validação para travamento progressivo
   const isDadosNotaPreenchidos = () => {
-    return formData.numero && formData.fornecedorId && formData.dataEmissao && formData.dataChegada;
+    return formData.numero && formData.clienteId && formData.dataEmissao && formData.dataSaida;
   };
 
   const isProdutosAdicionados = () => {
@@ -176,16 +176,16 @@ const NotaEntradaForm: React.FC = () => {
            (formData.valorFrete !== '' || formData.valorSeguro !== '' || formData.outrasDespesas !== '');
   };
 
-  // Atualizar condição de pagamento quando fornecedor mudar
+  // Atualizar condição de pagamento quando cliente mudar
   useEffect(() => {
-    if (fornecedorSelecionado && fornecedorSelecionado.condicaoPagamentoId) {
-      const condicao = condicoesPagamento.find(c => c.id === fornecedorSelecionado.condicaoPagamentoId);
+    if (clienteSelecionado && clienteSelecionado.condicaoPagamentoId) {
+      const condicao = condicoesPagamento.find(c => c.id === clienteSelecionado.condicaoPagamentoId);
       if (condicao) {
         setCondicaoPagamentoSelecionada(condicao);
         setFormData(prev => ({ ...prev, condicaoPagamentoId: String(condicao.id) }));
       }
     }
-  }, [fornecedorSelecionado, condicoesPagamento]);
+  }, [clienteSelecionado, condicoesPagamento]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -201,24 +201,24 @@ const NotaEntradaForm: React.FC = () => {
         return;
       }
       
-      // Validar se data de chegada não é anterior à nova data de emissão
-      if (formData.dataChegada) {
-        const dataChegada = new Date(formData.dataChegada);
-        if (dataChegada < dataEmissao) {
-          alert('A data de chegada não pode ser anterior à data de emissão!');
-          setFormData(prev => ({ ...prev, [name]: value, dataChegada: value }));
+      // Validar se data de saída não é anterior à nova data de emissão
+      if (formData.dataSaida) {
+        const dataSaida = new Date(formData.dataSaida);
+        if (dataSaida < dataEmissao) {
+          alert('A data de saída não pode ser anterior à data de emissão!');
+          setFormData(prev => ({ ...prev, [name]: value, dataSaida: value }));
           return;
         }
       }
     }
     
-    // Validar data de chegada
-    if (name === 'dataChegada') {
-      const dataChegada = new Date(value);
+    // Validar data de saída
+    if (name === 'dataSaida') {
+      const dataSaida = new Date(value);
       const dataEmissao = new Date(formData.dataEmissao);
       
-      if (dataChegada < dataEmissao) {
-        alert('A data de chegada não pode ser anterior à data de emissão!');
+      if (dataSaida < dataEmissao) {
+        alert('A data de saída não pode ser anterior à data de emissão!');
         return;
       }
     }
@@ -226,10 +226,10 @@ const NotaEntradaForm: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFornecedorSelect = (fornecedor: Fornecedor) => {
-    setFornecedorSelecionado(fornecedor);
-    setFormData(prev => ({ ...prev, fornecedorId: String(fornecedor.id) }));
-    setShowFornecedorModal(false);
+  const handleClienteSelect = (cliente: Cliente) => {
+    setClienteSelecionado(cliente);
+    setFormData(prev => ({ ...prev, clienteId: String(cliente.id) }));
+    setShowClienteModal(false);
   };
 
   const handleProdutoSelect = (produto: Produto) => {
@@ -239,7 +239,7 @@ const NotaEntradaForm: React.FC = () => {
       produtoId: produto.id,
       produtoNome: produto.produto,
       produtoCodigo: produto.codigoBarras,
-      valorUnitario: String(produto.valorCompra || 0)
+      valorUnitario: String(produto.valorVenda || 0)
     }));
     setShowProdutoModal(false);
   };
@@ -296,7 +296,7 @@ const NotaEntradaForm: React.FC = () => {
       return;
     }
 
-    const novoProduto: ProdutoNota = {
+    const novoProduto: ProdutoNotaSaida = {
       produtoId: produtoTemp.produtoId,
       produtoNome: produtoTemp.produtoNome,
       produtoCodigo: produtoTemp.produtoCodigo,
@@ -352,8 +352,8 @@ const NotaEntradaForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!fornecedorSelecionado) {
-      alert('Selecione um fornecedor');
+    if (!clienteSelecionado) {
+      alert('Selecione um cliente');
       return;
     }
 
@@ -372,12 +372,12 @@ const NotaEntradaForm: React.FC = () => {
       return;
     }
 
-    // Validar data de chegada
-    if (formData.dataChegada) {
-      const dataChegada = new Date(formData.dataChegada);
+    // Validar data de saída
+    if (formData.dataSaida) {
+      const dataSaida = new Date(formData.dataSaida);
       
-      if (dataChegada < dataEmissao) {
-        alert('A data de chegada não pode ser anterior à data de emissão!');
+      if (dataSaida < dataEmissao) {
+        alert('A data de saída não pode ser anterior à data de emissão!');
         return;
       }
     }
@@ -388,13 +388,13 @@ const NotaEntradaForm: React.FC = () => {
 
       const totais = calcularTotais();
 
-      const notaData: Partial<NotaEntrada> = {
+      const notaData: Partial<NotaSaida> = {
         numero: formData.numero,
         modelo: formData.modelo,
         serie: formData.serie,
-        fornecedorId: parseInt(formData.fornecedorId),
+        clienteId: parseInt(formData.clienteId),
         dataEmissao: formData.dataEmissao,
-        dataChegada: formData.dataChegada || undefined,
+        dataSaida: formData.dataSaida || undefined,
         tipoFrete: formData.tipoFrete,
         valorProdutos: totais.totalProdutos,
         valorFrete: parseFloat(formData.valorFrete) || 0,
@@ -411,14 +411,14 @@ const NotaEntradaForm: React.FC = () => {
       };
 
       if (isNew) {
-        await createNotaEntrada(notaData);
-        alert('Nota criada com sucesso! As contas a pagar foram geradas automaticamente.');
+        await createNotaSaida(notaData);
+        alert('Nota criada com sucesso! As contas a receber foram geradas automaticamente.');
       } else {
-        await updateNotaEntrada(numero!, modelo!, serie!, parseInt(fornecedorId!), notaData);
-        alert('Nota atualizada com sucesso! As contas a pagar foram atualizadas.');
+        await updateNotaSaida(numero!, modelo!, serie!, parseInt(clienteId!), notaData);
+        alert('Nota atualizada com sucesso! As contas a receber foram atualizadas.');
       }
 
-      navigate('/notas-entrada');
+      navigate('/notas-saida');
     } catch (err: any) {
       console.error('Erro ao salvar nota:', err);
       const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao salvar nota';
@@ -442,7 +442,7 @@ const NotaEntradaForm: React.FC = () => {
     <div className="flex flex-col bg-white shadow-md rounded-lg overflow-hidden max-w-7xl w-full mx-auto my-4">
       <div className="flex justify-between items-center bg-gray-50 p-4 border-b">
         <h1 className="text-xl font-bold text-gray-800">
-          {isNew ? 'Cadastro Nota de Compra' : 'Editar Nota de Compra'}
+          {isNew ? 'Cadastro Nota de Venda' : 'Editar Nota de Venda'}
         </h1>
       </div>
 
@@ -504,16 +504,16 @@ const NotaEntradaForm: React.FC = () => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fornecedor *
+                Cliente *
               </label>
               <div 
-                onClick={() => setShowFornecedorModal(true)}
+                onClick={() => setShowClienteModal(true)}
                 className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 h-10"
               >
                 <input
                   type="text"
                   readOnly
-                  value={fornecedorSelecionado ? fornecedorSelecionado.fornecedor : 'Selecione...'}
+                  value={clienteSelecionado ? clienteSelecionado.cliente : 'Selecione...'}
                   className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
                   placeholder="Selecione..."
                 />
@@ -540,12 +540,12 @@ const NotaEntradaForm: React.FC = () => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Data Chegada *
+                Data Saída *
               </label>
               <input
                 type="date"
-                name="dataChegada"
-                value={formData.dataChegada}
+                name="dataSaida"
+                value={formData.dataSaida}
                 onChange={handleChange}
                 min={formData.dataEmissao}
                 required
@@ -977,7 +977,7 @@ const NotaEntradaForm: React.FC = () => {
           <div className="flex gap-3 ml-auto">
             <button
               type="button"
-              onClick={() => navigate('/notas-entrada')}
+              onClick={() => navigate('/notas-saida')}
               className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none"
             >
               Cancelar
@@ -1000,28 +1000,28 @@ const NotaEntradaForm: React.FC = () => {
         </div>  
       </form>
 
-      {/* Modal Fornecedor */}
-      {showFornecedorModal && (
+      {/* Modal Cliente */}
+      {showClienteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Selecionar Fornecedor</h3>
+              <h3 className="text-lg font-semibold">Selecionar Cliente</h3>
               <button
-                onClick={() => setShowFornecedorModal(false)}
+                onClick={() => setShowClienteModal(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
                 ✕
               </button>
             </div>
             <div className="space-y-2">
-              {fornecedores.map(fornecedor => (
+              {clientes.map(cliente => (
                 <div
-                  key={fornecedor.id}
-                  onClick={() => handleFornecedorSelect(fornecedor)}
+                  key={cliente.id}
+                  onClick={() => handleClienteSelect(cliente)}
                   className="p-3 border rounded cursor-pointer hover:bg-gray-100"
                 >
-                  <div className="font-semibold">{fornecedor.fornecedor}</div>
-                  <div className="text-sm text-gray-600">{fornecedor.email}</div>
+                  <div className="font-semibold">{cliente.cliente}</div>
+                  <div className="text-sm text-gray-600">{cliente.email}</div>
                 </div>
               ))}
             </div>
@@ -1051,7 +1051,7 @@ const NotaEntradaForm: React.FC = () => {
                 >
                   <div className="font-semibold">{produto.produto}</div>
                   <div className="text-sm text-gray-600">
-                    Código: {produto.codigoBarras} | Valor: R$ {produto.valorCompra?.toFixed(2)}
+                    Código: {produto.codigoBarras} | Valor: R$ {produto.valorVenda?.toFixed(2)}
                   </div>
                 </div>
               ))}
@@ -1131,5 +1131,5 @@ const NotaEntradaForm: React.FC = () => {
   );
 };
 
-export default NotaEntradaForm;
+export default NotaSaidaForm;
 

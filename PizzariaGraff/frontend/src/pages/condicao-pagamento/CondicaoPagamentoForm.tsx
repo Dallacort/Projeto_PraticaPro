@@ -437,7 +437,7 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
     // Validação das parcelas
     if (!formData.parcelas || formData.parcelas.length === 0) {
       errors.parcelas = "É necessário pelo menos uma parcela";
-    } else {
+    } else if (formData.parcelas && formData.parcelas.length > 0) {
       let totalPercent = 0;
       const numerosUtilizados = new Set<number>();
       
@@ -474,13 +474,15 @@ const CondicaoPagamentoForm: React.FC<CondicaoPagamentoFormProps> = ({ mode = 'e
           errors[`parcelas[${index}].formaPagamentoId`] = `Parcela ${index + 1}: Forma de pagamento é obrigatória`;
         }
         
-        totalPercent += parcela.percentual || 0;
+        totalPercent += Number(parcela.percentual) || 0;
       });
       
       // Verificar se o total é exatamente 100%
-      const totalPercentFormatted = Number(totalPercent.toFixed(2));
-      if (Math.abs(totalPercentFormatted - 100) > 0.01) {
-        errors.parcelas = `A soma dos percentuais das parcelas deve ser 100%. Atual: ${totalPercentFormatted}%`;
+      if (totalPercent > 0) {
+        const totalPercentFormatted = Number(totalPercent.toFixed(2));
+        if (Math.abs(totalPercentFormatted - 100) > 0.01) {
+          errors.parcelas = `A soma dos percentuais das parcelas deve ser 100%. Atual: ${totalPercentFormatted}%`;
+        }
       }
       
       // Verificar se o número de parcelas configuradas bate com o número informado

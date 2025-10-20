@@ -81,6 +81,16 @@ import NfeForm from './pages/nota-fiscal/NfeForm';
 import NotaEntradaList from './pages/nota-entrada/NotaEntradaList';
 import NotaEntradaForm from './pages/nota-entrada/NotaEntradaForm';
 
+// Páginas de nota de saída
+import NotaSaidaList from './pages/nota-saida/NotaSaidaList';
+import NotaSaidaForm from './pages/nota-saida/NotaSaidaForm';
+
+// Páginas de contas a pagar
+import ContasPagarList from './pages/contas-pagar/ContasPagarList';
+
+// Páginas de contas a receber
+import ContasReceberList from './pages/contas-receber/ContasReceberList';
+
 // Página de login temporária
 const LoginPage: React.FC = () => (
   <div className="flex justify-center items-center h-screen bg-gray-100">
@@ -230,6 +240,18 @@ const App: React.FC = () => {
             <Route path="notas-entrada/editar/:numero/:modelo/:serie/:fornecedorId" element={<NotaEntradaForm />} />
             <Route path="notas-entrada/visualizar/:numero/:modelo/:serie/:fornecedorId" element={<NotaEntradaForm />} />
             <Route path="notas-entrada" element={<NotaEntradaList />} />
+            
+            {/* Notas de Saída */}
+            <Route path="notas-saida/novo" element={<NotaSaidaForm />} />
+            <Route path="notas-saida/editar/:numero/:modelo/:serie/:clienteId" element={<NotaSaidaForm />} />
+            <Route path="notas-saida/visualizar/:numero/:modelo/:serie/:clienteId" element={<NotaSaidaForm />} />
+            <Route path="notas-saida" element={<NotaSaidaList />} />
+            
+            {/* Contas a Pagar */}
+            <Route path="contas-pagar" element={<ContasPagarList />} />
+            
+            {/* Contas a Receber */}
+            <Route path="contas-receber" element={<ContasReceberList />} />
             
             {/* Rotas para Marcas */}
             <Route path="marcas/novo" element={<MarcaForm />} />

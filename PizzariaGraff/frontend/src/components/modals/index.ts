@@ -26,4 +26,6 @@ export { default as TelefonesModal } from './TelefonesModal';
 export { default as TransportadoraModal } from './TransportadoraModal';
 export { default as TransportadoraViewModal } from './TransportadoraViewModal';
 export { default as UnidadeMedidaModal } from './UnidadeMedidaModal';
-export { default as VeiculosModal } from './VeiculosModal'; 
+export { default as VeiculosModal } from './VeiculosModal';
+export { default as NotaEntradaViewModal } from './NotaEntradaViewModal';
+export { default as NotaSaidaViewModal } from './NotaSaidaViewModal'; 

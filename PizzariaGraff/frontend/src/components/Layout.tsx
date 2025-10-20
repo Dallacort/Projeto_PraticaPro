@@ -67,6 +67,9 @@ const Layout: React.FC = () => {
         { name: 'Formas de Pagamento', path: '/formas-pagamento', icon: '💳' },
         { name: 'Condições de Pagamento', path: '/condicoes-pagamento', icon: '⏱️' },
         { name: 'Notas de Entrada', path: '/notas-entrada', icon: '📥' },
+        { name: 'Notas de Saída', path: '/notas-saida', icon: '📤' },
+        { name: 'Contas a Pagar', path: '/contas-pagar', icon: '💰' },
+        { name: 'Contas a Receber', path: '/contas-receber', icon: '💵' },
       ],
     },
   ];

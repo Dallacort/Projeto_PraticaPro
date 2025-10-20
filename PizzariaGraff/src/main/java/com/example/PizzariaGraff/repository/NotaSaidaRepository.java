@@ -10,48 +10,48 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class NotaEntradaRepository {
+public class NotaSaidaRepository {
     
     private final DatabaseConnection databaseConnection;
-    private final FornecedorRepository fornecedorRepository;
+    private final ClienteRepository clienteRepository;
     private final CondicaoPagamentoRepository condicaoPagamentoRepository;
     private final ProdutoRepository produtoRepository;
     private final TransportadoraRepository transportadoraRepository;
     
-    public NotaEntradaRepository(DatabaseConnection databaseConnection,
-                                  FornecedorRepository fornecedorRepository,
-                                  CondicaoPagamentoRepository condicaoPagamentoRepository,
-                                  ProdutoRepository produtoRepository,
-                                  TransportadoraRepository transportadoraRepository) {
+    public NotaSaidaRepository(DatabaseConnection databaseConnection,
+                               ClienteRepository clienteRepository,
+                               CondicaoPagamentoRepository condicaoPagamentoRepository,
+                               ProdutoRepository produtoRepository,
+                               TransportadoraRepository transportadoraRepository) {
         this.databaseConnection = databaseConnection;
-        this.fornecedorRepository = fornecedorRepository;
+        this.clienteRepository = clienteRepository;
         this.condicaoPagamentoRepository = condicaoPagamentoRepository;
         this.produtoRepository = produtoRepository;
         this.transportadoraRepository = transportadoraRepository;
     }
     
-    public List<NotaEntrada> findAll() {
-        List<NotaEntrada> notas = new ArrayList<>();
-        String sql = "SELECT * FROM nota_entrada ORDER BY data_emissao DESC, numero DESC";
+    public List<NotaSaida> findAll() {
+        List<NotaSaida> notas = new ArrayList<>();
+        String sql = "SELECT * FROM nota_saida ORDER BY data_emissao DESC, numero DESC";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             
             while (rs.next()) {
-                NotaEntrada nota = mapRowToNotaEntrada(rs);
+                NotaSaida nota = mapRowToNotaSaida(rs);
                 carregarProdutos(nota);
                 notas.add(nota);
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao buscar notas de entrada", e);
+            throw new RuntimeException("Erro ao buscar notas de saída", e);
         }
         
         return notas;
     }
     
-    public Optional<NotaEntrada> findByChave(String numero, String modelo, String serie, Long fornecedorId) {
-        String sql = "SELECT * FROM nota_entrada WHERE numero = ? AND modelo = ? AND serie = ? AND fornecedor_id = ?";
+    public Optional<NotaSaida> findByChave(String numero, String modelo, String serie, Long clienteId) {
+        String sql = "SELECT * FROM nota_saida WHERE numero = ? AND modelo = ? AND serie = ? AND cliente_id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -59,48 +59,48 @@ public class NotaEntradaRepository {
             stmt.setString(1, numero);
             stmt.setString(2, modelo);
             stmt.setString(3, serie);
-            stmt.setLong(4, fornecedorId);
+            stmt.setLong(4, clienteId);
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    NotaEntrada nota = mapRowToNotaEntrada(rs);
+                    NotaSaida nota = mapRowToNotaSaida(rs);
                     carregarProdutos(nota);
                     return Optional.of(nota);
                 }
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao buscar nota de entrada", e);
+            throw new RuntimeException("Erro ao buscar nota de saída", e);
         }
         
         return Optional.empty();
     }
     
-    public List<NotaEntrada> findByFornecedorId(Long fornecedorId) {
-        List<NotaEntrada> notas = new ArrayList<>();
-        String sql = "SELECT * FROM nota_entrada WHERE fornecedor_id = ? ORDER BY data_emissao DESC";
+    public List<NotaSaida> findByClienteId(Long clienteId) {
+        List<NotaSaida> notas = new ArrayList<>();
+        String sql = "SELECT * FROM nota_saida WHERE cliente_id = ? ORDER BY data_emissao DESC";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setLong(1, fornecedorId);
+            stmt.setLong(1, clienteId);
             
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    NotaEntrada nota = mapRowToNotaEntrada(rs);
+                    NotaSaida nota = mapRowToNotaSaida(rs);
                     carregarProdutos(nota);
                     notas.add(nota);
                 }
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao buscar notas por fornecedor", e);
+            throw new RuntimeException("Erro ao buscar notas por cliente", e);
         }
         
         return notas;
     }
     
-    public List<NotaEntrada> findBySituacao(String situacao) {
-        List<NotaEntrada> notas = new ArrayList<>();
-        String sql = "SELECT * FROM nota_entrada WHERE situacao = ? ORDER BY data_emissao DESC";
+    public List<NotaSaida> findBySituacao(String situacao) {
+        List<NotaSaida> notas = new ArrayList<>();
+        String sql = "SELECT * FROM nota_saida WHERE situacao = ? ORDER BY data_emissao DESC";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -109,7 +109,7 @@ public class NotaEntradaRepository {
             
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    NotaEntrada nota = mapRowToNotaEntrada(rs);
+                    NotaSaida nota = mapRowToNotaSaida(rs);
                     carregarProdutos(nota);
                     notas.add(nota);
                 }
@@ -121,16 +121,16 @@ public class NotaEntradaRepository {
         return notas;
     }
     
-    public NotaEntrada save(NotaEntrada nota) {
-        if (existeNota(nota.getNumero(), nota.getModelo(), nota.getSerie(), nota.getFornecedorId())) {
+    public NotaSaida save(NotaSaida nota) {
+        if (existeNota(nota.getNumero(), nota.getModelo(), nota.getSerie(), nota.getClienteId())) {
             return update(nota);
         } else {
             return insert(nota);
         }
     }
     
-    private NotaEntrada insert(NotaEntrada nota) {
-        String sql = "INSERT INTO nota_entrada (numero, modelo, serie, fornecedor_id, data_emissao, data_chegada, " +
+    private NotaSaida insert(NotaSaida nota) {
+        String sql = "INSERT INTO nota_saida (numero, modelo, serie, cliente_id, data_emissao, data_saida, " +
                      "tipo_frete, valor_produtos, valor_frete, valor_seguro, outras_despesas, valor_desconto, " +
                      "valor_total, condicao_pagamento_id, transportadora_id, placa_veiculo, observacoes, situacao) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -146,25 +146,25 @@ public class NotaEntradaRepository {
                 salvarProdutos(nota);
             }
             
-            return findByChave(nota.getNumero(), nota.getModelo(), nota.getSerie(), nota.getFornecedorId())
+            return findByChave(nota.getNumero(), nota.getModelo(), nota.getSerie(), nota.getClienteId())
                     .orElseThrow(() -> new RuntimeException("Erro ao recuperar nota inserida"));
                     
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao inserir nota de entrada: " + e.getMessage(), e);
+            throw new RuntimeException("Erro ao inserir nota de saída: " + e.getMessage(), e);
         }
     }
     
-    private NotaEntrada update(NotaEntrada nota) {
-        String sql = "UPDATE nota_entrada SET data_emissao = ?, data_chegada = ?, tipo_frete = ?, " +
+    private NotaSaida update(NotaSaida nota) {
+        String sql = "UPDATE nota_saida SET data_emissao = ?, data_saida = ?, tipo_frete = ?, " +
                      "valor_produtos = ?, valor_frete = ?, valor_seguro = ?, outras_despesas = ?, " +
                      "valor_desconto = ?, valor_total = ?, condicao_pagamento_id = ?, transportadora_id = ?, " +
-                     "placa_veiculo = ?, observacoes = ?, situacao = ? WHERE numero = ? AND modelo = ? AND serie = ? AND fornecedor_id = ?";
+                     "placa_veiculo = ?, observacoes = ?, situacao = ? WHERE numero = ? AND modelo = ? AND serie = ? AND cliente_id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setDate(1, nota.getDataEmissao() != null ? Date.valueOf(nota.getDataEmissao()) : null);
-            stmt.setDate(2, nota.getDataChegada() != null ? Date.valueOf(nota.getDataChegada()) : null);
+            stmt.setDate(2, nota.getDataSaida() != null ? Date.valueOf(nota.getDataSaida()) : null);
             stmt.setString(3, nota.getTipoFrete());
             stmt.setBigDecimal(4, nota.getValorProdutos());
             stmt.setBigDecimal(5, nota.getValorFrete());
@@ -180,26 +180,26 @@ public class NotaEntradaRepository {
             stmt.setString(15, nota.getNumero());
             stmt.setString(16, nota.getModelo());
             stmt.setString(17, nota.getSerie());
-            stmt.setLong(18, nota.getFornecedorId());
+            stmt.setLong(18, nota.getClienteId());
             
             stmt.executeUpdate();
             
             // Deletar e reinserir produtos
-            deletarProdutos(nota.getNumero(), nota.getModelo(), nota.getSerie(), nota.getFornecedorId());
+            deletarProdutos(nota.getNumero(), nota.getModelo(), nota.getSerie(), nota.getClienteId());
             if (nota.getProdutos() != null && !nota.getProdutos().isEmpty()) {
                 salvarProdutos(nota);
             }
             
-            return findByChave(nota.getNumero(), nota.getModelo(), nota.getSerie(), nota.getFornecedorId())
+            return findByChave(nota.getNumero(), nota.getModelo(), nota.getSerie(), nota.getClienteId())
                     .orElseThrow(() -> new RuntimeException("Erro ao recuperar nota atualizada"));
                     
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao atualizar nota de entrada: " + e.getMessage(), e);
+            throw new RuntimeException("Erro ao atualizar nota de saída: " + e.getMessage(), e);
         }
     }
     
-    public void deleteByChave(String numero, String modelo, String serie, Long fornecedorId) {
-        String sql = "DELETE FROM nota_entrada WHERE numero = ? AND modelo = ? AND serie = ? AND fornecedor_id = ?";
+    public void deleteByChave(String numero, String modelo, String serie, Long clienteId) {
+        String sql = "DELETE FROM nota_saida WHERE numero = ? AND modelo = ? AND serie = ? AND cliente_id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -207,16 +207,16 @@ public class NotaEntradaRepository {
             stmt.setString(1, numero);
             stmt.setString(2, modelo);
             stmt.setString(3, serie);
-            stmt.setLong(4, fornecedorId);
+            stmt.setLong(4, clienteId);
             
             stmt.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao deletar nota de entrada", e);
+            throw new RuntimeException("Erro ao deletar nota de saída", e);
         }
     }
     
-    private boolean existeNota(String numero, String modelo, String serie, Long fornecedorId) {
-        String sql = "SELECT COUNT(*) FROM nota_entrada WHERE numero = ? AND modelo = ? AND serie = ? AND fornecedor_id = ?";
+    private boolean existeNota(String numero, String modelo, String serie, Long clienteId) {
+        String sql = "SELECT COUNT(*) FROM nota_saida WHERE numero = ? AND modelo = ? AND serie = ? AND cliente_id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -224,7 +224,7 @@ public class NotaEntradaRepository {
             stmt.setString(1, numero);
             stmt.setString(2, modelo);
             stmt.setString(3, serie);
-            stmt.setLong(4, fornecedorId);
+            stmt.setLong(4, clienteId);
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -238,8 +238,8 @@ public class NotaEntradaRepository {
         return false;
     }
     
-    private void salvarProdutos(NotaEntrada nota) {
-        String sql = "INSERT INTO produtos_nota (nota_numero, nota_modelo, nota_serie, fornecedor_id, produto_id, " +
+    private void salvarProdutos(NotaSaida nota) {
+        String sql = "INSERT INTO produto_nota_saida (nota_numero, nota_modelo, nota_serie, cliente_id, produto_id, " +
                      "sequencia, quantidade, valor_unitario, valor_desconto, percentual_desconto, valor_total, " +
                      "rateio_frete, rateio_seguro, rateio_outras, custo_preco_final) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -247,16 +247,16 @@ public class NotaEntradaRepository {
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            for (ProdutoNota produto : nota.getProdutos()) {
+            for (ProdutoNotaSaida produto : nota.getProdutos()) {
                 produto.setNotaNumero(nota.getNumero());
                 produto.setNotaModelo(nota.getModelo());
                 produto.setNotaSerie(nota.getSerie());
-                produto.setFornecedorId(nota.getFornecedorId());
+                produto.setClienteId(nota.getClienteId());
                 
                 stmt.setString(1, produto.getNotaNumero());
                 stmt.setString(2, produto.getNotaModelo());
                 stmt.setString(3, produto.getNotaSerie());
-                stmt.setLong(4, produto.getFornecedorId());
+                stmt.setLong(4, produto.getClienteId());
                 stmt.setLong(5, produto.getProdutoId());
                 stmt.setInt(6, produto.getSequencia());
                 stmt.setBigDecimal(7, produto.getQuantidade());
@@ -276,8 +276,8 @@ public class NotaEntradaRepository {
         }
     }
     
-    private void deletarProdutos(String numero, String modelo, String serie, Long fornecedorId) {
-        String sql = "DELETE FROM produtos_nota WHERE nota_numero = ? AND nota_modelo = ? AND nota_serie = ? AND fornecedor_id = ?";
+    private void deletarProdutos(String numero, String modelo, String serie, Long clienteId) {
+        String sql = "DELETE FROM produto_nota_saida WHERE nota_numero = ? AND nota_modelo = ? AND nota_serie = ? AND cliente_id = ?";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -285,7 +285,7 @@ public class NotaEntradaRepository {
             stmt.setString(1, numero);
             stmt.setString(2, modelo);
             stmt.setString(3, serie);
-            stmt.setLong(4, fornecedorId);
+            stmt.setLong(4, clienteId);
             
             stmt.executeUpdate();
         } catch (SQLException e) {
@@ -293,8 +293,8 @@ public class NotaEntradaRepository {
         }
     }
     
-    private void carregarProdutos(NotaEntrada nota) {
-        String sql = "SELECT * FROM produtos_nota WHERE nota_numero = ? AND nota_modelo = ? AND nota_serie = ? AND fornecedor_id = ? ORDER BY sequencia";
+    private void carregarProdutos(NotaSaida nota) {
+        String sql = "SELECT * FROM produto_nota_saida WHERE nota_numero = ? AND nota_modelo = ? AND nota_serie = ? AND cliente_id = ? ORDER BY sequencia";
         
         try (Connection conn = databaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -302,12 +302,12 @@ public class NotaEntradaRepository {
             stmt.setString(1, nota.getNumero());
             stmt.setString(2, nota.getModelo());
             stmt.setString(3, nota.getSerie());
-            stmt.setLong(4, nota.getFornecedorId());
+            stmt.setLong(4, nota.getClienteId());
             
             try (ResultSet rs = stmt.executeQuery()) {
-                List<ProdutoNota> produtos = new ArrayList<>();
+                List<ProdutoNotaSaida> produtos = new ArrayList<>();
                 while (rs.next()) {
-                    ProdutoNota produto = mapRowToProdutoNota(rs);
+                    ProdutoNotaSaida produto = mapRowToProdutoNotaSaida(rs);
                     
                     // Carregar informações do produto
                     produtoRepository.findById(produto.getProdutoId()).ifPresent(produto::setProduto);
@@ -321,13 +321,13 @@ public class NotaEntradaRepository {
         }
     }
     
-    private void setNotaParameters(PreparedStatement stmt, NotaEntrada nota) throws SQLException {
+    private void setNotaParameters(PreparedStatement stmt, NotaSaida nota) throws SQLException {
         stmt.setString(1, nota.getNumero());
         stmt.setString(2, nota.getModelo());
         stmt.setString(3, nota.getSerie());
-        stmt.setLong(4, nota.getFornecedorId());
+        stmt.setLong(4, nota.getClienteId());
         stmt.setDate(5, nota.getDataEmissao() != null ? Date.valueOf(nota.getDataEmissao()) : Date.valueOf(LocalDate.now()));
-        stmt.setDate(6, nota.getDataChegada() != null ? Date.valueOf(nota.getDataChegada()) : null);
+        stmt.setDate(6, nota.getDataSaida() != null ? Date.valueOf(nota.getDataSaida()) : null);
         stmt.setString(7, nota.getTipoFrete());
         stmt.setBigDecimal(8, nota.getValorProdutos());
         stmt.setBigDecimal(9, nota.getValorFrete());
@@ -342,18 +342,18 @@ public class NotaEntradaRepository {
         stmt.setString(18, nota.getSituacao());
     }
     
-    private NotaEntrada mapRowToNotaEntrada(ResultSet rs) throws SQLException {
-        NotaEntrada nota = new NotaEntrada();
+    private NotaSaida mapRowToNotaSaida(ResultSet rs) throws SQLException {
+        NotaSaida nota = new NotaSaida();
         nota.setNumero(rs.getString("numero"));
         nota.setModelo(rs.getString("modelo"));
         nota.setSerie(rs.getString("serie"));
-        nota.setFornecedorId(rs.getLong("fornecedor_id"));
+        nota.setClienteId(rs.getLong("cliente_id"));
         
         Date dataEmissao = rs.getDate("data_emissao");
         nota.setDataEmissao(dataEmissao != null ? dataEmissao.toLocalDate() : null);
         
-        Date dataChegada = rs.getDate("data_chegada");
-        nota.setDataChegada(dataChegada != null ? dataChegada.toLocalDate() : null);
+        Date dataSaida = rs.getDate("data_saida");
+        nota.setDataSaida(dataSaida != null ? dataSaida.toLocalDate() : null);
         
         nota.setTipoFrete(rs.getString("tipo_frete"));
         nota.setValorProdutos(rs.getBigDecimal("valor_produtos"));
@@ -379,8 +379,8 @@ public class NotaEntradaRepository {
         Timestamp dataAlteracao = rs.getTimestamp("data_alteracao");
         nota.setDataAlteracao(dataAlteracao != null ? dataAlteracao.toLocalDateTime() : null);
         
-        // Carregar fornecedor
-        fornecedorRepository.findById(nota.getFornecedorId()).ifPresent(nota::setFornecedor);
+        // Carregar cliente
+        clienteRepository.findById(nota.getClienteId()).ifPresent(nota::setCliente);
         
         // Carregar condição de pagamento
         if (condicaoPagamentoId != null) {
@@ -395,12 +395,12 @@ public class NotaEntradaRepository {
         return nota;
     }
     
-    private ProdutoNota mapRowToProdutoNota(ResultSet rs) throws SQLException {
-        ProdutoNota produto = new ProdutoNota();
+    private ProdutoNotaSaida mapRowToProdutoNotaSaida(ResultSet rs) throws SQLException {
+        ProdutoNotaSaida produto = new ProdutoNotaSaida();
         produto.setNotaNumero(rs.getString("nota_numero"));
         produto.setNotaModelo(rs.getString("nota_modelo"));
         produto.setNotaSerie(rs.getString("nota_serie"));
-        produto.setFornecedorId(rs.getLong("fornecedor_id"));
+        produto.setClienteId(rs.getLong("cliente_id"));
         produto.setProdutoId(rs.getLong("produto_id"));
         produto.setSequencia(rs.getInt("sequencia"));
         produto.setQuantidade(rs.getBigDecimal("quantidade"));
@@ -412,12 +412,6 @@ public class NotaEntradaRepository {
         produto.setRateioSeguro(rs.getBigDecimal("rateio_seguro"));
         produto.setRateioOutras(rs.getBigDecimal("rateio_outras"));
         produto.setCustoPrecoFinal(rs.getBigDecimal("custo_preco_final"));
-        
-        Timestamp dataCriacao = rs.getTimestamp("data_criacao");
-        produto.setDataCriacao(dataCriacao != null ? dataCriacao.toLocalDateTime() : null);
-        
-        Timestamp dataAlteracao = rs.getTimestamp("data_alteracao");
-        produto.setDataAlteracao(dataAlteracao != null ? dataAlteracao.toLocalDateTime() : null);
         
         return produto;
     }

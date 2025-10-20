@@ -1,8 +1,8 @@
 package com.example.PizzariaGraff.service;
 
-import com.example.PizzariaGraff.model.NotaEntrada;
-import com.example.PizzariaGraff.model.ProdutoNota;
-import com.example.PizzariaGraff.repository.NotaEntradaRepository;
+import com.example.PizzariaGraff.model.NotaSaida;
+import com.example.PizzariaGraff.model.ProdutoNotaSaida;
+import com.example.PizzariaGraff.repository.NotaSaidaRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -10,35 +10,35 @@ import java.math.RoundingMode;
 import java.util.List;
 
 @Service
-public class NotaEntradaService {
+public class NotaSaidaService {
     
-    private final NotaEntradaRepository notaEntradaRepository;
-    private final ContaPagarService contaPagarService;
+    private final NotaSaidaRepository notaSaidaRepository;
+    private final ContaReceberService contaReceberService;
     
-    public NotaEntradaService(NotaEntradaRepository notaEntradaRepository,
-                              ContaPagarService contaPagarService) {
-        this.notaEntradaRepository = notaEntradaRepository;
-        this.contaPagarService = contaPagarService;
+    public NotaSaidaService(NotaSaidaRepository notaSaidaRepository,
+                            ContaReceberService contaReceberService) {
+        this.notaSaidaRepository = notaSaidaRepository;
+        this.contaReceberService = contaReceberService;
     }
     
-    public List<NotaEntrada> findAll() {
-        return notaEntradaRepository.findAll();
+    public List<NotaSaida> findAll() {
+        return notaSaidaRepository.findAll();
     }
     
-    public NotaEntrada findByChave(String numero, String modelo, String serie, Long fornecedorId) {
-        return notaEntradaRepository.findByChave(numero, modelo, serie, fornecedorId)
-                .orElseThrow(() -> new RuntimeException("Nota de entrada não encontrada"));
+    public NotaSaida findByChave(String numero, String modelo, String serie, Long clienteId) {
+        return notaSaidaRepository.findByChave(numero, modelo, serie, clienteId)
+                .orElseThrow(() -> new RuntimeException("Nota de saída não encontrada"));
     }
     
-    public List<NotaEntrada> findByFornecedorId(Long fornecedorId) {
-        return notaEntradaRepository.findByFornecedorId(fornecedorId);
+    public List<NotaSaida> findByClienteId(Long clienteId) {
+        return notaSaidaRepository.findByClienteId(clienteId);
     }
     
-    public List<NotaEntrada> findBySituacao(String situacao) {
-        return notaEntradaRepository.findBySituacao(situacao);
+    public List<NotaSaida> findBySituacao(String situacao) {
+        return notaSaidaRepository.findBySituacao(situacao);
     }
     
-    public NotaEntrada save(NotaEntrada nota) {
+    public NotaSaida save(NotaSaida nota) {
         // Validações
         validarNota(nota);
         
@@ -48,22 +48,22 @@ public class NotaEntradaService {
         }
         
         // Salvar nota
-        NotaEntrada notaSalva = notaEntradaRepository.save(nota);
+        NotaSaida notaSalva = notaSaidaRepository.save(nota);
         
-        // Gerar contas a pagar automaticamente (sempre que salvar)
+        // Gerar contas a receber automaticamente (sempre que salvar)
         try {
             // Deletar contas antigas se existirem (caso de atualização)
-            contaPagarService.deletarContasDaNota(
+            contaReceberService.deletarContasDaNota(
                 notaSalva.getNumero(), 
                 notaSalva.getModelo(), 
                 notaSalva.getSerie(), 
-                notaSalva.getFornecedorId()
+                notaSalva.getClienteId()
             );
             
             // Gerar novas contas
-            contaPagarService.gerarContasDaNota(notaSalva);
+            contaReceberService.gerarContasDaNota(notaSalva);
         } catch (Exception e) {
-            System.err.println("Erro ao gerar contas a pagar: " + e.getMessage());
+            System.err.println("Erro ao gerar contas a receber: " + e.getMessage());
             e.printStackTrace();
             // Não falha o salvamento da nota se houver erro ao gerar contas
         }
@@ -71,17 +71,17 @@ public class NotaEntradaService {
         return notaSalva;
     }
     
-    public void deleteByChave(String numero, String modelo, String serie, Long fornecedorId) {
-        notaEntradaRepository.deleteByChave(numero, modelo, serie, fornecedorId);
+    public void deleteByChave(String numero, String modelo, String serie, Long clienteId) {
+        notaSaidaRepository.deleteByChave(numero, modelo, serie, clienteId);
     }
     
-    private void validarNota(NotaEntrada nota) {
+    private void validarNota(NotaSaida nota) {
         if (nota.getNumero() == null || nota.getNumero().trim().isEmpty()) {
             throw new IllegalArgumentException("Número da nota é obrigatório");
         }
         
-        if (nota.getFornecedorId() == null) {
-            throw new IllegalArgumentException("Fornecedor é obrigatório");
+        if (nota.getClienteId() == null) {
+            throw new IllegalArgumentException("Cliente é obrigatório");
         }
         
         if (nota.getDataEmissao() == null) {
@@ -110,7 +110,7 @@ public class NotaEntradaService {
         
         // Validar cada produto
         for (int i = 0; i < nota.getProdutos().size(); i++) {
-            ProdutoNota produto = nota.getProdutos().get(i);
+            ProdutoNotaSaida produto = nota.getProdutos().get(i);
             
             if (produto.getProdutoId() == null) {
                 throw new IllegalArgumentException("Produto " + (i + 1) + ": ID do produto é obrigatório");
@@ -135,8 +135,8 @@ public class NotaEntradaService {
         }
     }
     
-    private void calcularRateios(NotaEntrada nota) {
-        List<ProdutoNota> produtos = nota.getProdutos();
+    private void calcularRateios(NotaSaida nota) {
+        List<ProdutoNotaSaida> produtos = nota.getProdutos();
         
         if (produtos.isEmpty()) {
             return;
@@ -144,7 +144,7 @@ public class NotaEntradaService {
         
         // Somar valor total dos produtos
         BigDecimal totalProdutos = produtos.stream()
-                .map(ProdutoNota::getValorTotal)
+                .map(ProdutoNotaSaida::getValorTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         
         if (totalProdutos.compareTo(BigDecimal.ZERO) == 0) {
@@ -161,7 +161,7 @@ public class NotaEntradaService {
         BigDecimal totalRateioOutras = BigDecimal.ZERO;
         
         for (int i = 0; i < produtos.size(); i++) {
-            ProdutoNota produto = produtos.get(i);
+            ProdutoNotaSaida produto = produtos.get(i);
             
             // Calcular proporção do produto no total
             BigDecimal proporcao = produto.getValorTotal().divide(totalProdutos, 10, RoundingMode.HALF_UP);

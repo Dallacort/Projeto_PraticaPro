@@ -1,7 +1,6 @@
 package com.example.PizzariaGraff.dto;
 
-import com.example.PizzariaGraff.model.NotaEntrada;
-import com.example.PizzariaGraff.model.ProdutoNota;
+import com.example.PizzariaGraff.model.NotaSaida;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -12,8 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Schema(description = "DTO para representar uma Nota de Entrada")
-public class NotaEntradaDTO {
+@Schema(description = "DTO para representar uma Nota de Saída")
+public class NotaSaidaDTO {
     
     @Schema(description = "Número da nota fiscal", example = "22232", required = true)
     private String numero;
@@ -24,19 +23,19 @@ public class NotaEntradaDTO {
     @Schema(description = "Série da nota fiscal", example = "1")
     private String serie;
     
-    @Schema(description = "ID do fornecedor", example = "1", required = true)
-    private Long fornecedorId;
+    @Schema(description = "ID do cliente", example = "1", required = true)
+    private Long clienteId;
     
-    @Schema(description = "Nome do fornecedor")
-    private String fornecedorNome;
+    @Schema(description = "Nome do cliente")
+    private String clienteNome;
     
     @Schema(description = "Data de emissão da nota", example = "2025-09-28", required = true)
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dataEmissao;
     
-    @Schema(description = "Data de chegada da nota", example = "2025-09-28")
+    @Schema(description = "Data de saída da nota", example = "2025-09-28")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate dataChegada;
+    private LocalDate dataSaida;
     
     @Schema(description = "Tipo de frete (CIF, FOB, SEM)", example = "CIF", required = true)
     private String tipoFrete;
@@ -87,18 +86,18 @@ public class NotaEntradaDTO {
     private LocalDateTime dataAlteracao;
     
     @Schema(description = "Lista de produtos da nota", required = true)
-    private List<ProdutoNotaDTO> produtos = new ArrayList<>();
+    private List<ProdutoNotaSaidaDTO> produtos = new ArrayList<>();
     
     // Constructors
-    public NotaEntradaDTO() {}
+    public NotaSaidaDTO() {}
     
-    public NotaEntradaDTO(NotaEntrada nota) {
+    public NotaSaidaDTO(NotaSaida nota) {
         this.numero = nota.getNumero();
         this.modelo = nota.getModelo();
         this.serie = nota.getSerie();
-        this.fornecedorId = nota.getFornecedorId();
+        this.clienteId = nota.getClienteId();
         this.dataEmissao = nota.getDataEmissao();
-        this.dataChegada = nota.getDataChegada();
+        this.dataSaida = nota.getDataSaida();
         this.tipoFrete = nota.getTipoFrete();
         this.valorProdutos = nota.getValorProdutos();
         this.valorFrete = nota.getValorFrete();
@@ -115,8 +114,8 @@ public class NotaEntradaDTO {
         this.dataAlteracao = nota.getDataAlteracao();
         
         // Relacionamentos
-        if (nota.getFornecedor() != null) {
-            this.fornecedorNome = nota.getFornecedor().getFornecedor();
+        if (nota.getCliente() != null) {
+            this.clienteNome = nota.getCliente().getCliente();
         }
         
         if (nota.getCondicaoPagamento() != null) {
@@ -129,20 +128,20 @@ public class NotaEntradaDTO {
         
         if (nota.getProdutos() != null) {
             this.produtos = nota.getProdutos().stream()
-                    .map(ProdutoNotaDTO::new)
+                    .map(ProdutoNotaSaidaDTO::new)
                     .collect(Collectors.toList());
         }
     }
     
     // Método para converter DTO para Entity
-    public NotaEntrada toEntity() {
-        NotaEntrada nota = new NotaEntrada();
+    public NotaSaida toEntity() {
+        NotaSaida nota = new NotaSaida();
         nota.setNumero(this.numero);
         nota.setModelo(this.modelo != null ? this.modelo : "55");
         nota.setSerie(this.serie != null ? this.serie : "1");
-        nota.setFornecedorId(this.fornecedorId);
+        nota.setClienteId(this.clienteId);
         nota.setDataEmissao(this.dataEmissao);
-        nota.setDataChegada(this.dataChegada);
+        nota.setDataSaida(this.dataSaida);
         nota.setTipoFrete(this.tipoFrete != null ? this.tipoFrete : "CIF");
         nota.setValorProdutos(this.valorProdutos != null ? this.valorProdutos : BigDecimal.ZERO);
         nota.setValorFrete(this.valorFrete != null ? this.valorFrete : BigDecimal.ZERO);
@@ -157,8 +156,8 @@ public class NotaEntradaDTO {
         nota.setSituacao(this.situacao != null ? this.situacao : "PENDENTE");
         
         if (this.produtos != null) {
-            List<ProdutoNota> produtosEntity = this.produtos.stream()
-                    .map(ProdutoNotaDTO::toEntity)
+            List<com.example.PizzariaGraff.model.ProdutoNotaSaida> produtosEntity = this.produtos.stream()
+                    .map(ProdutoNotaSaidaDTO::toEntity)
                     .collect(Collectors.toList());
             nota.setProdutos(produtosEntity);
         }
@@ -191,20 +190,20 @@ public class NotaEntradaDTO {
         this.serie = serie;
     }
     
-    public Long getFornecedorId() {
-        return fornecedorId;
+    public Long getClienteId() {
+        return clienteId;
     }
     
-    public void setFornecedorId(Long fornecedorId) {
-        this.fornecedorId = fornecedorId;
+    public void setClienteId(Long clienteId) {
+        this.clienteId = clienteId;
     }
     
-    public String getFornecedorNome() {
-        return fornecedorNome;
+    public String getClienteNome() {
+        return clienteNome;
     }
     
-    public void setFornecedorNome(String fornecedorNome) {
-        this.fornecedorNome = fornecedorNome;
+    public void setClienteNome(String clienteNome) {
+        this.clienteNome = clienteNome;
     }
     
     public LocalDate getDataEmissao() {
@@ -215,12 +214,12 @@ public class NotaEntradaDTO {
         this.dataEmissao = dataEmissao;
     }
     
-    public LocalDate getDataChegada() {
-        return dataChegada;
+    public LocalDate getDataSaida() {
+        return dataSaida;
     }
     
-    public void setDataChegada(LocalDate dataChegada) {
-        this.dataChegada = dataChegada;
+    public void setDataSaida(LocalDate dataSaida) {
+        this.dataSaida = dataSaida;
     }
     
     public String getTipoFrete() {
@@ -351,11 +350,11 @@ public class NotaEntradaDTO {
         this.dataAlteracao = dataAlteracao;
     }
     
-    public List<ProdutoNotaDTO> getProdutos() {
+    public List<ProdutoNotaSaidaDTO> getProdutos() {
         return produtos;
     }
     
-    public void setProdutos(List<ProdutoNotaDTO> produtos) {
+    public void setProdutos(List<ProdutoNotaSaidaDTO> produtos) {
         this.produtos = produtos;
     }
 }

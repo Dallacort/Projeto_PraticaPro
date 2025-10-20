@@ -411,9 +411,116 @@ export interface NotaEntrada {
   valorTotal: number;
   condicaoPagamentoId?: number;
   condicaoPagamentoNome?: string;
+  transportadoraId?: number;
+  transportadoraNome?: string;
+  placaVeiculo?: string;
   observacoes?: string;
   situacao?: string;
   dataCriacao?: string;
   dataAlteracao?: string;
   produtos: ProdutoNota[];
+}
+
+export interface ProdutoNotaSaida {
+  produtoId: number;
+  produtoNome?: string;
+  produtoCodigo?: string;
+  sequencia: number;
+  quantidade: number;
+  valorUnitario: number;
+  valorDesconto?: number;
+  percentualDesconto?: number;
+  valorTotal: number;
+  rateioFrete?: number;
+  rateioSeguro?: number;
+  rateioOutras?: number;
+  custoPrecoFinal?: number;
+}
+
+export interface NotaSaida {
+  numero: string;
+  modelo: string;
+  serie: string;
+  clienteId: number;
+  clienteNome?: string;
+  dataEmissao: string;
+  dataSaida?: string;
+  tipoFrete: string;
+  valorProdutos: number;
+  valorFrete?: number;
+  valorSeguro?: number;
+  outrasDespesas?: number;
+  valorDesconto?: number;
+  valorTotal: number;
+  condicaoPagamentoId?: number;
+  condicaoPagamentoNome?: string;
+  transportadoraId?: number;
+  transportadoraNome?: string;
+  placaVeiculo?: string;
+  observacoes?: string;
+  situacao?: string;
+  dataCriacao?: string;
+  dataAlteracao?: string;
+  produtos: ProdutoNotaSaida[];
+}
+
+export interface ContaPagar {
+  id?: number;
+  notaNumero: string;
+  notaModelo: string;
+  notaSerie: string;
+  fornecedorId: number;
+  fornecedorNome?: string;
+  numeroParcela: number;
+  totalParcelas: number;
+  valorOriginal: number;
+  valorPago?: number;
+  valorDesconto?: number;
+  valorJuros?: number;
+  valorMulta?: number;
+  valorTotal: number;
+  dataEmissao: string;
+  dataVencimento: string;
+  dataPagamento?: string;
+  formaPagamentoId?: number;
+  formaPagamentoNome?: string;
+  situacao?: string; // PENDENTE, PAGA, VENCIDA, CANCELADA, PARCIALMENTE_PAGA
+  observacoes?: string;
+  dataCriacao?: string;
+  dataAlteracao?: string;
+}
+
+export interface ContaReceber {
+  id?: number;
+  notaNumero: string;
+  notaModelo: string;
+  notaSerie: string;
+  clienteId: number;
+  clienteNome?: string;
+  numeroParcela: number;
+  totalParcelas: number;
+  valorOriginal: number;
+  valorRecebido?: number;
+  valorDesconto?: number;
+  valorJuros?: number;
+  valorMulta?: number;
+  valorTotal: number;
+  dataEmissao: string;
+  dataVencimento: string;
+  dataRecebimento?: string;
+  formaPagamentoId?: number;
+  formaPagamentoNome?: string;
+  situacao?: string; // PENDENTE, RECEBIDA, VENCIDA, CANCELADA, PARCIALMENTE_RECEBIDA
+  observacoes?: string;
+  dataCriacao?: string;
+  dataAlteracao?: string;
+}
+
+export interface FormaPagamento {
+  id: number;
+  formaPagamento: string;
+  descricao?: string;
+  ativo?: boolean;
+  dataCriacao?: string;
+  dataAlteracao?: string;
 } 
