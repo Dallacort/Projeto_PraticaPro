@@ -10,13 +10,12 @@
 export const formatFromBackend = (dateString: string): string => {
   if (!dateString) return '-';
   try {
-    const date = new Date(dateString);
+    // Corrigir problema de timezone - tratar como data local
+    const date = new Date(dateString + 'T00:00:00');
     return date.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric'
     });
   } catch (error) {
     console.error('Erro ao formatar data:', error);
@@ -32,10 +31,19 @@ export const formatFromBackend = (dateString: string): string => {
 export const formatToBackend = (dateString: string): string => {
   if (!dateString) return '';
   try {
-    const date = new Date(dateString);
-    return date.toISOString();
+    // Garantir que a data seja tratada como local
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toISOString().split('T')[0]; // Retornar apenas a parte da data
   } catch (error) {
     console.error('Erro ao formatar data para o backend:', error);
     return '';
   }
+};
+
+/**
+ * Obtém a data atual no formato YYYY-MM-DD para inputs de data
+ * @returns Data atual no formato correto
+ */
+export const getCurrentDateString = (): string => {
+  return new Date().toLocaleDateString('pt-CA');
 }; 

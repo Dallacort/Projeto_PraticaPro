@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { NotaSaida, ProdutoNotaSaida, Cliente, Produto, CondicaoPagamento, Transportadora } from '../../types';
 import { createNotaSaida, getNotaSaida, updateNotaSaida } from '../../services/notaSaidaService';
@@ -8,6 +8,7 @@ import CondicaoPagamentoService from '../../services/condicaoPagamentoService';
 import { getTransportadoras } from '../../services/transportadoraService';
 import { FaSpinner, FaSearch, FaPlus, FaTrash } from 'react-icons/fa';
 import FormField from '../../components/FormField';
+import { getCurrentDateString } from '../../utils/dateUtils';
 
 interface NotaSaidaFormData {
   numero: string;
@@ -48,8 +49,8 @@ const NotaSaidaForm: React.FC = () => {
     modelo: '55',
     serie: '1',
     clienteId: '',
-    dataEmissao: new Date().toISOString().split('T')[0],
-    dataSaida: new Date().toISOString().split('T')[0],
+    dataEmissao: getCurrentDateString(),
+    dataSaida: getCurrentDateString(),
     tipoFrete: 'CIF',
     valorFrete: '0',
     valorSeguro: '0',
@@ -296,20 +297,26 @@ const NotaSaidaForm: React.FC = () => {
       return;
     }
 
+    // Recalcular valor total para garantir precisão
+    const quantidade = parseFloat(produtoTemp.quantidade);
+    const valorUnitario = parseFloat(produtoTemp.valorUnitario);
+    const valorDesconto = parseFloat(produtoTemp.valorDesconto) || 0;
+    const valorTotalCalculado = (quantidade * valorUnitario) - valorDesconto;
+
     const novoProduto: ProdutoNotaSaida = {
       produtoId: produtoTemp.produtoId,
       produtoNome: produtoTemp.produtoNome,
       produtoCodigo: produtoTemp.produtoCodigo,
       sequencia: produtosNota.length + 1,
-      quantidade: parseFloat(produtoTemp.quantidade),
-      valorUnitario: parseFloat(produtoTemp.valorUnitario),
-      valorDesconto: parseFloat(produtoTemp.valorDesconto) || 0,
+      quantidade: quantidade,
+      valorUnitario: valorUnitario,
+      valorDesconto: valorDesconto,
       percentualDesconto: parseFloat(produtoTemp.percentualDesconto) || 0,
-      valorTotal: produtoTemp.valorTotal,
+      valorTotal: valorTotalCalculado,
       rateioFrete: 0,
       rateioSeguro: 0,
       rateioOutras: 0,
-      custoPrecoFinal: produtoTemp.valorTotal
+      custoPrecoFinal: valorTotalCalculado
     };
 
     setProdutosNota(prev => [...prev, novoProduto]);
@@ -336,8 +343,9 @@ const NotaSaidaForm: React.FC = () => {
     }
   };
 
-  const calcularTotais = () => {
-    const totalProdutos = produtosNota.reduce((sum, p) => sum + p.valorTotal, 0);
+  // Usar useMemo para garantir recálculo correto dos totais
+  const totais = useMemo(() => {
+    const totalProdutos = produtosNota.reduce((sum, p) => sum + (p.valorTotal || 0), 0);
     const frete = parseFloat(formData.valorFrete) || 0;
     const seguro = parseFloat(formData.valorSeguro) || 0;
     const outras = parseFloat(formData.outrasDespesas) || 0;
@@ -347,7 +355,7 @@ const NotaSaidaForm: React.FC = () => {
       totalProdutos,
       totalPagar: total
     };
-  };
+  }, [produtosNota, formData.valorFrete, formData.valorSeguro, formData.outrasDespesas]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -386,7 +394,6 @@ const NotaSaidaForm: React.FC = () => {
       setSaving(true);
       setError(null);
 
-      const totais = calcularTotais();
 
       const notaData: Partial<NotaSaida> = {
         numero: formData.numero,
@@ -428,7 +435,6 @@ const NotaSaidaForm: React.FC = () => {
     }
   };
 
-  const totais = calcularTotais();
 
   if (loading) {
     return (
@@ -532,7 +538,7 @@ const NotaSaidaForm: React.FC = () => {
                 name="dataEmissao"
                 value={formData.dataEmissao}
                 onChange={handleChange}
-                max={new Date().toISOString().split('T')[0]}
+                max={getCurrentDateString()}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-10"
               />

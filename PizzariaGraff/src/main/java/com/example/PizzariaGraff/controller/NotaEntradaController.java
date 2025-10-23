@@ -210,6 +210,35 @@ public class NotaEntradaController {
         }
     }
     
+    @PutMapping("/{numero}/{modelo}/{serie}/{fornecedorId}/cancelar")
+    @Operation(summary = "Cancela uma nota de entrada e todas as suas parcelas")
+    public ResponseEntity<?> cancelar(
+            @PathVariable String numero,
+            @PathVariable String modelo,
+            @PathVariable String serie,
+            @PathVariable Long fornecedorId) {
+        try {
+            System.out.println("=== CONTROLLER CANCELAR NOTA ENTRADA ===");
+            System.out.println("Chave: " + numero + "/" + modelo + "/" + serie + "/" + fornecedorId);
+            
+            notaEntradaService.cancelarNota(numero, modelo, serie, fornecedorId);
+            System.out.println("Nota cancelada com sucesso!");
+            
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            System.err.println("Erro de validação ao cancelar nota: " + e.getMessage());
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        } catch (RuntimeException e) {
+            System.err.println("Erro ao cancelar nota: " + e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            System.err.println("Erro geral ao cancelar nota: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Erro ao cancelar nota de entrada"));
+        }
+    }
+    
     // Classe auxiliar para resposta de erro
     private static class ErrorResponse {
         private String message;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NotaEntrada } from '../../types';
-import { updateNotaEntrada } from '../../services/notaEntradaService';
+import { cancelarNotaEntrada } from '../../services/notaEntradaService';
 import { FaTimes, FaSpinner } from 'react-icons/fa';
 
 interface NotaEntradaViewModalProps {
@@ -25,20 +25,19 @@ const NotaEntradaViewModal: React.FC<NotaEntradaViewModalProps> = ({
       return;
     }
 
-    if (window.confirm('Deseja realmente cancelar esta nota?')) {
+    if (window.confirm('Deseja realmente cancelar esta nota? Todas as parcelas relacionadas também serão canceladas.')) {
       try {
         setLoading(true);
         setError(null);
 
-        await updateNotaEntrada(
-          nota.numero,
-          nota.modelo,
-          nota.serie,
-          nota.fornecedorId,
-          { ...nota, situacao: 'CANCELADA' }
-        );
+              await cancelarNotaEntrada(
+                nota.numero,
+                nota.modelo,
+                nota.serie,
+                nota.fornecedorId
+              );
 
-        alert('Nota cancelada com sucesso!');
+        alert('Nota e todas as parcelas foram canceladas com sucesso!');
         onUpdate();
         onClose();
       } catch (err: any) {
@@ -75,18 +74,12 @@ const NotaEntradaViewModal: React.FC<NotaEntradaViewModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Debug logs
-  console.log('NotaEntradaViewModal - nota:', nota);
-  console.log('NotaEntradaViewModal - transportadoraNome:', nota.transportadoraNome);
-  console.log('NotaEntradaViewModal - placaVeiculo:', nota.placaVeiculo);
-  console.log('NotaEntradaViewModal - situacao:', nota.situacao);
-
   return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" 
       style={{ zIndex: 9999 }}
     >
-      <div className="flex flex-col bg-white shadow-md rounded-lg overflow-hidden max-w-7xl w-full mx-auto my-4 max-h-[90vh] overflow-y-auto">
+      <div className="flex flex-col bg-white shadow-md rounded-lg overflow-hidden max-w-7xl w-full mx-auto my-4 max-h-[90vh]">
         <div className="flex justify-between items-center bg-gray-50 p-4 border-b">
           <h1 className="text-xl font-bold text-gray-800">
             Visualizar Nota de Compra - {nota.numero}/{nota.modelo}/{nota.serie}
@@ -99,7 +92,7 @@ const NotaEntradaViewModal: React.FC<NotaEntradaViewModalProps> = ({
           </button>
         </div>
 
-        <div className="p-4 space-y-6">
+        <div className="p-4 space-y-6 overflow-y-auto flex-1">
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
               {error}

@@ -1,5 +1,6 @@
 import api from './api';
 import { NotaEntrada } from '../types';
+import { formatNotaDates } from '../utils/dateFormatter';
 
 // Lista todas as notas de entrada
 export const getNotasEntrada = async (): Promise<NotaEntrada[]> => {
@@ -89,6 +90,21 @@ export const deleteNotaEntrada = async (
     await api.delete(`/notas-entrada/${numero}/${modelo}/${serie}/${fornecedorId}`);
   } catch (error) {
     console.error(`Erro ao deletar nota de entrada:`, error);
+    throw error;
+  }
+};
+
+// Cancela uma nota de entrada e todas as suas parcelas
+export const cancelarNotaEntrada = async (
+  numero: string,
+  modelo: string,
+  serie: string,
+  fornecedorId: number
+): Promise<void> => {
+  try {
+    await api.put(`/notas-entrada/${numero}/${modelo}/${serie}/${fornecedorId}/cancelar`);
+  } catch (error) {
+    console.error(`Erro ao cancelar nota de entrada:`, error);
     throw error;
   }
 };

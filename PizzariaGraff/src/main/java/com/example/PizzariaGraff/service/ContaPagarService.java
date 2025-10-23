@@ -214,6 +214,20 @@ public class ContaPagarService {
         contaPagarRepository.deleteByNota(numero, modelo, serie, fornecedorId);
     }
     
+    /**
+     * Cancela todas as contas de uma nota
+     */
+    public void cancelarContasDaNota(String numero, String modelo, String serie, Long fornecedorId) {
+        List<ContaPagar> contas = findByNota(numero, modelo, serie, fornecedorId);
+        
+        for (ContaPagar conta : contas) {
+            if (!conta.getSituacao().equals("PAGA")) {
+                conta.setSituacao("CANCELADA");
+                contaPagarRepository.save(conta);
+            }
+        }
+    }
+    
     private void validarConta(ContaPagar conta) {
         if (conta.getNotaNumero() == null || conta.getNotaNumero().trim().isEmpty()) {
             throw new IllegalArgumentException("Número da nota é obrigatório");

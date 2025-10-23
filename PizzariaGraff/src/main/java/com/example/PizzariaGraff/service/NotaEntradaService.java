@@ -75,6 +75,27 @@ public class NotaEntradaService {
         notaEntradaRepository.deleteByChave(numero, modelo, serie, fornecedorId);
     }
     
+    public void cancelarNota(String numero, String modelo, String serie, Long fornecedorId) {
+        NotaEntrada nota = findByChave(numero, modelo, serie, fornecedorId);
+        
+        if (nota.getSituacao().equals("CANCELADA")) {
+            throw new IllegalArgumentException("Esta nota já está cancelada");
+        }
+        
+        // Cancelar a nota
+        nota.setSituacao("CANCELADA");
+        notaEntradaRepository.save(nota);
+        
+        // Cancelar todas as contas a pagar relacionadas
+        try {
+            contaPagarService.cancelarContasDaNota(numero, modelo, serie, fornecedorId);
+        } catch (Exception e) {
+            System.err.println("Erro ao cancelar contas a pagar: " + e.getMessage());
+            e.printStackTrace();
+            // Não falha o cancelamento da nota se houver erro ao cancelar contas
+        }
+    }
+    
     private void validarNota(NotaEntrada nota) {
         if (nota.getNumero() == null || nota.getNumero().trim().isEmpty()) {
             throw new IllegalArgumentException("Número da nota é obrigatório");

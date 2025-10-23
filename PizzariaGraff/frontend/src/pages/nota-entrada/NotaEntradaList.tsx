@@ -51,7 +51,8 @@ const NotaEntradaList: React.FC = () => {
     if (!dateString) return '-';
     
     try {
-      const date = new Date(dateString);
+      // Corrigir problema de timezone - tratar como data local
+      const date = new Date(dateString + 'T00:00:00');
       if (isNaN(date.getTime())) return '-';
       
       return date.toLocaleDateString('pt-BR', {

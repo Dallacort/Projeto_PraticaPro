@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { NotaEntrada, ProdutoNota, Fornecedor, Produto, CondicaoPagamento, Transportadora } from '../../types';
 import { createNotaEntrada, getNotaEntrada, updateNotaEntrada } from '../../services/notaEntradaService';
@@ -8,6 +8,7 @@ import CondicaoPagamentoService from '../../services/condicaoPagamentoService';
 import { getTransportadoras } from '../../services/transportadoraService';
 import { FaSpinner, FaSearch, FaPlus, FaTrash } from 'react-icons/fa';
 import FormField from '../../components/FormField';
+import { getCurrentDateString } from '../../utils/dateUtils';
 
 interface NotaEntradaFormData {
   numero: string;
@@ -48,8 +49,8 @@ const NotaEntradaForm: React.FC = () => {
     modelo: '55',
     serie: '1',
     fornecedorId: '',
-    dataEmissao: new Date().toISOString().split('T')[0],
-    dataChegada: new Date().toISOString().split('T')[0],
+    dataEmissao: getCurrentDateString(),
+    dataChegada: getCurrentDateString(),
     tipoFrete: 'CIF',
     valorFrete: '0',
     valorSeguro: '0',
@@ -296,20 +297,26 @@ const NotaEntradaForm: React.FC = () => {
       return;
     }
 
+    // Recalcular valor total para garantir precisão
+    const quantidade = parseFloat(produtoTemp.quantidade);
+    const valorUnitario = parseFloat(produtoTemp.valorUnitario);
+    const valorDesconto = parseFloat(produtoTemp.valorDesconto) || 0;
+    const valorTotalCalculado = (quantidade * valorUnitario) - valorDesconto;
+
     const novoProduto: ProdutoNota = {
       produtoId: produtoTemp.produtoId,
       produtoNome: produtoTemp.produtoNome,
       produtoCodigo: produtoTemp.produtoCodigo,
       sequencia: produtosNota.length + 1,
-      quantidade: parseFloat(produtoTemp.quantidade),
-      valorUnitario: parseFloat(produtoTemp.valorUnitario),
-      valorDesconto: parseFloat(produtoTemp.valorDesconto) || 0,
+      quantidade: quantidade,
+      valorUnitario: valorUnitario,
+      valorDesconto: valorDesconto,
       percentualDesconto: parseFloat(produtoTemp.percentualDesconto) || 0,
-      valorTotal: produtoTemp.valorTotal,
+      valorTotal: valorTotalCalculado,
       rateioFrete: 0,
       rateioSeguro: 0,
       rateioOutras: 0,
-      custoPrecoFinal: produtoTemp.valorTotal
+      custoPrecoFinal: valorTotalCalculado
     };
 
     setProdutosNota(prev => [...prev, novoProduto]);
@@ -336,18 +343,29 @@ const NotaEntradaForm: React.FC = () => {
     }
   };
 
-  const calcularTotais = () => {
-    const totalProdutos = produtosNota.reduce((sum, p) => sum + p.valorTotal, 0);
+  // Usar useMemo para garantir recálculo correto dos totais
+  const totais = useMemo(() => {
+    const totalProdutos = produtosNota.reduce((sum, p) => sum + (p.valorTotal || 0), 0);
     const frete = parseFloat(formData.valorFrete) || 0;
     const seguro = parseFloat(formData.valorSeguro) || 0;
     const outras = parseFloat(formData.outrasDespesas) || 0;
     const total = totalProdutos + frete + seguro + outras;
 
+    // Debug para verificar cálculos
+    console.log('Cálculo de totais:', {
+      produtos: produtosNota.map(p => ({ nome: p.produtoNome, valor: p.valorTotal })),
+      totalProdutos,
+      frete,
+      seguro,
+      outras,
+      total
+    });
+
     return {
       totalProdutos,
       totalPagar: total
     };
-  };
+  }, [produtosNota, formData.valorFrete, formData.valorSeguro, formData.outrasDespesas]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -386,7 +404,6 @@ const NotaEntradaForm: React.FC = () => {
       setSaving(true);
       setError(null);
 
-      const totais = calcularTotais();
 
       const notaData: Partial<NotaEntrada> = {
         numero: formData.numero,
@@ -428,7 +445,6 @@ const NotaEntradaForm: React.FC = () => {
     }
   };
 
-  const totais = calcularTotais();
 
   if (loading) {
     return (
@@ -532,7 +548,7 @@ const NotaEntradaForm: React.FC = () => {
                 name="dataEmissao"
                 value={formData.dataEmissao}
                 onChange={handleChange}
-                max={new Date().toISOString().split('T')[0]}
+                max={getCurrentDateString()}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-10"
               />

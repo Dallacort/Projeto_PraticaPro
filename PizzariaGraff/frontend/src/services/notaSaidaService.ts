@@ -1,5 +1,6 @@
 import api from './api';
 import { NotaSaida } from '../types';
+import { formatNotaDates } from '../utils/dateFormatter';
 
 // Lista todas as notas de saída
 export const getNotasSaida = async (): Promise<NotaSaida[]> => {
@@ -89,6 +90,21 @@ export const deleteNotaSaida = async (
     await api.delete(`/notas-saida/${numero}/${modelo}/${serie}/${clienteId}`);
   } catch (error) {
     console.error(`Erro ao deletar nota de saída:`, error);
+    throw error;
+  }
+};
+
+// Cancela uma nota de saída e todas as suas parcelas
+export const cancelarNotaSaida = async (
+  numero: string,
+  modelo: string,
+  serie: string,
+  clienteId: number
+): Promise<void> => {
+  try {
+    await api.put(`/notas-saida/${numero}/${modelo}/${serie}/${clienteId}/cancelar`);
+  } catch (error) {
+    console.error(`Erro ao cancelar nota de saída:`, error);
     throw error;
   }
 };
