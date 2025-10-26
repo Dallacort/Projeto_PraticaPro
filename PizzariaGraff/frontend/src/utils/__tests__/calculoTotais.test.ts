@@ -77,3 +77,5 @@ describe('Cálculo de Totais - Cenários com 1-2 itens', () => {
   });
 });
 
+
+

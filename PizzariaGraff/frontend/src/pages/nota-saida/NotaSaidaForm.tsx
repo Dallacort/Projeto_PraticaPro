@@ -9,6 +9,10 @@ import { getTransportadoras } from '../../services/transportadoraService';
 import { FaSpinner, FaSearch, FaPlus, FaTrash } from 'react-icons/fa';
 import FormField from '../../components/FormField';
 import { getCurrentDateString } from '../../utils/dateUtils';
+import ClienteModal from '../../components/modals/ClienteModal';
+import ProdutoModal from '../../components/modals/ProdutoModal';
+import TransportadoraModal from '../../components/modals/TransportadoraModal';
+import VeiculoModal from '../../components/modals/VeiculoModal';
 
 interface NotaSaidaFormData {
   numero: string;
@@ -1006,133 +1010,48 @@ const NotaSaidaForm: React.FC = () => {
         </div>  
       </form>
 
-      {/* Modal Cliente */}
-      {showClienteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Selecionar Cliente</h3>
-              <button
-                onClick={() => setShowClienteModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="space-y-2">
-              {clientes.map(cliente => (
-                <div
-                  key={cliente.id}
-                  onClick={() => handleClienteSelect(cliente)}
-                  className="p-3 border rounded cursor-pointer hover:bg-gray-100"
-                >
-                  <div className="font-semibold">{cliente.cliente}</div>
-                  <div className="text-sm text-gray-600">{cliente.email}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal Cliente com Cadastro */}
+      <ClienteModal
+        isOpen={showClienteModal}
+        onClose={() => setShowClienteModal(false)}
+        onSelect={(cliente) => {
+          handleClienteSelect(cliente);
+          // Recarregar lista de clientes
+          getClientes().then(setClientes);
+        }}
+      />
 
-      {/* Modal Produto */}
-      {showProdutoModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Selecionar Produto</h3>
-              <button
-                onClick={() => setShowProdutoModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="space-y-2">
-              {produtos.map(produto => (
-                <div
-                  key={produto.id}
-                  onClick={() => handleProdutoSelect(produto)}
-                  className="p-3 border rounded cursor-pointer hover:bg-gray-100"
-                >
-                  <div className="font-semibold">{produto.produto}</div>
-                  <div className="text-sm text-gray-600">
-                    Código: {produto.codigoBarras} | Valor: R$ {produto.valorVenda?.toFixed(2)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal Produto com Cadastro */}
+      <ProdutoModal
+        isOpen={showProdutoModal}
+        onClose={() => setShowProdutoModal(false)}
+        onSelect={(produto) => {
+          handleProdutoSelect(produto);
+          // Recarregar lista de produtos
+          getProdutos().then(setProdutos);
+        }}
+      />
 
-      {/* Modal Transportadora */}
-      {showTransportadoraModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Selecionar Transportadora</h3>
-              <button
-                onClick={() => setShowTransportadoraModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="space-y-2">
-              {transportadoras.map(transportadora => (
-                <div
-                  key={transportadora.id}
-                  onClick={() => handleTransportadoraSelect(transportadora)}
-                  className="p-3 border rounded cursor-pointer hover:bg-gray-100"
-                >
-                  <div className="font-semibold">{transportadora.transportadora}</div>
-                  <div className="text-sm text-gray-600">
-                    {transportadora.email || 'Sem email'}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal Transportadora com Cadastro */}
+      <TransportadoraModal
+        isOpen={showTransportadoraModal}
+        onClose={() => setShowTransportadoraModal(false)}
+        onSelect={(transportadora) => {
+          handleTransportadoraSelect(transportadora);
+          // Recarregar lista de transportadoras
+          getTransportadoras().then(setTransportadoras);
+        }}
+      />
 
-      {/* Modal Veículo */}
-      {showVeiculoModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Selecionar Veículo</h3>
-              <button
-                onClick={() => setShowVeiculoModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-            {veiculos.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                Nenhum veículo cadastrado para esta transportadora
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {veiculos.map((veiculo, index) => (
-                  <div
-                    key={index}
-                    onClick={() => handleVeiculoSelect(veiculo)}
-                    className="p-3 border rounded cursor-pointer hover:bg-gray-100"
-                  >
-                    <div className="font-semibold">{veiculo.placa}</div>
-                    <div className="text-sm text-gray-600">
-                      {veiculo.modelo || 'Sem modelo'} - {veiculo.marca || 'Sem marca'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Modal Veículo com Cadastro */}
+      <VeiculoModal
+        isOpen={showVeiculoModal}
+        onClose={() => setShowVeiculoModal(false)}
+        transportadoraId={transportadoraSelecionada?.id}
+        onSelect={(veiculo) => {
+          handleVeiculoSelect(veiculo);
+        }}
+      />
     </div>
   );
 };
