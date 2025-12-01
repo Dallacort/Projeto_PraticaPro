@@ -490,6 +490,30 @@ export interface ContaPagar {
   dataAlteracao?: string;
 }
 
+export interface ContaPagarAvulsa {
+  id?: number;
+  numeroNota?: string;
+  modelo?: string;
+  serie?: string;
+  fornecedorId: number;
+  fornecedorNome?: string;
+  numParcela: number;
+  valorParcela: number;
+  dataEmissao: string;
+  dataVencimento: string;
+  dataPagamento?: string;
+  valorPago?: number;
+  juros?: number;
+  multa?: number;
+  desconto?: number;
+  status?: string; // PENDENTE, PAGA, VENCIDA, CANCELADA
+  formaPagamentoId?: number;
+  formaPagamentoNome?: string;
+  observacao?: string;
+  dataCriacao?: string;
+  dataAtualizacao?: string;
+}
+
 export interface ContaReceber {
   id?: number;
   notaNumero: string;

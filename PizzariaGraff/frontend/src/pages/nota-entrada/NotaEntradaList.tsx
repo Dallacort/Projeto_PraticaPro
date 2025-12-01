@@ -125,9 +125,9 @@ const NotaEntradaList: React.FC = () => {
         <h1 className="text-xl font-bold text-gray-800">Notas de Entrada</h1>
         <button
           onClick={() => navigate('/notas-entrada/novo')}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center text-sm"
         >
-          <FaPlus />
+          <FaPlus className="mr-2" />
           Nova Nota
         </button>
       </div>

@@ -291,6 +291,97 @@ public class ProdutoRepository {
         }
     }
     
+    /**
+     * Aumenta a quantidade em estoque de um produto
+     * @param produtoId ID do produto
+     * @param quantidade Quantidade a adicionar (pode ser decimal, será convertida para int)
+     */
+    public void aumentarEstoque(Long produtoId, java.math.BigDecimal quantidade) {
+        // Converter BigDecimal para int (arredondando)
+        int quantidadeInt = quantidade.setScale(0, java.math.RoundingMode.HALF_UP).intValue();
+        
+        String sql = "UPDATE produto SET quantidade = quantidade + ? WHERE id = ?";
+        
+        try (Connection conn = databaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, quantidadeInt);
+            stmt.setLong(2, produtoId);
+            
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new RuntimeException("Produto não encontrado para atualizar estoque: ID " + produtoId);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao aumentar estoque do produto", e);
+        }
+    }
+    
+    /**
+     * Diminui a quantidade em estoque de um produto
+     * @param produtoId ID do produto
+     * @param quantidade Quantidade a subtrair (pode ser decimal, será convertida para int)
+     * @throws IllegalArgumentException se não houver estoque suficiente
+     */
+    public void diminuirEstoque(Long produtoId, java.math.BigDecimal quantidade) {
+        // Converter BigDecimal para int (arredondando)
+        int quantidadeInt = quantidade.setScale(0, java.math.RoundingMode.HALF_UP).intValue();
+        
+        // Primeiro verificar se há estoque suficiente
+        Optional<Produto> produtoOpt = findById(produtoId);
+        if (produtoOpt.isEmpty()) {
+            throw new RuntimeException("Produto não encontrado: ID " + produtoId);
+        }
+        
+        Produto produto = produtoOpt.get();
+        Integer estoqueAtual = produto.getQuantidade() != null ? produto.getQuantidade() : 0;
+        
+        if (estoqueAtual < quantidadeInt) {
+            throw new IllegalArgumentException(
+                String.format("Estoque insuficiente para o produto '%s' (ID: %d). " +
+                            "Estoque disponível: %d, Quantidade solicitada: %d",
+                    produto.getProduto(), produtoId, estoqueAtual, quantidadeInt)
+            );
+        }
+        
+        String sql = "UPDATE produto SET quantidade = quantidade - ? WHERE id = ?";
+        
+        try (Connection conn = databaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, quantidadeInt);
+            stmt.setLong(2, produtoId);
+            
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new RuntimeException("Produto não encontrado para atualizar estoque: ID " + produtoId);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao diminuir estoque do produto", e);
+        }
+    }
+    
+    /**
+     * Verifica se há estoque suficiente para uma quantidade
+     * @param produtoId ID do produto
+     * @param quantidade Quantidade necessária (pode ser decimal, será convertida para int)
+     * @return true se houver estoque suficiente, false caso contrário
+     */
+    public boolean verificarEstoqueDisponivel(Long produtoId, java.math.BigDecimal quantidade) {
+        // Converter BigDecimal para int (arredondando)
+        int quantidadeInt = quantidade.setScale(0, java.math.RoundingMode.HALF_UP).intValue();
+        
+        Optional<Produto> produtoOpt = findById(produtoId);
+        if (produtoOpt.isEmpty()) {
+            return false;
+        }
+        
+        Produto produto = produtoOpt.get();
+        Integer estoqueAtual = produto.getQuantidade() != null ? produto.getQuantidade() : 0;
+        
+        return estoqueAtual >= quantidadeInt;
+    }
+    
     private Produto mapResultSetToProduto(ResultSet rs) throws SQLException {
         Produto produto = new Produto();
         produto.setId(rs.getLong("id"));

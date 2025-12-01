@@ -61,13 +61,13 @@ export const pagarConta = async (
   id: number,
   valorPago: number,
   dataPagamento: string,
-  formaPagamentoId: number
+  formaPagamentoId?: number | undefined
 ): Promise<ContaPagar> => {
   try {
     const response = await api.post(`/contas-pagar/${id}/pagar`, {
       valorPago,
       dataPagamento,
-      formaPagamentoId
+      formaPagamentoId: formaPagamentoId || null
     });
     return response.data;
   } catch (error) {

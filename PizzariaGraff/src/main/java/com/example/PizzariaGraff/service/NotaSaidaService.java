@@ -3,22 +3,27 @@ package com.example.PizzariaGraff.service;
 import com.example.PizzariaGraff.model.NotaSaida;
 import com.example.PizzariaGraff.model.ProdutoNotaSaida;
 import com.example.PizzariaGraff.repository.NotaSaidaRepository;
+import com.example.PizzariaGraff.repository.ProdutoRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class NotaSaidaService {
     
     private final NotaSaidaRepository notaSaidaRepository;
     private final ContaReceberService contaReceberService;
+    private final ProdutoRepository produtoRepository;
     
     public NotaSaidaService(NotaSaidaRepository notaSaidaRepository,
-                            ContaReceberService contaReceberService) {
+                            ContaReceberService contaReceberService,
+                            ProdutoRepository produtoRepository) {
         this.notaSaidaRepository = notaSaidaRepository;
         this.contaReceberService = contaReceberService;
+        this.produtoRepository = produtoRepository;
     }
     
     public List<NotaSaida> findAll() {
@@ -42,6 +47,26 @@ public class NotaSaidaService {
         // Validações
         validarNota(nota);
         
+        // Verificar situação anterior da nota (se já existe)
+        String situacaoAnterior = null;
+        try {
+            Optional<NotaSaida> notaExistente = Optional.ofNullable(notaSaidaRepository.findByChave(
+                nota.getNumero(), nota.getModelo(), nota.getSerie(), nota.getClienteId()
+            ).orElse(null));
+            if (notaExistente.isPresent()) {
+                situacaoAnterior = notaExistente.get().getSituacao();
+            }
+        } catch (Exception e) {
+            // Se não encontrar, é uma nota nova
+        }
+        
+        // Validar estoque antes de salvar (sempre, para garantir que não venda sem estoque)
+        String situacaoNova = nota.getSituacao() != null ? nota.getSituacao().toUpperCase() : "PENDENTE";
+        if (situacaoNova.equals("CONFIRMADA") || 
+            (situacaoNova.equals("PENDENTE") && (situacaoAnterior == null || !situacaoAnterior.toUpperCase().equals("CONFIRMADA")))) {
+            validarEstoqueDisponivel(nota);
+        }
+        
         // Calcular rateios se houver produtos
         if (nota.getProdutos() != null && !nota.getProdutos().isEmpty()) {
             calcularRateios(nota);
@@ -49,6 +74,19 @@ public class NotaSaidaService {
         
         // Salvar nota
         NotaSaida notaSalva = notaSaidaRepository.save(nota);
+        
+        // Processar estoque baseado na mudança de situação
+        String situacaoAnt = situacaoAnterior != null ? situacaoAnterior.toUpperCase() : null;
+        
+        // Se mudou de PENDENTE para CONFIRMADA ou se é nova e já vem CONFIRMADA: diminuir estoque
+        if (situacaoNova.equals("CONFIRMADA") && 
+            (situacaoAnt == null || situacaoAnt.equals("PENDENTE"))) {
+            processarEstoqueSaida(notaSalva, true);
+        }
+        // Se mudou de CONFIRMADA para CANCELADA: reverter estoque (aumentar)
+        else if (situacaoNova.equals("CANCELADA") && situacaoAnt != null && situacaoAnt.equals("CONFIRMADA")) {
+            processarEstoqueSaida(notaSalva, false);
+        }
         
         // Gerar contas a receber automaticamente (sempre que salvar)
         try {
@@ -82,9 +120,16 @@ public class NotaSaidaService {
             throw new IllegalArgumentException("Esta nota já está cancelada");
         }
         
+        String situacaoAnterior = nota.getSituacao();
+        
         // Cancelar a nota
         nota.setSituacao("CANCELADA");
         notaSaidaRepository.save(nota);
+        
+        // Se estava CONFIRMADA, reverter estoque (aumentar)
+        if (situacaoAnterior != null && situacaoAnterior.toUpperCase().equals("CONFIRMADA")) {
+            processarEstoqueSaida(nota, false);
+        }
         
         // Cancelar todas as contas a receber relacionadas
         try {
@@ -93,6 +138,77 @@ public class NotaSaidaService {
             System.err.println("Erro ao cancelar contas a receber: " + e.getMessage());
             e.printStackTrace();
             // Não falha o cancelamento da nota se houver erro ao cancelar contas
+        }
+    }
+    
+    /**
+     * Valida se há estoque disponível para todos os produtos da nota de saída
+     * @param nota Nota de saída
+     * @throws IllegalArgumentException se não houver estoque suficiente para algum produto
+     */
+    private void validarEstoqueDisponivel(NotaSaida nota) {
+        if (nota.getProdutos() == null || nota.getProdutos().isEmpty()) {
+            return;
+        }
+        
+        for (ProdutoNotaSaida produtoNota : nota.getProdutos()) {
+            if (produtoNota.getProdutoId() != null && produtoNota.getQuantidade() != null) {
+                boolean estoqueDisponivel = produtoRepository.verificarEstoqueDisponivel(
+                    produtoNota.getProdutoId(), 
+                    produtoNota.getQuantidade()
+                );
+                
+                if (!estoqueDisponivel) {
+                    // Buscar nome do produto para mensagem de erro
+                    String nomeProduto = "ID " + produtoNota.getProdutoId();
+                    try {
+                        var produtoOpt = produtoRepository.findById(produtoNota.getProdutoId());
+                        if (produtoOpt.isPresent()) {
+                            nomeProduto = produtoOpt.get().getProduto();
+                        }
+                    } catch (Exception e) {
+                        // Se não conseguir buscar o nome, usar o ID
+                    }
+                    
+                    throw new IllegalArgumentException(
+                        String.format("Estoque insuficiente para o produto '%s' (ID: %d). " +
+                                    "Quantidade solicitada: %s",
+                            nomeProduto, produtoNota.getProdutoId(), produtoNota.getQuantidade())
+                    );
+                }
+            }
+        }
+    }
+    
+    /**
+     * Processa o estoque dos produtos da nota de saída
+     * @param nota Nota de saída
+     * @param diminuir true para diminuir estoque (nota confirmada), false para aumentar (nota cancelada)
+     */
+    private void processarEstoqueSaida(NotaSaida nota, boolean diminuir) {
+        if (nota.getProdutos() == null || nota.getProdutos().isEmpty()) {
+            return;
+        }
+        
+        for (ProdutoNotaSaida produtoNota : nota.getProdutos()) {
+            if (produtoNota.getProdutoId() != null && produtoNota.getQuantidade() != null) {
+                try {
+                    if (diminuir) {
+                        produtoRepository.diminuirEstoque(produtoNota.getProdutoId(), produtoNota.getQuantidade());
+                        System.out.println("Estoque diminuído para produto ID " + produtoNota.getProdutoId() + 
+                                         ": -" + produtoNota.getQuantidade());
+                    } else {
+                        produtoRepository.aumentarEstoque(produtoNota.getProdutoId(), produtoNota.getQuantidade());
+                        System.out.println("Estoque aumentado para produto ID " + produtoNota.getProdutoId() + 
+                                         ": +" + produtoNota.getQuantidade());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Erro ao processar estoque do produto ID " + produtoNota.getProdutoId() + 
+                                     ": " + e.getMessage());
+                    e.printStackTrace();
+                    throw new RuntimeException("Erro ao processar estoque: " + e.getMessage(), e);
+                }
+            }
         }
     }
     

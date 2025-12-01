@@ -5,6 +5,7 @@ import com.example.PizzariaGraff.model.CondicaoPagamento;
 import com.example.PizzariaGraff.model.NotaEntrada;
 import com.example.PizzariaGraff.repository.ContaPagarRepository;
 import com.example.PizzariaGraff.repository.CondicaoPagamentoRepository;
+import com.example.PizzariaGraff.repository.NotaEntradaRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -12,17 +13,21 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ContaPagarService {
     
     private final ContaPagarRepository contaPagarRepository;
     private final CondicaoPagamentoRepository condicaoPagamentoRepository;
+    private final NotaEntradaRepository notaEntradaRepository;
     
     public ContaPagarService(ContaPagarRepository contaPagarRepository,
-                             CondicaoPagamentoRepository condicaoPagamentoRepository) {
+                             CondicaoPagamentoRepository condicaoPagamentoRepository,
+                             NotaEntradaRepository notaEntradaRepository) {
         this.contaPagarRepository = contaPagarRepository;
         this.condicaoPagamentoRepository = condicaoPagamentoRepository;
+        this.notaEntradaRepository = notaEntradaRepository;
     }
     
     public List<ContaPagar> findAll() {
@@ -70,19 +75,66 @@ public class ContaPagarService {
         conta.setDataPagamento(dataPagamento);
         conta.setFormaPagamentoId(formaPagamentoId);
         
-        // Calcular juros e multa se estiver vencida
+        // Calcular juros e multa apenas se o pagamento for depois do vencimento
         if (dataPagamento.isAfter(conta.getDataVencimento())) {
-            long diasAtraso = java.time.temporal.ChronoUnit.DAYS.between(conta.getDataVencimento(), dataPagamento);
+            // Buscar a condição de pagamento da nota para obter os percentuais
+            CondicaoPagamento condicao = null;
+            try {
+                // Buscar nota de entrada para obter a condição de pagamento
+                Optional<NotaEntrada> notaOpt = notaEntradaRepository.findByChave(
+                    conta.getNotaNumero(),
+                    conta.getNotaModelo(),
+                    conta.getNotaSerie(),
+                    conta.getFornecedorId()
+                );
+                
+                if (notaOpt.isPresent() && notaOpt.get().getCondicaoPagamentoId() != null) {
+                    condicao = condicaoPagamentoRepository.findById(notaOpt.get().getCondicaoPagamentoId())
+                        .orElse(null);
+                }
+            } catch (Exception e) {
+                // Se não conseguir buscar a condição, usar valores padrão
+                System.err.println("Erro ao buscar condição de pagamento: " + e.getMessage());
+            }
             
-            // Multa de 2%
-            BigDecimal multa = conta.getValorOriginal().multiply(new BigDecimal("0.02"));
+            // Calcular multa usando percentual da condição de pagamento (ou padrão 2%)
+            // Multa é aplicada apenas uma vez sobre o valor original
+            Double percentualMulta = (condicao != null && condicao.getPercentualMulta() != null) 
+                ? condicao.getPercentualMulta() 
+                : 2.0;
+            // Converter percentual para decimal (2% = 0.02, 21% = 0.21)
+            BigDecimal multaDecimal = new BigDecimal(percentualMulta).divide(new BigDecimal(100), 4, RoundingMode.HALF_UP);
+            BigDecimal multa = conta.getValorOriginal().multiply(multaDecimal);
             conta.setValorMulta(multa);
             
-            // Juros de 0.033% ao dia (1% ao mês)
-            BigDecimal juros = conta.getValorOriginal()
-                    .multiply(new BigDecimal("0.00033"))
-                    .multiply(new BigDecimal(diasAtraso));
+            // Calcular juros compostos usando percentual da condição de pagamento
+            // Juros compostos: M = C * (1 + i)^n, onde J = M - C
+            Double percentualJuros = (condicao != null && condicao.getPercentualJuros() != null) 
+                ? condicao.getPercentualJuros() 
+                : 1.0; // 1% ao mês
+            long diasAtraso = java.time.temporal.ChronoUnit.DAYS.between(conta.getDataVencimento(), dataPagamento);
+            
+            // Converter percentual mensal para diário (1% ao mês = 0.033% ao dia)
+            BigDecimal jurosMensalDecimal = new BigDecimal(percentualJuros).divide(new BigDecimal(100), 8, RoundingMode.HALF_UP);
+            BigDecimal taxaDiaria = jurosMensalDecimal.divide(new BigDecimal(30), 8, RoundingMode.HALF_UP);
+            
+            // Calcular juros compostos: M = C * (1 + i)^n
+            // Usando BigDecimal para precisão
+            BigDecimal umMaisTaxa = BigDecimal.ONE.add(taxaDiaria);
+            BigDecimal montante = conta.getValorOriginal();
+            
+            // Calcular (1 + i)^n usando multiplicação iterativa para precisão
+            for (long dia = 0; dia < diasAtraso; dia++) {
+                montante = montante.multiply(umMaisTaxa).setScale(4, RoundingMode.HALF_UP);
+            }
+            
+            // Juros = Montante - Capital
+            BigDecimal juros = montante.subtract(conta.getValorOriginal()).setScale(2, RoundingMode.HALF_UP);
             conta.setValorJuros(juros);
+        } else {
+            // Se pagamento for antes ou no vencimento, zerar juros e multa
+            conta.setValorJuros(BigDecimal.ZERO);
+            conta.setValorMulta(BigDecimal.ZERO);
         }
         
         // Calcular valor total
@@ -164,20 +216,46 @@ public class ContaPagarService {
             return contas;
         }
         
-        // Calcular valor de cada parcela
+        // Calcular valor de cada parcela usando o percentual definido na condição de pagamento
         BigDecimal valorTotal = nota.getValorTotal();
         int totalParcelas = parcelas.size();
-        BigDecimal valorParcela = valorTotal.divide(new BigDecimal(totalParcelas), 2, RoundingMode.HALF_UP);
         BigDecimal somaParcelasGeradas = BigDecimal.ZERO;
+        
+        System.out.println("Gerando contas para nota " + nota.getNumero() + " com valor total: " + valorTotal);
+        System.out.println("Total de parcelas: " + totalParcelas);
         
         // Gerar uma conta para cada parcela
         for (int i = 0; i < parcelas.size(); i++) {
             com.example.PizzariaGraff.model.ParcelaCondicaoPagamento parcela = parcelas.get(i);
             
+            // Verificar se a parcela tem percentual definido
+            Double percentualDouble = parcela.getPercentual();
+            System.out.println("Parcela " + (i + 1) + " - Percentual lido: " + percentualDouble);
+            
+            // Calcular valor da parcela usando o percentual
+            BigDecimal percentual;
+            if (percentualDouble != null && percentualDouble > 0 && percentualDouble <= 100) {
+                percentual = new BigDecimal(percentualDouble);
+                System.out.println("✓ Usando percentual da parcela: " + percentual + "%");
+            } else {
+                // Se não tiver percentual válido, dividir igualmente (fallback)
+                percentual = new BigDecimal(100).divide(new BigDecimal(totalParcelas), 2, RoundingMode.HALF_UP);
+                System.out.println("⚠ Percentual inválido ou não encontrado (valor: " + percentualDouble + "), dividindo igualmente: " + percentual + "%");
+            }
+            
+            // Converter percentual para decimal (20% = 0.20)
+            BigDecimal percentualDecimal = percentual.divide(new BigDecimal(100), 4, RoundingMode.HALF_UP);
+            
+            // Calcular valor da parcela
+            BigDecimal valorDessaParcela = valorTotal.multiply(percentualDecimal).setScale(2, RoundingMode.HALF_UP);
+            
+            System.out.println("Valor calculado da parcela " + (i + 1) + ": " + valorDessaParcela);
+            
             // Para a última parcela, ajustar o valor para evitar erro de arredondamento
-            BigDecimal valorDessaParcela = valorParcela;
             if (i == parcelas.size() - 1) {
-                valorDessaParcela = valorTotal.subtract(somaParcelasGeradas);
+                BigDecimal valorAjustado = valorTotal.subtract(somaParcelasGeradas);
+                System.out.println("Ajustando última parcela de " + valorDessaParcela + " para " + valorAjustado);
+                valorDessaParcela = valorAjustado;
             }
             
             // Calcular data de vencimento
@@ -203,6 +281,8 @@ public class ContaPagarService {
             contas.add(contaPagarRepository.save(conta));
             somaParcelasGeradas = somaParcelasGeradas.add(valorDessaParcela);
         }
+        
+        System.out.println("Total de parcelas geradas: " + contas.size() + ", Soma: " + somaParcelasGeradas);
         
         return contas;
     }

@@ -1,8 +1,11 @@
 package com.example.PizzariaGraff.controller;
 
 import com.example.PizzariaGraff.dto.ContaPagarDTO;
+import com.example.PizzariaGraff.dto.ContaPagarAvulsaDTO;
 import com.example.PizzariaGraff.model.ContaPagar;
+import com.example.PizzariaGraff.model.ContaPagarAvulsa;
 import com.example.PizzariaGraff.service.ContaPagarService;
+import com.example.PizzariaGraff.service.ContaPagarAvulsaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
@@ -11,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,24 +25,115 @@ import java.util.stream.Collectors;
 public class ContaPagarController {
     
     private final ContaPagarService contaPagarService;
+    private final ContaPagarAvulsaService contaPagarAvulsaService;
     
-    public ContaPagarController(ContaPagarService contaPagarService) {
+    public ContaPagarController(ContaPagarService contaPagarService,
+                                 ContaPagarAvulsaService contaPagarAvulsaService) {
         this.contaPagarService = contaPagarService;
+        this.contaPagarAvulsaService = contaPagarAvulsaService;
     }
     
     @GetMapping
-    @Operation(summary = "Lista todas as contas a pagar")
+    @Operation(summary = "Lista todas as contas a pagar (incluindo avulsas)")
     public ResponseEntity<List<ContaPagarDTO>> listar() {
         try {
+            List<ContaPagarDTO> contasDTO = new ArrayList<>();
+            
+            // Buscar contas normais
             List<ContaPagar> contas = contaPagarService.findAll();
-            List<ContaPagarDTO> contasDTO = contas.stream()
+            contasDTO.addAll(contas.stream()
                     .map(ContaPagarDTO::new)
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toList()));
+            
+            // Buscar contas avulsas e converter para ContaPagarDTO
+            try {
+                List<ContaPagarAvulsa> contasAvulsasEntities = contaPagarAvulsaService.findAll();
+                System.out.println("Total de contas avulsas entities encontradas: " + contasAvulsasEntities.size());
+                
+                List<ContaPagarAvulsaDTO> contasAvulsas = contasAvulsasEntities.stream()
+                        .map(ContaPagarAvulsaDTO::new)
+                        .collect(Collectors.toList());
+                
+                System.out.println("Total de contas avulsas DTOs convertidas: " + contasAvulsas.size());
+                
+                for (ContaPagarAvulsaDTO contaAvulsa : contasAvulsas) {
+                    try {
+                        ContaPagarDTO contaDTO = new ContaPagarDTO();
+                        // Manter ID original - contas avulsas têm sua própria tabela, então não há conflito
+                        contaDTO.setId(contaAvulsa.getId());
+                        contaDTO.setNotaNumero(contaAvulsa.getNumeroNota() != null ? contaAvulsa.getNumeroNota() : "");
+                        contaDTO.setNotaModelo(contaAvulsa.getModelo() != null ? contaAvulsa.getModelo() : "");
+                        contaDTO.setNotaSerie(contaAvulsa.getSerie() != null ? contaAvulsa.getSerie() : "");
+                        contaDTO.setFornecedorId(contaAvulsa.getFornecedorId());
+                        contaDTO.setFornecedorNome(contaAvulsa.getFornecedorNome() != null ? contaAvulsa.getFornecedorNome() : "");
+                        contaDTO.setNumeroParcela(contaAvulsa.getNumParcela() != null ? contaAvulsa.getNumParcela() : 1);
+                        contaDTO.setTotalParcelas(1); // Contas avulsas são sempre parcela única
+                        contaDTO.setValorOriginal(contaAvulsa.getValorParcela() != null ? contaAvulsa.getValorParcela() : BigDecimal.ZERO);
+                        contaDTO.setValorPago(contaAvulsa.getValorPago() != null ? contaAvulsa.getValorPago() : BigDecimal.ZERO);
+                        contaDTO.setValorDesconto(contaAvulsa.getDesconto() != null ? contaAvulsa.getDesconto() : BigDecimal.ZERO);
+                        contaDTO.setValorJuros(contaAvulsa.getJuros() != null ? contaAvulsa.getJuros() : BigDecimal.ZERO);
+                        contaDTO.setValorMulta(contaAvulsa.getMulta() != null ? contaAvulsa.getMulta() : BigDecimal.ZERO);
+                        
+                        // Calcular valor total - juros e multa só são somados se o pagamento for depois do vencimento
+                        BigDecimal valorTotal = contaAvulsa.getValorParcela();
+                        
+                        // Só somar juros e multa se houver data de pagamento E se for depois do vencimento
+                        if (contaAvulsa.getDataPagamento() != null && 
+                            contaAvulsa.getDataVencimento() != null &&
+                            contaAvulsa.getDataPagamento().isAfter(contaAvulsa.getDataVencimento())) {
+                            valorTotal = valorTotal
+                                    .add(contaAvulsa.getJuros() != null ? contaAvulsa.getJuros() : BigDecimal.ZERO)
+                                    .add(contaAvulsa.getMulta() != null ? contaAvulsa.getMulta() : BigDecimal.ZERO);
+                        }
+                        
+                        valorTotal = valorTotal.subtract(contaAvulsa.getDesconto() != null ? contaAvulsa.getDesconto() : BigDecimal.ZERO);
+                        contaDTO.setValorTotal(valorTotal);
+                        
+                        contaDTO.setDataEmissao(contaAvulsa.getDataEmissao());
+                        contaDTO.setDataVencimento(contaAvulsa.getDataVencimento());
+                        contaDTO.setDataPagamento(contaAvulsa.getDataPagamento());
+                        contaDTO.setFormaPagamentoId(contaAvulsa.getFormaPagamentoId());
+                        contaDTO.setFormaPagamentoNome(contaAvulsa.getFormaPagamentoNome());
+                        
+                        // Mapear status para situação
+                        String situacao = contaAvulsa.getStatus();
+                        if (situacao != null) {
+                            // Converter status para situação (PENDENTE, PAGA, VENCIDA, CANCELADA)
+                            if (situacao.equals("PENDENTE")) {
+                                contaDTO.setSituacao("PENDENTE");
+                            } else if (situacao.equals("PAGA")) {
+                                contaDTO.setSituacao("PAGA");
+                            } else if (situacao.equals("VENCIDA")) {
+                                contaDTO.setSituacao("VENCIDA");
+                            } else if (situacao.equals("CANCELADA")) {
+                                contaDTO.setSituacao("CANCELADA");
+                            } else {
+                                contaDTO.setSituacao(situacao); // Usar o status original se não houver mapeamento
+                            }
+                        } else {
+                            contaDTO.setSituacao("PENDENTE");
+                        }
+                        
+                        contaDTO.setObservacoes(contaAvulsa.getObservacao());
+                        
+                        contasDTO.add(contaDTO);
+                        System.out.println("Conta avulsa convertida: ID=" + contaDTO.getId() + ", Fornecedor=" + contaDTO.getFornecedorNome());
+                    } catch (Exception ex) {
+                        System.err.println("Erro ao converter conta avulsa ID " + contaAvulsa.getId() + ": " + ex.getMessage());
+                        ex.printStackTrace();
+                    }
+                }
+            } catch (Exception ex) {
+                System.err.println("Erro ao buscar contas avulsas: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+            
             return ResponseEntity.ok(contasDTO);
         } catch (Exception e) {
             System.err.println("Erro ao listar contas a pagar: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ArrayList<>()); // Retornar lista vazia em caso de erro para não quebrar o frontend
         }
     }
     

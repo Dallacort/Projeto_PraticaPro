@@ -142,7 +142,15 @@ public class ParcelaCondicaoPagamentoRepository {
         parcela.setId(rs.getLong("id"));
         parcela.setNumero(rs.getInt("numero"));
         parcela.setDias(rs.getInt("dias"));
-        parcela.setPercentual(rs.getDouble("percentual"));
+        
+        // Ler percentual do banco
+        double percentual = rs.getDouble("percentual");
+        if (rs.wasNull()) {
+            percentual = 0.0;
+        }
+        parcela.setPercentual(percentual);
+        
+        System.out.println("Parcela " + parcela.getNumero() + " - Percentual lido do banco: " + percentual);
         
         // Configura a condição de pagamento
         CondicaoPagamento condicao = new CondicaoPagamento();

@@ -1,10 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getContasPagar, pagarConta, cancelarContaPagar } from '../../services/contaPagarService';
 import FormaPagamentoService from '../../services/FormaPagamentoService';
-import { ContaPagar, FormaPagamento } from '../../types';
+import { ContaPagar, FormaPagamento, ContaPagarAvulsa, Fornecedor } from '../../types';
+import { createContaPagarAvulsa } from '../../services/contaPagarAvulsaService';
+import { getFornecedores } from '../../services/fornecedorService';
 import DataTable from '../../components/DataTable';
-import { FaPlus, FaEye, FaMoneyBillWave, FaBan } from 'react-icons/fa';
+import { FaPlus, FaMoneyBillWave, FaBan, FaSearch, FaSpinner } from 'react-icons/fa';
+import { getCurrentDateString } from '../../utils/dateUtils';
+import FornecedorModal from '../../components/modals/FornecedorModal';
+import FormaPagamentoModal from '../../components/FormaPagamentoModal';
 
 const ContasPagarList: React.FC = () => {
   const navigate = useNavigate();
@@ -21,10 +26,45 @@ const ContasPagarList: React.FC = () => {
   const [formaPagamentoId, setFormaPagamentoId] = useState('');
   const [formasPagamento, setFormasPagamento] = useState<FormaPagamento[]>([]);
 
+  // Modal de nota avulsa
+  const [showNotaAvulsaModal, setShowNotaAvulsaModal] = useState(false);
+  const [notaFormData, setNotaFormData] = useState({
+    numeroNota: '',
+    modelo: '',
+    serie: '',
+    fornecedorId: '',
+    dataEmissao: getCurrentDateString(),
+    formaPagamentoId: '',
+    numParcela: '1',
+    valorParcela: '0',
+    dataVencimento: getCurrentDateString(),
+    juros: '0',
+    multa: '0',
+    desconto: '0',
+    dataPagamento: '',
+    observacao: ''
+  });
+  const [fornecedorSelecionado, setFornecedorSelecionado] = useState<Fornecedor | null>(null);
+  const [formaPagamentoSelecionada, setFormaPagamentoSelecionada] = useState<FormaPagamento | null>(null);
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  const [savingNota, setSavingNota] = useState(false);
+  const [showFornecedorModal, setShowFornecedorModal] = useState(false);
+  const [showFormaPagamentoModal, setShowFormaPagamentoModal] = useState(false);
+
   useEffect(() => {
     loadContas();
     loadFormasPagamento();
+    loadNotaData();
   }, []);
+
+  const loadNotaData = async () => {
+    try {
+      const fornecedoresData = await getFornecedores();
+      setFornecedores(fornecedoresData);
+    } catch (err) {
+      console.error('Erro ao carregar dados para nota:', err);
+    }
+  };
 
   const loadContas = async () => {
     try {
@@ -51,10 +91,18 @@ const ContasPagarList: React.FC = () => {
 
   const formatDateBR = (dateString: string | undefined) => {
     if (!dateString) return '-';
+    
     try {
-      const date = new Date(dateString);
+      // Corrigir problema de timezone - tratar como data local
+      // Adicionar 'T00:00:00' para evitar conversão de timezone
+      const date = new Date(dateString + 'T00:00:00');
       if (isNaN(date.getTime())) return '-';
-      return date.toLocaleDateString('pt-BR');
+      
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
     } catch {
       return '-';
     }
@@ -80,7 +128,6 @@ const ContasPagarList: React.FC = () => {
     setContaSelecionada(conta);
     setValorPago(String(conta.valorTotal));
     setDataPagamento(new Date().toISOString().split('T')[0]);
-    setFormaPagamentoId('');
     setShowPagamentoModal(true);
   };
 
@@ -92,17 +139,13 @@ const ContasPagarList: React.FC = () => {
       return;
     }
 
-    if (!formaPagamentoId) {
-      alert('Selecione uma forma de pagamento');
-      return;
-    }
-
     try {
+      // Enviar formaPagamentoId como undefined/null já que não é mais obrigatório
       await pagarConta(
         contaSelecionada.id!,
         parseFloat(valorPago),
         dataPagamento,
-        parseInt(formaPagamentoId)
+        undefined
       );
       alert('Pagamento registrado com sucesso!');
       setShowPagamentoModal(false);
@@ -130,6 +173,139 @@ const ContasPagarList: React.FC = () => {
     if (filtroSituacao === 'TODAS') return true;
     return conta.situacao === filtroSituacao;
   });
+
+  // Funções para modal de nota avulsa
+  const handleAbrirNotaAvulsa = () => {
+    setNotaFormData({
+      numeroNota: '',
+      modelo: '',
+      serie: '',
+      fornecedorId: '',
+      dataEmissao: getCurrentDateString(),
+      formaPagamentoId: '',
+      numParcela: '1',
+      valorParcela: '0',
+      dataVencimento: getCurrentDateString(),
+      juros: '0',
+      multa: '0',
+      desconto: '0',
+      dataPagamento: '',
+      observacao: ''
+    });
+    setFornecedorSelecionado(null);
+    setFormaPagamentoSelecionada(null);
+    setShowNotaAvulsaModal(true);
+  };
+
+  const handleFecharNotaAvulsa = () => {
+    setShowNotaAvulsaModal(false);
+  };
+
+  const handleNotaFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'dataEmissao') {
+      const dataEmissao = new Date(value);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      
+      if (dataEmissao > hoje) {
+        alert('A data de emissão não pode ser futura!');
+        return;
+      }
+    }
+    
+    if (name === 'dataVencimento') {
+      const dataVencimento = new Date(value);
+      const dataEmissao = new Date(notaFormData.dataEmissao);
+      
+      if (dataVencimento < dataEmissao) {
+        alert('A data de vencimento não pode ser anterior à data de emissão!');
+        return;
+      }
+    }
+    
+    setNotaFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFornecedorSelect = (fornecedor: Fornecedor) => {
+    setFornecedorSelecionado(fornecedor);
+    setNotaFormData(prev => ({ ...prev, fornecedorId: String(fornecedor.id) }));
+    setShowFornecedorModal(false);
+  };
+
+  const handleFormaPagamentoSelect = (formaPagamento: FormaPagamento) => {
+    setFormaPagamentoSelecionada(formaPagamento);
+    setNotaFormData(prev => ({ ...prev, formaPagamentoId: String(formaPagamento.id) }));
+    setShowFormaPagamentoModal(false);
+    // Atualizar lista de formas de pagamento se necessário
+    if (!formasPagamento.find(f => f.id === formaPagamento.id)) {
+      setFormasPagamento(prev => [...prev, formaPagamento]);
+    }
+  };
+
+  const calcularTotalPagar = () => {
+    const valorParcela = parseFloat(notaFormData.valorParcela) || 0;
+    const desconto = parseFloat(notaFormData.desconto) || 0;
+    // Juros e multa não são somados aqui - só serão somados no backend se o pagamento for depois do vencimento
+    return valorParcela - desconto;
+  };
+
+  const handleSalvarNotaAvulsa = async () => {
+    if (!fornecedorSelecionado) {
+      alert('Selecione um fornecedor');
+      return;
+    }
+
+    if (!notaFormData.valorParcela || parseFloat(notaFormData.valorParcela) <= 0) {
+      alert('O valor da parcela deve ser maior que zero');
+      return;
+    }
+
+    if (!notaFormData.dataVencimento) {
+      alert('Informe a data de vencimento');
+      return;
+    }
+
+    const dataEmissao = new Date(notaFormData.dataEmissao);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    if (dataEmissao > hoje) {
+      alert('A data de emissão não pode ser futura!');
+      return;
+    }
+
+    try {
+      setSavingNota(true);
+      const contaData: Partial<ContaPagarAvulsa> = {
+        numeroNota: notaFormData.numeroNota || undefined,
+        modelo: notaFormData.modelo || undefined,
+        serie: notaFormData.serie || undefined,
+        fornecedorId: parseInt(notaFormData.fornecedorId),
+        numParcela: parseInt(notaFormData.numParcela),
+        valorParcela: parseFloat(notaFormData.valorParcela),
+        dataEmissao: notaFormData.dataEmissao,
+        dataVencimento: notaFormData.dataVencimento,
+        juros: parseFloat(notaFormData.juros) || 0, // Será somado ao total apenas se pagamento for depois do vencimento
+        multa: parseFloat(notaFormData.multa) || 0, // Será somada ao total apenas se pagamento for depois do vencimento
+        desconto: parseFloat(notaFormData.desconto) || 0,
+        formaPagamentoId: notaFormData.formaPagamentoId ? parseInt(notaFormData.formaPagamentoId) : undefined,
+        observacao: notaFormData.observacao || undefined,
+        status: 'PENDENTE'
+      };
+
+      await createContaPagarAvulsa(contaData);
+      alert('Conta a pagar avulsa criada com sucesso!');
+      handleFecharNotaAvulsa();
+      loadContas();
+    } catch (err: any) {
+      console.error('Erro ao salvar conta avulsa:', err);
+      alert(err?.response?.data?.message || 'Erro ao salvar conta a pagar avulsa');
+    } finally {
+      setSavingNota(false);
+    }
+  };
 
   const columns = [
     {
@@ -212,6 +388,13 @@ const ContasPagarList: React.FC = () => {
       <div className="flex justify-between items-center bg-gray-50 p-4 border-b">
         <h1 className="text-xl font-bold text-gray-800">Contas a Pagar</h1>
         <div className="flex gap-2">
+          <button
+            onClick={handleAbrirNotaAvulsa}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center text-sm"
+          >
+            <FaPlus className="mr-2" />
+            Nota Avulsa
+          </button>
           <select
             value={filtroSituacao}
             onChange={(e) => setFiltroSituacao(e.target.value)}
@@ -295,24 +478,6 @@ const ContasPagarList: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Forma de Pagamento *
-                </label>
-                <select
-                  value={formaPagamentoId}
-                  onChange={(e) => setFormaPagamentoId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                >
-                  <option value="">Selecione...</option>
-                  {formasPagamento.map(forma => (
-                    <option key={forma.id} value={forma.id}>
-                      {forma.formaPagamento}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
 
             <div className="flex gap-2 mt-6">
@@ -332,6 +497,354 @@ const ContasPagarList: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Nota Avulsa */}
+      {showNotaAvulsaModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full m-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Cadastrar Conta a Pagar</h2>
+            
+            <div className="space-y-6">
+              {/* Dados da Nota */}
+              <div className="border-b pb-4">
+                <h3 className="text-lg font-semibold mb-4">Dados da Nota</h3>
+                
+                <div className="grid grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Data Emissão *
+                    </label>
+                    <input
+                      type="date"
+                      name="dataEmissao"
+                      value={notaFormData.dataEmissao}
+                      onChange={handleNotaFormChange}
+                      max={getCurrentDateString()}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-10"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Número
+                    </label>
+                    <input
+                      type="text"
+                      name="numeroNota"
+                      value={notaFormData.numeroNota}
+                      onChange={handleNotaFormChange}
+                      placeholder="22232"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Modelo
+                    </label>
+                    <input
+                      type="text"
+                      name="modelo"
+                      value={notaFormData.modelo}
+                      onChange={handleNotaFormChange}
+                      placeholder="55"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Série
+                    </label>
+                    <input
+                      type="text"
+                      name="serie"
+                      value={notaFormData.serie}
+                      onChange={handleNotaFormChange}
+                      placeholder="1"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Dados do Fornecedor e Pagamento */}
+              <div className="border-b pb-4">
+                <h3 className="text-lg font-semibold mb-4">Dados do Fornecedor e Pagamento</h3>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Cód. Fornecedor *
+                    </label>
+                    <div 
+                      onClick={() => setShowFornecedorModal(true)}
+                      className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 h-10"
+                    >
+                      <input
+                        type="text"
+                        readOnly
+                        value={fornecedorSelecionado ? String(fornecedorSelecionado.id) : ''}
+                        className="flex-grow bg-transparent outline-none cursor-pointer text-sm text-right"
+                        placeholder="Selecione..."
+                      />
+                      <FaSearch className="text-gray-500" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Fornecedor
+                    </label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={fornecedorSelecionado ? fornecedorSelecionado.fornecedor : ''}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm h-10"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Cód. Forma Pag. *
+                    </label>
+                    <div 
+                      onClick={() => setShowFormaPagamentoModal(true)}
+                      className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 h-10"
+                    >
+                      <input
+                        type="text"
+                        readOnly
+                        value={formaPagamentoSelecionada ? String(formaPagamentoSelecionada.id) : ''}
+                        className="flex-grow bg-transparent outline-none cursor-pointer text-sm text-right"
+                        placeholder="Selecione..."
+                      />
+                      <FaSearch className="text-gray-500" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Forma de Pagamento
+                    </label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={formaPagamentoSelecionada ? formaPagamentoSelecionada.nome : ''}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm h-10"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Detalhes da Parcela */}
+              <div className="border-b pb-4">
+                <h3 className="text-lg font-semibold mb-4">Detalhes da Parcela</h3>
+                
+                <div className="grid grid-cols-6 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      N° Parcela *
+                    </label>
+                    <input
+                      type="number"
+                      name="numParcela"
+                      value={notaFormData.numParcela}
+                      onChange={handleNotaFormChange}
+                      min="1"
+                      required
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm h-10 text-right cursor-not-allowed"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Valor Parcela *
+                    </label>
+                    <input
+                      type="number"
+                      name="valorParcela"
+                      value={notaFormData.valorParcela}
+                      onChange={handleNotaFormChange}
+                      step="0.01"
+                      min="0"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Data Vencimento *
+                    </label>
+                    <input
+                      type="date"
+                      name="dataVencimento"
+                      value={notaFormData.dataVencimento}
+                      onChange={handleNotaFormChange}
+                      min={notaFormData.dataEmissao}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-10"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      % Juros
+                    </label>
+                    <input
+                      type="number"
+                      name="juros"
+                      value={notaFormData.juros}
+                      onChange={handleNotaFormChange}
+                      step="0.01"
+                      min="0"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+                      title="Porcentagem de juros (ex: 0.21 = 21%). Será convertido para valor e somado ao total apenas se o pagamento for feito depois da data de vencimento"
+                      placeholder="0.21"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      % Multa
+                    </label>
+                    <input
+                      type="number"
+                      name="multa"
+                      value={notaFormData.multa}
+                      onChange={handleNotaFormChange}
+                      step="0.01"
+                      min="0"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+                      title="Porcentagem de multa (ex: 2.00 = 2%). Será convertida para valor e somada ao total apenas se o pagamento for feito depois da data de vencimento"
+                      placeholder="2.00"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      R$ Desconto
+                    </label>
+                    <input
+                      type="number"
+                      name="desconto"
+                      value={notaFormData.desconto}
+                      onChange={handleNotaFormChange}
+                      step="0.01"
+                      min="0"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-10 text-right"
+                    />
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <p className="text-xs text-gray-500">
+                    * Juros e multa devem ser informados como porcentagem (ex: 0.21 = 0.21%, 2.00 = 2%). 
+                    Serão convertidos para valor e somados ao total apenas se o pagamento for feito depois da data de vencimento.
+                  </p>
+                </div>
+              </div>
+
+              {/* Dados de Pagamento */}
+              <div className="border-b pb-4">
+                <h3 className="text-lg font-semibold mb-4">Dados de Pagamento</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Data Pagamento
+                    </label>
+                    <input
+                      type="date"
+                      name="dataPagamento"
+                      value={notaFormData.dataPagamento}
+                      onChange={handleNotaFormChange}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 h-10 cursor-not-allowed"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Total a Pagar
+                    </label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={`R$ ${calcularTotalPagar().toFixed(2).replace('.', ',')}`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm h-10 text-right font-semibold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Observação */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Observação</h3>
+                <textarea
+                  name="observacao"
+                  value={notaFormData.observacao}
+                  onChange={handleNotaFormChange}
+                  placeholder="Digite observações sobre a conta..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center mt-6 pt-6 border-t">
+              <div className="text-sm text-gray-600">
+                <div>Data Criação: {new Date().toLocaleString('pt-BR')}</div>
+                <div>Data Últ. Alteração: N/A</div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleFecharNotaAvulsa}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                >
+                  Sair
+                </button>
+                <button
+                  onClick={handleSalvarNotaAvulsa}
+                  disabled={savingNota}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                >
+                  {savingNota ? (
+                    <span className="inline-flex items-center justify-center">
+                      <FaSpinner className="animate-spin mr-2" />
+                      Salvando...
+                    </span>
+                  ) : (
+                    'Salvar'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modais auxiliares */}
+      <FornecedorModal
+        isOpen={showFornecedorModal}
+        onClose={() => setShowFornecedorModal(false)}
+        onSelect={(fornecedor) => {
+          handleFornecedorSelect(fornecedor);
+          getFornecedores().then(setFornecedores);
+        }}
+      />
+
+      <FormaPagamentoModal
+        isOpen={showFormaPagamentoModal}
+        onClose={() => setShowFormaPagamentoModal(false)}
+        onSelect={(formaPagamento) => {
+          handleFormaPagamentoSelect(formaPagamento);
+          loadFormasPagamento();
+        }}
+        initialFormasPagamento={formasPagamento}
+      />
     </div>
   );
 };
