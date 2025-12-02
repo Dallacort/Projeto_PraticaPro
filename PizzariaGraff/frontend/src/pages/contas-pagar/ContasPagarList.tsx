@@ -486,11 +486,14 @@ const ContasPagarList: React.FC = () => {
                     hoje.setHours(0, 0, 0, 0);
                     const vencimento = new Date(contaSelecionada.dataVencimento + 'T00:00:00');
                     vencimento.setHours(0, 0, 0, 0);
-                    if (hoje > vencimento) {
+                    if (hoje < vencimento) {
+                      const diasAntecipacao = Math.floor((vencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                      return `ℹ️ Valor calculado automaticamente incluindo desconto (${diasAntecipacao} dia(s) antes do vencimento).`;
+                    } else if (hoje > vencimento) {
                       const diasAtraso = Math.floor((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
                       return `ℹ️ Valor calculado automaticamente incluindo multa e juros (${diasAtraso} dia(s) de atraso).`;
                     }
-                    return 'ℹ️ Valor original da parcela (pagamento em dia).';
+                    return 'ℹ️ Valor calculado automaticamente incluindo desconto (pagamento no dia do vencimento).';
                   })()}
                 </p>
               </div>
@@ -513,11 +516,14 @@ const ContasPagarList: React.FC = () => {
                       hoje.setHours(0, 0, 0, 0);
                       const vencimento = new Date(contaSelecionada.dataVencimento + 'T00:00:00');
                       vencimento.setHours(0, 0, 0, 0);
-                      if (hoje > vencimento) {
+                      if (hoje < vencimento) {
+                        const diasAntecipacao = Math.floor((vencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                        return `✓ Pagamento ${diasAntecipacao} dia(s) antes do vencimento. Desconto será aplicado automaticamente.`;
+                      } else if (hoje > vencimento) {
                         const diasAtraso = Math.floor((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
                         return `⚠️ Pagamento com ${diasAtraso} dia(s) de atraso. Multa e juros serão aplicados automaticamente.`;
                       }
-                      return '✓ Pagamento em dia';
+                      return '✓ Pagamento no dia do vencimento. Desconto será aplicado automaticamente.';
                     })()}
                   </p>
                 )}

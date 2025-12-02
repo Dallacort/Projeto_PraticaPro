@@ -101,10 +101,11 @@ public class ContaPagarService {
         
         // Comparar datas (sem hora)
         boolean pagamentoAntesVencimento = dataPagamento.isBefore(conta.getDataVencimento());
+        boolean pagamentoNoDiaVencimento = dataPagamento.isEqual(conta.getDataVencimento());
         boolean pagamentoDepoisVencimento = dataPagamento.isAfter(conta.getDataVencimento());
         
-        // Se pagamento ANTES do vencimento: aplicar DESCONTO
-        if (pagamentoAntesVencimento) {
+        // Se pagamento ANTES ou NO DIA do vencimento: aplicar DESCONTO
+        if (pagamentoAntesVencimento || pagamentoNoDiaVencimento) {
             Double percentualDesconto = (condicao != null && condicao.getPercentualDesconto() != null) 
                 ? condicao.getPercentualDesconto() 
                 : 0.0;
@@ -113,7 +114,11 @@ public class ContaPagarService {
             BigDecimal descontoDecimal = new BigDecimal(percentualDesconto);
             valorDesconto = conta.getValorOriginal().multiply(descontoDecimal).setScale(2, RoundingMode.HALF_UP);
             
-            System.out.println("Pagamento ANTES do vencimento - Aplicando desconto: " + percentualDesconto + " (20% se for 0.20) = " + valorDesconto);
+            if (pagamentoAntesVencimento) {
+                System.out.println("Pagamento ANTES do vencimento - Aplicando desconto: " + percentualDesconto + " (20% se for 0.20) = " + valorDesconto);
+            } else {
+                System.out.println("Pagamento NO DIA do vencimento - Aplicando desconto: " + percentualDesconto + " (20% se for 0.20) = " + valorDesconto);
+            }
         }
         // Se pagamento DEPOIS do vencimento: aplicar MULTA e JUROS
         else if (pagamentoDepoisVencimento) {
@@ -145,10 +150,6 @@ public class ContaPagarService {
             
             System.out.println("Pagamento DEPOIS do vencimento - Aplicando multa: " + percentualMulta + " (20% se for 0.20) = " + valorMulta + 
                              ", Juros: " + percentualJuros + " (20% ao mês se for 0.20) = " + valorJuros + " (dias atraso: " + diasAtraso + ")");
-        }
-        // Se pagamento NO DIA do vencimento: sem desconto, multa ou juros
-        else {
-            System.out.println("Pagamento NO DIA do vencimento - Sem desconto, multa ou juros");
         }
         
         // Calcular valor total: Original + Juros + Multa - Desconto
@@ -203,10 +204,11 @@ public class ContaPagarService {
         
         // Comparar datas (sem hora)
         boolean pagamentoAntesVencimento = dataPagamento.isBefore(conta.getDataVencimento());
+        boolean pagamentoNoDiaVencimento = dataPagamento.isEqual(conta.getDataVencimento());
         boolean pagamentoDepoisVencimento = dataPagamento.isAfter(conta.getDataVencimento());
         
-        // Se pagamento ANTES do vencimento: aplicar DESCONTO
-        if (pagamentoAntesVencimento) {
+        // Se pagamento ANTES ou NO DIA do vencimento: aplicar DESCONTO
+        if (pagamentoAntesVencimento || pagamentoNoDiaVencimento) {
             Double percentualDesconto = (condicao != null && condicao.getPercentualDesconto() != null) 
                 ? condicao.getPercentualDesconto() 
                 : 0.0;
@@ -218,7 +220,11 @@ public class ContaPagarService {
             conta.setValorJuros(BigDecimal.ZERO);
             conta.setValorMulta(BigDecimal.ZERO);
             
-            System.out.println("Pagamento ANTES do vencimento - Aplicando desconto: " + percentualDesconto + " (20% se for 0.20) = " + desconto);
+            if (pagamentoAntesVencimento) {
+                System.out.println("Pagamento ANTES do vencimento - Aplicando desconto: " + percentualDesconto + " (20% se for 0.20) = " + desconto);
+            } else {
+                System.out.println("Pagamento NO DIA do vencimento - Aplicando desconto: " + percentualDesconto + " (20% se for 0.20) = " + desconto);
+            }
         }
         // Se pagamento DEPOIS do vencimento: aplicar MULTA e JUROS
         else if (pagamentoDepoisVencimento) {
@@ -254,13 +260,6 @@ public class ContaPagarService {
             
             System.out.println("Pagamento DEPOIS do vencimento - Aplicando multa: " + percentualMulta + " (20% se for 0.20) = " + multa + 
                              ", Juros: " + percentualJuros + " (20% ao mês se for 0.20) = " + juros + " (dias atraso: " + diasAtraso + ")");
-        }
-        // Se pagamento NO DIA do vencimento: sem desconto, multa ou juros
-        else {
-            conta.setValorJuros(BigDecimal.ZERO);
-            conta.setValorMulta(BigDecimal.ZERO);
-            conta.setValorDesconto(BigDecimal.ZERO);
-            System.out.println("Pagamento NO DIA do vencimento - Sem desconto, multa ou juros");
         }
         
         // Calcular valor total: Original + Juros + Multa - Desconto

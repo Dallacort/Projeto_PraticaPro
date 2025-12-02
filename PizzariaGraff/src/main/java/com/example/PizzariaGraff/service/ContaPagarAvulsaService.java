@@ -85,16 +85,21 @@ public class ContaPagarAvulsaService {
         
         // Comparar datas (sem hora)
         boolean pagamentoAntesVencimento = dataPagamento.isBefore(conta.getDataVencimento());
+        boolean pagamentoNoDiaVencimento = dataPagamento.isEqual(conta.getDataVencimento());
         boolean pagamentoDepoisVencimento = dataPagamento.isAfter(conta.getDataVencimento());
         
-        // Se pagamento ANTES do vencimento: aplicar DESCONTO
-        if (pagamentoAntesVencimento) {
+        // Se pagamento ANTES ou NO DIA do vencimento: aplicar DESCONTO
+        if (pagamentoAntesVencimento || pagamentoNoDiaVencimento) {
             // Desconto informado já está no formato correto (ex: 0.20 = 20%), usar diretamente
             if (conta.getDesconto() != null && conta.getDesconto().compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal descontoPercentual = conta.getDesconto();
                 valorDesconto = conta.getValorParcela().multiply(descontoPercentual).setScale(2, RoundingMode.HALF_UP);
             }
-            System.out.println("Conta Avulsa - Pagamento ANTES do vencimento - Aplicando desconto: " + valorDesconto);
+            if (pagamentoAntesVencimento) {
+                System.out.println("Conta Avulsa - Pagamento ANTES do vencimento - Aplicando desconto: " + valorDesconto);
+            } else {
+                System.out.println("Conta Avulsa - Pagamento NO DIA do vencimento - Aplicando desconto: " + valorDesconto);
+            }
         }
         // Se pagamento DEPOIS do vencimento: aplicar MULTA e JUROS
         else if (pagamentoDepoisVencimento) {
@@ -119,10 +124,6 @@ public class ContaPagarAvulsaService {
             
             System.out.println("Conta Avulsa - Pagamento DEPOIS do vencimento - Aplicando multa: " + valorMulta + 
                              ", Juros: " + valorJuros + " (dias atraso: " + diasAtraso + ")");
-        }
-        // Se pagamento NO DIA do vencimento: sem desconto, multa ou juros
-        else {
-            System.out.println("Conta Avulsa - Pagamento NO DIA do vencimento - Sem desconto, multa ou juros");
         }
         
         // Calcular valor total: Original + Juros + Multa - Desconto
@@ -157,10 +158,11 @@ public class ContaPagarAvulsaService {
         
         // Comparar datas (sem hora)
         boolean pagamentoAntesVencimento = dataPagamento.isBefore(conta.getDataVencimento());
+        boolean pagamentoNoDiaVencimento = dataPagamento.isEqual(conta.getDataVencimento());
         boolean pagamentoDepoisVencimento = dataPagamento.isAfter(conta.getDataVencimento());
         
-        // Se pagamento ANTES do vencimento: aplicar DESCONTO
-        if (pagamentoAntesVencimento) {
+        // Se pagamento ANTES ou NO DIA do vencimento: aplicar DESCONTO
+        if (pagamentoAntesVencimento || pagamentoNoDiaVencimento) {
             // Desconto informado já está no formato correto (ex: 0.20 = 20%), usar diretamente
             BigDecimal descontoCalculado = BigDecimal.ZERO;
             if (conta.getDesconto() != null && conta.getDesconto().compareTo(BigDecimal.ZERO) > 0) {
@@ -171,7 +173,11 @@ public class ContaPagarAvulsaService {
             conta.setJuros(BigDecimal.ZERO);
             conta.setMulta(BigDecimal.ZERO);
             
-            System.out.println("Conta Avulsa - Pagamento ANTES do vencimento - Aplicando desconto: " + descontoCalculado);
+            if (pagamentoAntesVencimento) {
+                System.out.println("Conta Avulsa - Pagamento ANTES do vencimento - Aplicando desconto: " + descontoCalculado);
+            } else {
+                System.out.println("Conta Avulsa - Pagamento NO DIA do vencimento - Aplicando desconto: " + descontoCalculado);
+            }
         }
         // Se pagamento DEPOIS do vencimento: aplicar MULTA e JUROS
         else if (pagamentoDepoisVencimento) {
@@ -201,13 +207,6 @@ public class ContaPagarAvulsaService {
             
             System.out.println("Conta Avulsa - Pagamento DEPOIS do vencimento - Aplicando multa: " + multaCalculada + 
                              ", Juros: " + jurosCalculado + " (dias atraso: " + diasAtraso + ")");
-        }
-        // Se pagamento NO DIA do vencimento: sem desconto, multa ou juros
-        else {
-            conta.setJuros(BigDecimal.ZERO);
-            conta.setMulta(BigDecimal.ZERO);
-            conta.setDesconto(BigDecimal.ZERO);
-            System.out.println("Conta Avulsa - Pagamento NO DIA do vencimento - Sem desconto, multa ou juros");
         }
         
         // Atualizar situação

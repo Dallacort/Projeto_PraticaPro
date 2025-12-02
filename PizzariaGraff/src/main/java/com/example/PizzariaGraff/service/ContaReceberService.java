@@ -101,10 +101,11 @@ public class ContaReceberService {
         
         // Comparar datas (sem hora)
         boolean recebimentoAntesVencimento = dataRecebimento.isBefore(conta.getDataVencimento());
+        boolean recebimentoNoDiaVencimento = dataRecebimento.isEqual(conta.getDataVencimento());
         boolean recebimentoDepoisVencimento = dataRecebimento.isAfter(conta.getDataVencimento());
         
-        // Se recebimento ANTES do vencimento: aplicar DESCONTO
-        if (recebimentoAntesVencimento) {
+        // Se recebimento ANTES ou NO DIA do vencimento: aplicar DESCONTO
+        if (recebimentoAntesVencimento || recebimentoNoDiaVencimento) {
             Double percentualDesconto = (condicao != null && condicao.getPercentualDesconto() != null) 
                 ? condicao.getPercentualDesconto() 
                 : 0.0;
@@ -113,7 +114,11 @@ public class ContaReceberService {
             BigDecimal descontoDecimal = new BigDecimal(percentualDesconto);
             valorDesconto = conta.getValorOriginal().multiply(descontoDecimal).setScale(2, RoundingMode.HALF_UP);
             
-            System.out.println("Recebimento ANTES do vencimento - Aplicando desconto: " + percentualDesconto + " (20% se for 0.20) = " + valorDesconto);
+            if (recebimentoAntesVencimento) {
+                System.out.println("Recebimento ANTES do vencimento - Aplicando desconto: " + percentualDesconto + " (20% se for 0.20) = " + valorDesconto);
+            } else {
+                System.out.println("Recebimento NO DIA do vencimento - Aplicando desconto: " + percentualDesconto + " (20% se for 0.20) = " + valorDesconto);
+            }
         }
         // Se recebimento DEPOIS do vencimento: aplicar MULTA e JUROS
         else if (recebimentoDepoisVencimento) {
@@ -145,10 +150,6 @@ public class ContaReceberService {
             
             System.out.println("Recebimento DEPOIS do vencimento - Aplicando multa: " + percentualMulta + " (20% se for 0.20) = " + valorMulta + 
                              ", Juros: " + percentualJuros + " (20% se for 0.20) = " + valorJuros + " (dias atraso: " + diasAtraso + ")");
-        }
-        // Se recebimento NO DIA do vencimento: sem desconto, multa ou juros
-        else {
-            System.out.println("Recebimento NO DIA do vencimento - Sem desconto, multa ou juros");
         }
         
         // Calcular valor total: Original + Juros + Multa - Desconto
@@ -231,11 +232,16 @@ public class ContaReceberService {
         
         // Comparar datas (sem hora)
         boolean recebimentoAntesVencimento = dataRecebimento.isBefore(conta.getDataVencimento());
+        boolean recebimentoNoDiaVencimento = dataRecebimento.isEqual(conta.getDataVencimento());
         boolean recebimentoDepoisVencimento = dataRecebimento.isAfter(conta.getDataVencimento());
         
-        // Se recebimento ANTES do vencimento: aplicar DESCONTO
-        if (recebimentoAntesVencimento) {
-            System.out.println("✓ Recebimento ANTES do vencimento - Aplicando DESCONTO");
+        // Se recebimento ANTES ou NO DIA do vencimento: aplicar DESCONTO
+        if (recebimentoAntesVencimento || recebimentoNoDiaVencimento) {
+            if (recebimentoAntesVencimento) {
+                System.out.println("✓ Recebimento ANTES do vencimento - Aplicando DESCONTO");
+            } else {
+                System.out.println("✓ Recebimento NO DIA do vencimento - Aplicando DESCONTO");
+            }
             Double percentualDesconto = (condicao != null && condicao.getPercentualDesconto() != null) 
                 ? condicao.getPercentualDesconto() 
                 : 0.0;
@@ -295,13 +301,6 @@ public class ContaReceberService {
             }
             conta.setValorJuros(juros);
             conta.setValorDesconto(BigDecimal.ZERO);
-        }
-        // Se recebimento NO DIA do vencimento: sem desconto, multa ou juros
-        else {
-            conta.setValorJuros(BigDecimal.ZERO);
-            conta.setValorMulta(BigDecimal.ZERO);
-            conta.setValorDesconto(BigDecimal.ZERO);
-            System.out.println("✓ Recebimento NO DIA do vencimento - Sem desconto, multa ou juros");
         }
         
         // Calcular valor total: Original + Juros + Multa - Desconto

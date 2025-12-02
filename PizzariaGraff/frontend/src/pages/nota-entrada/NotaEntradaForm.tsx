@@ -228,6 +228,21 @@ const NotaEntradaForm: React.FC = () => {
       }
     }
     
+    // Se tipoFrete for "SEM", zerar e limpar campos de frete
+    if (name === 'tipoFrete' && value === 'SEM') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        valorFrete: '0',
+        valorSeguro: '0',
+        outrasDespesas: '0',
+        transportadoraId: '',
+        placaVeiculo: ''
+      }));
+      setTransportadoraSelecionada(null);
+      return;
+    }
+    
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -370,6 +385,58 @@ const NotaEntradaForm: React.FC = () => {
       totalPagar: total
     };
   }, [produtosNota, formData.valorFrete, formData.valorSeguro, formData.outrasDespesas]);
+
+  // Calcular parcelas baseado na condição de pagamento
+  const parcelasCalculadas = useMemo(() => {
+    if (!condicaoPagamentoSelecionada || !totais.totalPagar || totais.totalPagar <= 0) {
+      return [];
+    }
+
+    const parcelas = condicaoPagamentoSelecionada.parcelasCondicaoPagamento || 
+                     condicaoPagamentoSelecionada.parcelas || 
+                     [];
+
+    if (parcelas.length === 0) {
+      return [];
+    }
+
+    const dataEmissao = new Date(formData.dataEmissao);
+    const valorTotal = totais.totalPagar;
+    
+    // Calcular valor de cada parcela baseado no percentual
+    const parcelasComValor = parcelas.map((parcela) => {
+      // Calcular valor da parcela baseado no percentual
+      const valorParcela = (valorTotal * parcela.percentual) / 100;
+      
+      // Calcular data de vencimento usando os dias da parcela
+      const diasParaVencimento = parcela.dias || 0;
+      const dataVencimento = new Date(dataEmissao);
+      dataVencimento.setDate(dataVencimento.getDate() + diasParaVencimento);
+
+      return {
+        numero: parcela.numero,
+        codFormaPgto: parcela.formaPagamento?.id || parcela.formaPagamentoId || condicaoPagamentoSelecionada.formaPagamentoPadraoId || '',
+        formaPagamento: parcela.formaPagamento?.nome || 
+                       parcela.formaPagamento?.descricao ||
+                       condicaoPagamentoSelecionada.formaPagamentoPadraoNome || 
+                       parcela.formaPagamentoDescricao || 
+                       'Não informado',
+        dataVencimento: dataVencimento.toLocaleDateString('pt-BR'),
+        valorParcela: valorParcela
+      };
+    });
+
+    // Ajustar última parcela para garantir que a soma seja exata
+    if (parcelasComValor.length > 0) {
+      const somaParcelas = parcelasComValor.reduce((sum, p) => sum + p.valorParcela, 0);
+      const diferenca = valorTotal - somaParcelas;
+      if (Math.abs(diferenca) > 0.01) {
+        parcelasComValor[parcelasComValor.length - 1].valorParcela += diferenca;
+      }
+    }
+
+    return parcelasComValor;
+  }, [condicaoPagamentoSelecionada, totais.totalPagar, formData.dataEmissao]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -815,7 +882,7 @@ const NotaEntradaForm: React.FC = () => {
                 name="valorFrete"
                 value={formData.valorFrete}
                 onChange={handleChange}
-                disabled={!isProdutosAdicionados()}
+                disabled={!isProdutosAdicionados() || formData.tipoFrete === 'SEM'}
                 placeholder="0.00"
                 step="0.01"
                 min="0"
@@ -832,7 +899,7 @@ const NotaEntradaForm: React.FC = () => {
                 name="valorSeguro"
                 value={formData.valorSeguro}
                 onChange={handleChange}
-                disabled={!isProdutosAdicionados()}
+                disabled={!isProdutosAdicionados() || formData.tipoFrete === 'SEM'}
                 placeholder="0.00"
                 step="0.01"
                 min="0"
@@ -849,7 +916,7 @@ const NotaEntradaForm: React.FC = () => {
                 name="outrasDespesas"
                 value={formData.outrasDespesas}
                 onChange={handleChange}
-                disabled={!isProdutosAdicionados()}
+                disabled={!isProdutosAdicionados() || formData.tipoFrete === 'SEM'}
                 placeholder="0.00"
                 step="0.01"
                 min="0"
@@ -865,9 +932,9 @@ const NotaEntradaForm: React.FC = () => {
                 Cód. Transportadora
               </label>
               <div 
-                onClick={() => isProdutosAdicionados() && setShowTransportadoraModal(true)}
+                onClick={() => isProdutosAdicionados() && formData.tipoFrete !== 'SEM' && setShowTransportadoraModal(true)}
                 className={`flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md h-10 ${
-                  isProdutosAdicionados()
+                  isProdutosAdicionados() && formData.tipoFrete !== 'SEM'
                     ? 'bg-gray-100 cursor-pointer hover:bg-gray-200'
                     : 'bg-gray-200 cursor-not-allowed opacity-50'
                 }`}
@@ -878,7 +945,7 @@ const NotaEntradaForm: React.FC = () => {
                   value={transportadoraSelecionada ? transportadoraSelecionada.transportadora : 'Selecione...'}
                   className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
                   placeholder="Selecione..."
-                  disabled={!isProdutosAdicionados()}
+                  disabled={!isProdutosAdicionados() || formData.tipoFrete === 'SEM'}
                 />
                 <FaSearch className="text-gray-500" />
               </div>
@@ -889,9 +956,9 @@ const NotaEntradaForm: React.FC = () => {
                 Placa Veículo
               </label>
               <div 
-                onClick={() => transportadoraSelecionada && isProdutosAdicionados() && setShowVeiculoModal(true)}
+                onClick={() => transportadoraSelecionada && isProdutosAdicionados() && formData.tipoFrete !== 'SEM' && setShowVeiculoModal(true)}
                 className={`flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md h-10 ${
-                  transportadoraSelecionada && isProdutosAdicionados()
+                  transportadoraSelecionada && isProdutosAdicionados() && formData.tipoFrete !== 'SEM'
                     ? 'bg-gray-100 cursor-pointer hover:bg-gray-200'
                     : 'bg-gray-200 cursor-not-allowed opacity-50'
                 }`}
@@ -902,7 +969,7 @@ const NotaEntradaForm: React.FC = () => {
                   value={formData.placaVeiculo || 'Selecione...'}
                   className="flex-grow bg-transparent outline-none cursor-pointer text-sm"
                   placeholder="Selecione..."
-                  disabled={!transportadoraSelecionada || !isProdutosAdicionados()}
+                  disabled={!transportadoraSelecionada || !isProdutosAdicionados() || formData.tipoFrete === 'SEM'}
                 />
                 <FaSearch className="text-gray-500" />
               </div>
@@ -957,22 +1024,28 @@ const NotaEntradaForm: React.FC = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-3 py-2 text-left">PARCELA</th>
-                    <th className="px-3 py-2 text-left">CÓD. FORMA PGTO</th>
-                    <th className="px-3 py-2 text-left">FORMA DE PAGAMENTO</th>
                     <th className="px-3 py-2 text-left">DATA VENCIMENTO</th>
                     <th className="px-3 py-2 text-right">VALOR PARCELA</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b">
-                    <td className="px-3 py-2">1</td>
-                    <td className="px-3 py-2">1</td>
-                    <td className="px-3 py-2">PIX</td>
-                    <td className="px-3 py-2">{new Date(formData.dataEmissao).toLocaleDateString('pt-BR')}</td>
-                    <td className="px-3 py-2 text-right font-semibold">
-                      R$ {totais.totalPagar.toFixed(2).replace('.', ',')}
-                    </td>
-                  </tr>
+                  {parcelasCalculadas.length > 0 ? (
+                    parcelasCalculadas.map((parcela, index) => (
+                      <tr key={index} className="border-b">
+                        <td className="px-3 py-2">{parcela.numero}</td>
+                        <td className="px-3 py-2">{parcela.dataVencimento}</td>
+                        <td className="px-3 py-2 text-right font-semibold">
+                          R$ {parcela.valorParcela.toFixed(2).replace('.', ',')}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="border-b">
+                      <td colSpan={3} className="px-3 py-2 text-center text-gray-500">
+                        Nenhuma parcela configurada na condição de pagamento
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
