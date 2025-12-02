@@ -41,9 +41,25 @@ public class ContaPagarController {
             
             // Buscar contas normais
             List<ContaPagar> contas = contaPagarService.findAll();
-            contasDTO.addAll(contas.stream()
-                    .map(ContaPagarDTO::new)
-                    .collect(Collectors.toList()));
+            LocalDate hoje = LocalDate.now();
+            
+            for (ContaPagar conta : contas) {
+                ContaPagarDTO contaDTO = new ContaPagarDTO(conta);
+                
+                // Se a conta ainda não foi paga, calcular valor total com multa/juros baseado na data atual
+                if (!conta.getSituacao().equals("PAGA") && !conta.getSituacao().equals("CANCELADA")) {
+                    try {
+                        BigDecimal valorTotalCalculado = contaPagarService.calcularValorTotalParaPagamento(
+                            conta.getId(), hoje);
+                        contaDTO.setValorTotal(valorTotalCalculado);
+                    } catch (Exception e) {
+                        // Se der erro, usar o valor total original
+                        System.err.println("Erro ao calcular valor total para conta " + conta.getId() + ": " + e.getMessage());
+                    }
+                }
+                
+                contasDTO.add(contaDTO);
+            }
             
             // Buscar contas avulsas e converter para ContaPagarDTO
             try {
@@ -74,19 +90,36 @@ public class ContaPagarController {
                         contaDTO.setValorJuros(contaAvulsa.getJuros() != null ? contaAvulsa.getJuros() : BigDecimal.ZERO);
                         contaDTO.setValorMulta(contaAvulsa.getMulta() != null ? contaAvulsa.getMulta() : BigDecimal.ZERO);
                         
-                        // Calcular valor total - juros e multa só são somados se o pagamento for depois do vencimento
-                        BigDecimal valorTotal = contaAvulsa.getValorParcela();
-                        
-                        // Só somar juros e multa se houver data de pagamento E se for depois do vencimento
-                        if (contaAvulsa.getDataPagamento() != null && 
-                            contaAvulsa.getDataVencimento() != null &&
-                            contaAvulsa.getDataPagamento().isAfter(contaAvulsa.getDataVencimento())) {
-                            valorTotal = valorTotal
-                                    .add(contaAvulsa.getJuros() != null ? contaAvulsa.getJuros() : BigDecimal.ZERO)
-                                    .add(contaAvulsa.getMulta() != null ? contaAvulsa.getMulta() : BigDecimal.ZERO);
+                        // Se a conta ainda não foi paga, calcular valor total com multa/juros baseado na data atual
+                        BigDecimal valorTotal;
+                        if (!contaAvulsa.getStatus().equals("PAGA") && !contaAvulsa.getStatus().equals("CANCELADA")) {
+                            try {
+                                valorTotal = contaPagarAvulsaService.calcularValorTotalParaPagamento(
+                                    contaAvulsa.getId(), LocalDate.now());
+                            } catch (Exception e) {
+                                // Se der erro, calcular manualmente
+                                System.err.println("Erro ao calcular valor total para conta avulsa " + contaAvulsa.getId() + ": " + e.getMessage());
+                                valorTotal = contaAvulsa.getValorParcela();
+                                if (contaAvulsa.getDataVencimento() != null && 
+                                    LocalDate.now().isAfter(contaAvulsa.getDataVencimento())) {
+                                    valorTotal = valorTotal
+                                            .add(contaAvulsa.getJuros() != null ? contaAvulsa.getJuros() : BigDecimal.ZERO)
+                                            .add(contaAvulsa.getMulta() != null ? contaAvulsa.getMulta() : BigDecimal.ZERO);
+                                }
+                                valorTotal = valorTotal.subtract(contaAvulsa.getDesconto() != null ? contaAvulsa.getDesconto() : BigDecimal.ZERO);
+                            }
+                        } else {
+                            // Se já foi paga, usar o valor total já calculado
+                            valorTotal = contaAvulsa.getValorParcela();
+                            if (contaAvulsa.getDataPagamento() != null && 
+                                contaAvulsa.getDataVencimento() != null &&
+                                contaAvulsa.getDataPagamento().isAfter(contaAvulsa.getDataVencimento())) {
+                                valorTotal = valorTotal
+                                        .add(contaAvulsa.getJuros() != null ? contaAvulsa.getJuros() : BigDecimal.ZERO)
+                                        .add(contaAvulsa.getMulta() != null ? contaAvulsa.getMulta() : BigDecimal.ZERO);
+                            }
+                            valorTotal = valorTotal.subtract(contaAvulsa.getDesconto() != null ? contaAvulsa.getDesconto() : BigDecimal.ZERO);
                         }
-                        
-                        valorTotal = valorTotal.subtract(contaAvulsa.getDesconto() != null ? contaAvulsa.getDesconto() : BigDecimal.ZERO);
                         contaDTO.setValorTotal(valorTotal);
                         
                         contaDTO.setDataEmissao(contaAvulsa.getDataEmissao());
@@ -196,19 +229,103 @@ public class ContaPagarController {
         }
     }
     
+    @GetMapping("/{id}/calcular-valor")
+    @Operation(summary = "Calcula o valor total a ser pago (incluindo multa e juros se aplicável)")
+    public ResponseEntity<?> calcularValorTotal(
+            @PathVariable Long id,
+            @RequestParam(required = false) String dataPagamento) {
+        try {
+            LocalDate dataPag = dataPagamento != null ? LocalDate.parse(dataPagamento) : LocalDate.now();
+            
+            // Tentar primeiro como conta normal
+            try {
+                BigDecimal valorTotal = contaPagarService.calcularValorTotalParaPagamento(id, dataPag);
+                return ResponseEntity.ok(new ValorTotalResponse(valorTotal));
+            } catch (RuntimeException e) {
+                // Se não encontrar como conta normal, tentar como conta avulsa
+                try {
+                    BigDecimal valorTotal = contaPagarAvulsaService.calcularValorTotalParaPagamento(id, dataPag);
+                    return ResponseEntity.ok(new ValorTotalResponse(valorTotal));
+                } catch (RuntimeException e2) {
+                    return ResponseEntity.badRequest().body(new ErrorResponse("Conta a pagar não encontrada: ID " + id));
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("Erro ao calcular valor total: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Erro ao calcular valor total"));
+        }
+    }
+    
     @PostMapping("/{id}/pagar")
-    @Operation(summary = "Registra pagamento de uma conta")
+    @Operation(summary = "Registra pagamento de uma conta (normal ou avulsa)")
     public ResponseEntity<?> pagar(
             @PathVariable Long id,
             @RequestBody PagamentoRequest request) {
         try {
-            ContaPagar conta = contaPagarService.pagar(
-                    id,
-                    request.getValorPago(),
-                    request.getDataPagamento(),
-                    request.getFormaPagamentoId()
-            );
-            return ResponseEntity.ok(new ContaPagarDTO(conta));
+            // Tentar primeiro como conta normal
+            try {
+                ContaPagar conta = contaPagarService.pagar(
+                        id,
+                        request.getValorPago(),
+                        request.getDataPagamento(),
+                        request.getFormaPagamentoId()
+                );
+                return ResponseEntity.ok(new ContaPagarDTO(conta));
+            } catch (RuntimeException e) {
+                // Se não encontrar como conta normal, tentar como conta avulsa
+                try {
+                    ContaPagarAvulsa contaAvulsa = contaPagarAvulsaService.pagar(
+                            id,
+                            request.getValorPago(),
+                            request.getDataPagamento(),
+                            request.getFormaPagamentoId()
+                    );
+                    // Converter ContaPagarAvulsa para ContaPagarDTO
+                    ContaPagarAvulsaDTO contaAvulsaDTO = new ContaPagarAvulsaDTO(contaAvulsa);
+                    ContaPagarDTO contaDTO = new ContaPagarDTO();
+                    contaDTO.setId(contaAvulsaDTO.getId());
+                    contaDTO.setNotaNumero(contaAvulsaDTO.getNumeroNota() != null ? contaAvulsaDTO.getNumeroNota() : "");
+                    contaDTO.setNotaModelo(contaAvulsaDTO.getModelo() != null ? contaAvulsaDTO.getModelo() : "");
+                    contaDTO.setNotaSerie(contaAvulsaDTO.getSerie() != null ? contaAvulsaDTO.getSerie() : "");
+                    contaDTO.setFornecedorId(contaAvulsaDTO.getFornecedorId());
+                    contaDTO.setFornecedorNome(contaAvulsaDTO.getFornecedorNome() != null ? contaAvulsaDTO.getFornecedorNome() : "");
+                    contaDTO.setNumeroParcela(contaAvulsaDTO.getNumParcela() != null ? contaAvulsaDTO.getNumParcela() : 1);
+                    contaDTO.setTotalParcelas(1);
+                    contaDTO.setValorOriginal(contaAvulsaDTO.getValorParcela() != null ? contaAvulsaDTO.getValorParcela() : BigDecimal.ZERO);
+                    contaDTO.setValorPago(contaAvulsaDTO.getValorPago() != null ? contaAvulsaDTO.getValorPago() : BigDecimal.ZERO);
+                    contaDTO.setValorDesconto(contaAvulsaDTO.getDesconto() != null ? contaAvulsaDTO.getDesconto() : BigDecimal.ZERO);
+                    contaDTO.setValorJuros(contaAvulsaDTO.getJuros() != null ? contaAvulsaDTO.getJuros() : BigDecimal.ZERO);
+                    contaDTO.setValorMulta(contaAvulsaDTO.getMulta() != null ? contaAvulsaDTO.getMulta() : BigDecimal.ZERO);
+                    
+                    // Calcular valor total
+                    BigDecimal valorTotal = contaAvulsaDTO.getValorParcela();
+                    if (contaAvulsaDTO.getDataPagamento() != null && 
+                        contaAvulsaDTO.getDataVencimento() != null &&
+                        contaAvulsaDTO.getDataPagamento().isAfter(contaAvulsaDTO.getDataVencimento())) {
+                        valorTotal = valorTotal
+                                .add(contaAvulsaDTO.getJuros() != null ? contaAvulsaDTO.getJuros() : BigDecimal.ZERO)
+                                .add(contaAvulsaDTO.getMulta() != null ? contaAvulsaDTO.getMulta() : BigDecimal.ZERO);
+                    }
+                    valorTotal = valorTotal.subtract(contaAvulsaDTO.getDesconto() != null ? contaAvulsaDTO.getDesconto() : BigDecimal.ZERO);
+                    contaDTO.setValorTotal(valorTotal);
+                    
+                    contaDTO.setDataEmissao(contaAvulsaDTO.getDataEmissao());
+                    contaDTO.setDataVencimento(contaAvulsaDTO.getDataVencimento());
+                    contaDTO.setDataPagamento(contaAvulsaDTO.getDataPagamento());
+                    contaDTO.setFormaPagamentoId(contaAvulsaDTO.getFormaPagamentoId());
+                    contaDTO.setFormaPagamentoNome(contaAvulsaDTO.getFormaPagamentoNome());
+                    contaDTO.setSituacao(contaAvulsaDTO.getStatus());
+                    contaDTO.setObservacoes(contaAvulsaDTO.getObservacao());
+                    
+                    return ResponseEntity.ok(contaDTO);
+                } catch (RuntimeException e2) {
+                    // Se também não encontrar como conta avulsa, retornar erro
+                    throw new RuntimeException("Conta a pagar não encontrada: ID " + id);
+                }
+            }
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
@@ -275,6 +392,17 @@ public class ContaPagarController {
         
         public Long getFormaPagamentoId() { return formaPagamentoId; }
         public void setFormaPagamentoId(Long formaPagamentoId) { this.formaPagamentoId = formaPagamentoId; }
+    }
+    
+    private static class ValorTotalResponse {
+        private BigDecimal valorTotal;
+        
+        public ValorTotalResponse(BigDecimal valorTotal) {
+            this.valorTotal = valorTotal;
+        }
+        
+        public BigDecimal getValorTotal() { return valorTotal; }
+        public void setValorTotal(BigDecimal valorTotal) { this.valorTotal = valorTotal; }
     }
     
     private static class ErrorResponse {

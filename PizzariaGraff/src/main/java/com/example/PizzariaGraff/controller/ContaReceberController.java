@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,9 +32,27 @@ public class ContaReceberController {
     public ResponseEntity<List<ContaReceberDTO>> listar() {
         try {
             List<ContaReceber> contas = contaReceberService.findAll();
-            List<ContaReceberDTO> contasDTO = contas.stream()
-                    .map(ContaReceberDTO::new)
-                    .collect(Collectors.toList());
+            LocalDate hoje = LocalDate.now();
+            
+            List<ContaReceberDTO> contasDTO = new ArrayList<>();
+            for (ContaReceber conta : contas) {
+                ContaReceberDTO contaDTO = new ContaReceberDTO(conta);
+                
+                // Se a conta ainda não foi recebida, calcular valor total com multa/juros baseado na data atual
+                if (!conta.getSituacao().equals("RECEBIDA") && !conta.getSituacao().equals("CANCELADA")) {
+                    try {
+                        BigDecimal valorTotalCalculado = contaReceberService.calcularValorTotalParaRecebimento(
+                            conta.getId(), hoje);
+                        contaDTO.setValorTotal(valorTotalCalculado);
+                    } catch (Exception e) {
+                        // Se der erro, usar o valor total original
+                        System.err.println("Erro ao calcular valor total para conta " + conta.getId() + ": " + e.getMessage());
+                    }
+                }
+                
+                contasDTO.add(contaDTO);
+            }
+            
             return ResponseEntity.ok(contasDTO);
         } catch (Exception e) {
             System.err.println("Erro ao listar contas a receber: " + e.getMessage());
@@ -98,6 +117,25 @@ public class ContaReceberController {
         } catch (Exception e) {
             System.err.println("Erro ao listar contas vencidas: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    @GetMapping("/{id}/calcular-valor")
+    @Operation(summary = "Calcula o valor total a ser recebido (incluindo multa e juros se aplicável)")
+    public ResponseEntity<?> calcularValorTotal(
+            @PathVariable Long id,
+            @RequestParam(required = false) String dataRecebimento) {
+        try {
+            LocalDate dataRec = dataRecebimento != null ? LocalDate.parse(dataRecebimento) : LocalDate.now();
+            
+            BigDecimal valorTotal = contaReceberService.calcularValorTotalParaRecebimento(id, dataRec);
+            return ResponseEntity.ok(new ValorTotalResponse(valorTotal));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("Erro ao calcular valor total: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Erro ao calcular valor total"));
         }
     }
     
@@ -180,6 +218,17 @@ public class ContaReceberController {
         
         public Long getFormaPagamentoId() { return formaPagamentoId; }
         public void setFormaPagamentoId(Long formaPagamentoId) { this.formaPagamentoId = formaPagamentoId; }
+    }
+    
+    private static class ValorTotalResponse {
+        private BigDecimal valorTotal;
+        
+        public ValorTotalResponse(BigDecimal valorTotal) {
+            this.valorTotal = valorTotal;
+        }
+        
+        public BigDecimal getValorTotal() { return valorTotal; }
+        public void setValorTotal(BigDecimal valorTotal) { this.valorTotal = valorTotal; }
     }
     
     private static class ErrorResponse {

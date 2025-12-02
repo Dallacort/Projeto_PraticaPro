@@ -107,3 +107,19 @@ export const deleteContaPagar = async (id: number): Promise<void> => {
   }
 };
 
+// Calcula o valor total a ser pago (incluindo multa e juros se aplicável)
+export const calcularValorTotalPagamento = async (
+  id: number,
+  dataPagamento: string
+): Promise<number> => {
+  try {
+    const response = await api.get(`/contas-pagar/${id}/calcular-valor`, {
+      params: { dataPagamento }
+    });
+    return response.data.valorTotal;
+  } catch (error) {
+    console.error('Erro ao calcular valor total:', error);
+    throw error;
+  }
+};
+

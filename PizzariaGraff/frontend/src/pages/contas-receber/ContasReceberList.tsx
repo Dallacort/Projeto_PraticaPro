@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getContasReceber, receberConta, cancelarContaReceber } from '../../services/contaReceberService';
+import { getContasReceber, receberConta, cancelarContaReceber, calcularValorTotalRecebimento } from '../../services/contaReceberService';
 import FormaPagamentoService from '../../services/FormaPagamentoService';
 import { ContaReceber, FormaPagamento } from '../../types';
 import DataTable from '../../components/DataTable';
 import { FaPlus, FaEye, FaMoneyBillWave, FaBan } from 'react-icons/fa';
+import { getCurrentDateString } from '../../utils/dateUtils';
 
 const ContasReceberList: React.FC = () => {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ const ContasReceberList: React.FC = () => {
   const [showRecebimentoModal, setShowRecebimentoModal] = useState(false);
   const [contaSelecionada, setContaSelecionada] = useState<ContaReceber | null>(null);
   const [valorRecebido, setValorRecebido] = useState('');
-  const [dataRecebimento, setDataRecebimento] = useState(new Date().toISOString().split('T')[0]);
+  const [dataRecebimento, setDataRecebimento] = useState(getCurrentDateString());
   const [formaPagamentoId, setFormaPagamentoId] = useState('');
   const [formasPagamento, setFormasPagamento] = useState<FormaPagamento[]>([]);
 
@@ -51,10 +52,17 @@ const ContasReceberList: React.FC = () => {
 
   const formatDateBR = (dateString: string | undefined) => {
     if (!dateString) return '-';
+    
     try {
-      const date = new Date(dateString);
+      // Corrigir problema de timezone - tratar como data local
+      const date = new Date(dateString + 'T00:00:00');
       if (isNaN(date.getTime())) return '-';
-      return date.toLocaleDateString('pt-BR');
+      
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
     } catch {
       return '-';
     }
@@ -76,10 +84,23 @@ const ContasReceberList: React.FC = () => {
     return badges[situacao || 'PENDENTE'] || 'bg-gray-100 text-gray-800';
   };
 
-  const handleReceber = (conta: ContaReceber) => {
+  const handleReceber = async (conta: ContaReceber) => {
     setContaSelecionada(conta);
-    setValorRecebido(String(conta.valorTotal));
-    setDataRecebimento(new Date().toISOString().split('T')[0]);
+    // Data sempre travada no dia de hoje
+    const dataRecebimentoHoje = getCurrentDateString();
+    setDataRecebimento(dataRecebimentoHoje);
+    
+    try {
+      // Calcular valor total com multa e juros (se aplicável) via backend
+      const valorTotalCalculado = await calcularValorTotalRecebimento(conta.id!, dataRecebimentoHoje);
+      setValorRecebido(String(valorTotalCalculado.toFixed(2)));
+    } catch (err: any) {
+      console.error('Erro ao calcular valor total:', err);
+      // Em caso de erro, usar o valor original como fallback
+      setValorRecebido(String(conta.valorTotal));
+      alert('Aviso: Não foi possível calcular o valor com multa/juros. Usando valor original.');
+    }
+    
     setFormaPagamentoId('');
     setShowRecebimentoModal(true);
   };
@@ -88,21 +109,17 @@ const ContasReceberList: React.FC = () => {
     if (!contaSelecionada) return;
 
     if (!valorRecebido || parseFloat(valorRecebido) <= 0) {
-      alert('Informe um valor válido');
-      return;
-    }
-
-    if (!formaPagamentoId) {
-      alert('Selecione uma forma de pagamento');
+      alert('Valor inválido');
       return;
     }
 
     try {
+      // O valor já foi calculado com multa e juros (se aplicável) quando o modal foi aberto
       await receberConta(
         contaSelecionada.id!,
         parseFloat(valorRecebido),
         dataRecebimento,
-        parseInt(formaPagamentoId)
+        formaPagamentoId ? parseInt(formaPagamentoId) : undefined
       );
       alert('Recebimento registrado com sucesso!');
       setShowRecebimentoModal(false);
@@ -253,7 +270,7 @@ const ContasReceberList: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={contaSelecionada.clienteNome}
+                  value={contaSelecionada.clienteNome || 'N/A'}
                   readOnly
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                 />
@@ -273,15 +290,30 @@ const ContasReceberList: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Valor Total *
+                  Valor a Receber *
                 </label>
                 <input
                   type="number"
                   value={valorRecebido}
-                  onChange={(e) => setValorRecebido(e.target.value)}
+                  readOnly
                   step="0.01"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                  placeholder="0.00"
+                  title="Valor calculado automaticamente incluindo multa e juros (se aplicável)"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  {contaSelecionada.dataVencimento && (() => {
+                    const hoje = new Date();
+                    hoje.setHours(0, 0, 0, 0);
+                    const vencimento = new Date(contaSelecionada.dataVencimento + 'T00:00:00');
+                    vencimento.setHours(0, 0, 0, 0);
+                    if (hoje > vencimento) {
+                      const diasAtraso = Math.floor((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
+                      return `ℹ️ Valor calculado automaticamente incluindo multa e juros (${diasAtraso} dia(s) de atraso).`;
+                    }
+                    return 'ℹ️ Valor original da parcela (recebimento em dia).';
+                  })()}
+                </p>
               </div>
 
               <div>
@@ -290,28 +322,26 @@ const ContasReceberList: React.FC = () => {
                 </label>
                 <input
                   type="date"
-                  value={dataRecebimento}
-                  onChange={(e) => setDataRecebimento(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  value={dataRecebimento || getCurrentDateString()}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                  title="Data de recebimento travada no dia de hoje"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Forma de Pagamento *
-                </label>
-                <select
-                  value={formaPagamentoId}
-                  onChange={(e) => setFormaPagamentoId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                >
-                  <option value="">Selecione...</option>
-                  {formasPagamento.map(forma => (
-                    <option key={forma.id} value={forma.id}>
-                      {forma.formaPagamento}
-                    </option>
-                  ))}
-                </select>
+                {contaSelecionada.dataVencimento && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {(() => {
+                      const hoje = new Date();
+                      hoje.setHours(0, 0, 0, 0);
+                      const vencimento = new Date(contaSelecionada.dataVencimento + 'T00:00:00');
+                      vencimento.setHours(0, 0, 0, 0);
+                      if (hoje > vencimento) {
+                        const diasAtraso = Math.floor((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
+                        return `⚠️ Recebimento com ${diasAtraso} dia(s) de atraso. Multa e juros serão aplicados automaticamente.`;
+                      }
+                      return '✓ Recebimento em dia';
+                    })()}
+                  </p>
+                )}
               </div>
             </div>
 

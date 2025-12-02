@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getContasPagar, pagarConta, cancelarContaPagar } from '../../services/contaPagarService';
+import { getContasPagar, pagarConta, cancelarContaPagar, calcularValorTotalPagamento } from '../../services/contaPagarService';
 import FormaPagamentoService from '../../services/FormaPagamentoService';
 import { ContaPagar, FormaPagamento, ContaPagarAvulsa, Fornecedor } from '../../types';
 import { createContaPagarAvulsa } from '../../services/contaPagarAvulsaService';
@@ -22,7 +22,7 @@ const ContasPagarList: React.FC = () => {
   const [showPagamentoModal, setShowPagamentoModal] = useState(false);
   const [contaSelecionada, setContaSelecionada] = useState<ContaPagar | null>(null);
   const [valorPago, setValorPago] = useState('');
-  const [dataPagamento, setDataPagamento] = useState(new Date().toISOString().split('T')[0]);
+  const [dataPagamento, setDataPagamento] = useState(getCurrentDateString());
   const [formaPagamentoId, setFormaPagamentoId] = useState('');
   const [formasPagamento, setFormasPagamento] = useState<FormaPagamento[]>([]);
 
@@ -124,10 +124,23 @@ const ContasPagarList: React.FC = () => {
     return badges[situacao || 'PENDENTE'] || 'bg-gray-100 text-gray-800';
   };
 
-  const handlePagar = (conta: ContaPagar) => {
+  const handlePagar = async (conta: ContaPagar) => {
     setContaSelecionada(conta);
-    setValorPago(String(conta.valorTotal));
-    setDataPagamento(new Date().toISOString().split('T')[0]);
+    // Data sempre travada no dia de hoje
+    const dataPagamentoHoje = getCurrentDateString();
+    setDataPagamento(dataPagamentoHoje);
+    
+    try {
+      // Calcular valor total com multa e juros (se aplicável) via backend
+      const valorTotalCalculado = await calcularValorTotalPagamento(conta.id!, dataPagamentoHoje);
+      setValorPago(String(valorTotalCalculado.toFixed(2)));
+    } catch (err: any) {
+      console.error('Erro ao calcular valor total:', err);
+      // Em caso de erro, usar o valor original como fallback
+      setValorPago(String(conta.valorTotal));
+      alert('Aviso: Não foi possível calcular o valor com multa/juros. Usando valor original.');
+    }
+    
     setShowPagamentoModal(true);
   };
 
@@ -135,12 +148,12 @@ const ContasPagarList: React.FC = () => {
     if (!contaSelecionada) return;
 
     if (!valorPago || parseFloat(valorPago) <= 0) {
-      alert('Informe um valor válido');
+      alert('Valor inválido');
       return;
     }
 
     try {
-      // Enviar formaPagamentoId como undefined/null já que não é mais obrigatório
+      // O valor já foi calculado com multa e juros (se aplicável) quando o modal foi aberto
       await pagarConta(
         contaSelecionada.id!,
         parseFloat(valorPago),
@@ -436,7 +449,7 @@ const ContasPagarList: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={contaSelecionada.fornecedorNome}
+                  value={contaSelecionada.fornecedorNome || 'N/A'}
                   readOnly
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                 />
@@ -456,15 +469,30 @@ const ContasPagarList: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Valor Total *
+                  Valor a Pagar *
                 </label>
                 <input
                   type="number"
                   value={valorPago}
-                  onChange={(e) => setValorPago(e.target.value)}
+                  readOnly
                   step="0.01"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                  placeholder="0.00"
+                  title="Valor calculado automaticamente incluindo multa e juros (se aplicável)"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  {contaSelecionada.dataVencimento && (() => {
+                    const hoje = new Date();
+                    hoje.setHours(0, 0, 0, 0);
+                    const vencimento = new Date(contaSelecionada.dataVencimento + 'T00:00:00');
+                    vencimento.setHours(0, 0, 0, 0);
+                    if (hoje > vencimento) {
+                      const diasAtraso = Math.floor((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
+                      return `ℹ️ Valor calculado automaticamente incluindo multa e juros (${diasAtraso} dia(s) de atraso).`;
+                    }
+                    return 'ℹ️ Valor original da parcela (pagamento em dia).';
+                  })()}
+                </p>
               </div>
 
               <div>
@@ -473,10 +501,26 @@ const ContasPagarList: React.FC = () => {
                 </label>
                 <input
                   type="date"
-                  value={dataPagamento}
-                  onChange={(e) => setDataPagamento(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  value={dataPagamento || getCurrentDateString()}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                  title="Data de pagamento travada no dia de hoje"
                 />
+                {contaSelecionada.dataVencimento && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {(() => {
+                      const hoje = new Date();
+                      hoje.setHours(0, 0, 0, 0);
+                      const vencimento = new Date(contaSelecionada.dataVencimento + 'T00:00:00');
+                      vencimento.setHours(0, 0, 0, 0);
+                      if (hoje > vencimento) {
+                        const diasAtraso = Math.floor((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
+                        return `⚠️ Pagamento com ${diasAtraso} dia(s) de atraso. Multa e juros serão aplicados automaticamente.`;
+                      }
+                      return '✓ Pagamento em dia';
+                    })()}
+                  </p>
+                )}
               </div>
             </div>
 

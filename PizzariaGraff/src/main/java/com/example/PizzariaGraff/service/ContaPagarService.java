@@ -60,6 +60,112 @@ public class ContaPagarService {
         return contaPagarRepository.save(conta);
     }
     
+    /**
+     * Calcula o valor total que deve ser pago (incluindo desconto, multa e juros se aplicável)
+     * sem salvar a conta
+     */
+    public BigDecimal calcularValorTotalParaPagamento(Long id, LocalDate dataPagamento) {
+        ContaPagar conta = findById(id);
+        
+        if (conta.getSituacao().equals("PAGA")) {
+            throw new IllegalArgumentException("Esta conta já está paga");
+        }
+        
+        if (conta.getSituacao().equals("CANCELADA")) {
+            throw new IllegalArgumentException("Esta conta está cancelada");
+        }
+        
+        // Buscar a condição de pagamento da nota para obter os percentuais
+        CondicaoPagamento condicao = null;
+        try {
+            // Buscar nota de entrada para obter a condição de pagamento
+            Optional<NotaEntrada> notaOpt = notaEntradaRepository.findByChave(
+                conta.getNotaNumero(),
+                conta.getNotaModelo(),
+                conta.getNotaSerie(),
+                conta.getFornecedorId()
+            );
+            
+            if (notaOpt.isPresent() && notaOpt.get().getCondicaoPagamentoId() != null) {
+                condicao = condicaoPagamentoRepository.findById(notaOpt.get().getCondicaoPagamentoId())
+                    .orElse(null);
+            }
+        } catch (Exception e) {
+            // Se não conseguir buscar a condição, usar valores padrão
+            System.err.println("Erro ao buscar condição de pagamento: " + e.getMessage());
+        }
+        
+        BigDecimal valorJuros = BigDecimal.ZERO;
+        BigDecimal valorMulta = BigDecimal.ZERO;
+        BigDecimal valorDesconto = BigDecimal.ZERO;
+        
+        // Comparar datas (sem hora)
+        boolean pagamentoAntesVencimento = dataPagamento.isBefore(conta.getDataVencimento());
+        boolean pagamentoDepoisVencimento = dataPagamento.isAfter(conta.getDataVencimento());
+        
+        // Se pagamento ANTES do vencimento: aplicar DESCONTO
+        if (pagamentoAntesVencimento) {
+            Double percentualDesconto = (condicao != null && condicao.getPercentualDesconto() != null) 
+                ? condicao.getPercentualDesconto() 
+                : 0.0;
+            
+            // Percentual já está no formato correto (0.20 = 20%), usar diretamente
+            BigDecimal descontoDecimal = new BigDecimal(percentualDesconto);
+            valorDesconto = conta.getValorOriginal().multiply(descontoDecimal).setScale(2, RoundingMode.HALF_UP);
+            
+            System.out.println("Pagamento ANTES do vencimento - Aplicando desconto: " + percentualDesconto + " (20% se for 0.20) = " + valorDesconto);
+        }
+        // Se pagamento DEPOIS do vencimento: aplicar MULTA e JUROS
+        else if (pagamentoDepoisVencimento) {
+            // Calcular multa usando percentual da condição de pagamento
+            // Multa é aplicada apenas uma vez sobre o valor original
+            Double percentualMulta = (condicao != null && condicao.getPercentualMulta() != null) 
+                ? condicao.getPercentualMulta() 
+                : 0.0;
+            
+            // Percentual já está no formato correto (0.20 = 20%), usar diretamente
+            BigDecimal multaDecimal = new BigDecimal(percentualMulta);
+            valorMulta = conta.getValorOriginal().multiply(multaDecimal).setScale(2, RoundingMode.HALF_UP);
+            
+            // Calcular juros usando percentual da condição de pagamento
+            // Juros aplicado como porcentagem fixa sobre o valor original (igual à multa)
+            Double percentualJuros = (condicao != null && condicao.getPercentualJuros() != null) 
+                ? condicao.getPercentualJuros() 
+                : 0.0;
+            
+            long diasAtraso = java.time.temporal.ChronoUnit.DAYS.between(conta.getDataVencimento(), dataPagamento);
+            
+            if (diasAtraso > 0 && percentualJuros > 0) {
+                // Percentual já está no formato correto (0.20 = 20%), aplicar diretamente sobre o valor
+                BigDecimal jurosDecimal = new BigDecimal(percentualJuros);
+                valorJuros = conta.getValorOriginal()
+                    .multiply(jurosDecimal)
+                    .setScale(2, RoundingMode.HALF_UP);
+            }
+            
+            System.out.println("Pagamento DEPOIS do vencimento - Aplicando multa: " + percentualMulta + " (20% se for 0.20) = " + valorMulta + 
+                             ", Juros: " + percentualJuros + " (20% ao mês se for 0.20) = " + valorJuros + " (dias atraso: " + diasAtraso + ")");
+        }
+        // Se pagamento NO DIA do vencimento: sem desconto, multa ou juros
+        else {
+            System.out.println("Pagamento NO DIA do vencimento - Sem desconto, multa ou juros");
+        }
+        
+        // Calcular valor total: Original + Juros + Multa - Desconto
+        BigDecimal valorTotal = conta.getValorOriginal()
+                .add(valorJuros)
+                .add(valorMulta)
+                .subtract(valorDesconto);
+        
+        System.out.println("Valor Original: " + conta.getValorOriginal() + 
+                         ", Juros: " + valorJuros + 
+                         ", Multa: " + valorMulta + 
+                         ", Desconto: " + valorDesconto + 
+                         ", Total: " + valorTotal);
+        
+        return valorTotal.setScale(2, RoundingMode.HALF_UP);
+    }
+    
     public ContaPagar pagar(Long id, BigDecimal valorPago, LocalDate dataPagamento, Long formaPagamentoId) {
         ContaPagar conta = findById(id);
         
@@ -75,69 +181,89 @@ public class ContaPagarService {
         conta.setDataPagamento(dataPagamento);
         conta.setFormaPagamentoId(formaPagamentoId);
         
-        // Calcular juros e multa apenas se o pagamento for depois do vencimento
-        if (dataPagamento.isAfter(conta.getDataVencimento())) {
-            // Buscar a condição de pagamento da nota para obter os percentuais
-            CondicaoPagamento condicao = null;
-            try {
-                // Buscar nota de entrada para obter a condição de pagamento
-                Optional<NotaEntrada> notaOpt = notaEntradaRepository.findByChave(
-                    conta.getNotaNumero(),
-                    conta.getNotaModelo(),
-                    conta.getNotaSerie(),
-                    conta.getFornecedorId()
-                );
-                
-                if (notaOpt.isPresent() && notaOpt.get().getCondicaoPagamentoId() != null) {
-                    condicao = condicaoPagamentoRepository.findById(notaOpt.get().getCondicaoPagamentoId())
-                        .orElse(null);
-                }
-            } catch (Exception e) {
-                // Se não conseguir buscar a condição, usar valores padrão
-                System.err.println("Erro ao buscar condição de pagamento: " + e.getMessage());
-            }
+        // Buscar a condição de pagamento da nota para obter os percentuais
+        CondicaoPagamento condicao = null;
+        try {
+            // Buscar nota de entrada para obter a condição de pagamento
+            Optional<NotaEntrada> notaOpt = notaEntradaRepository.findByChave(
+                conta.getNotaNumero(),
+                conta.getNotaModelo(),
+                conta.getNotaSerie(),
+                conta.getFornecedorId()
+            );
             
-            // Calcular multa usando percentual da condição de pagamento (ou padrão 2%)
+            if (notaOpt.isPresent() && notaOpt.get().getCondicaoPagamentoId() != null) {
+                condicao = condicaoPagamentoRepository.findById(notaOpt.get().getCondicaoPagamentoId())
+                    .orElse(null);
+            }
+        } catch (Exception e) {
+            // Se não conseguir buscar a condição, usar valores padrão
+            System.err.println("Erro ao buscar condição de pagamento: " + e.getMessage());
+        }
+        
+        // Comparar datas (sem hora)
+        boolean pagamentoAntesVencimento = dataPagamento.isBefore(conta.getDataVencimento());
+        boolean pagamentoDepoisVencimento = dataPagamento.isAfter(conta.getDataVencimento());
+        
+        // Se pagamento ANTES do vencimento: aplicar DESCONTO
+        if (pagamentoAntesVencimento) {
+            Double percentualDesconto = (condicao != null && condicao.getPercentualDesconto() != null) 
+                ? condicao.getPercentualDesconto() 
+                : 0.0;
+            
+            // Percentual já está no formato correto (0.20 = 20%), usar diretamente
+            BigDecimal descontoDecimal = new BigDecimal(percentualDesconto);
+            BigDecimal desconto = conta.getValorOriginal().multiply(descontoDecimal).setScale(2, RoundingMode.HALF_UP);
+            conta.setValorDesconto(desconto);
+            conta.setValorJuros(BigDecimal.ZERO);
+            conta.setValorMulta(BigDecimal.ZERO);
+            
+            System.out.println("Pagamento ANTES do vencimento - Aplicando desconto: " + percentualDesconto + " (20% se for 0.20) = " + desconto);
+        }
+        // Se pagamento DEPOIS do vencimento: aplicar MULTA e JUROS
+        else if (pagamentoDepoisVencimento) {
+            // Calcular multa usando percentual da condição de pagamento
             // Multa é aplicada apenas uma vez sobre o valor original
             Double percentualMulta = (condicao != null && condicao.getPercentualMulta() != null) 
                 ? condicao.getPercentualMulta() 
-                : 2.0;
-            // Converter percentual para decimal (2% = 0.02, 21% = 0.21)
-            BigDecimal multaDecimal = new BigDecimal(percentualMulta).divide(new BigDecimal(100), 4, RoundingMode.HALF_UP);
-            BigDecimal multa = conta.getValorOriginal().multiply(multaDecimal);
+                : 0.0;
+            
+            // Percentual já está no formato correto (0.20 = 20%), usar diretamente
+            BigDecimal multaDecimal = new BigDecimal(percentualMulta);
+            BigDecimal multa = conta.getValorOriginal().multiply(multaDecimal).setScale(2, RoundingMode.HALF_UP);
             conta.setValorMulta(multa);
             
-            // Calcular juros compostos usando percentual da condição de pagamento
-            // Juros compostos: M = C * (1 + i)^n, onde J = M - C
+            // Calcular juros usando percentual da condição de pagamento
+            // Juros aplicado como porcentagem fixa sobre o valor original (igual à multa)
             Double percentualJuros = (condicao != null && condicao.getPercentualJuros() != null) 
                 ? condicao.getPercentualJuros() 
-                : 1.0; // 1% ao mês
+                : 0.0;
+            
             long diasAtraso = java.time.temporal.ChronoUnit.DAYS.between(conta.getDataVencimento(), dataPagamento);
             
-            // Converter percentual mensal para diário (1% ao mês = 0.033% ao dia)
-            BigDecimal jurosMensalDecimal = new BigDecimal(percentualJuros).divide(new BigDecimal(100), 8, RoundingMode.HALF_UP);
-            BigDecimal taxaDiaria = jurosMensalDecimal.divide(new BigDecimal(30), 8, RoundingMode.HALF_UP);
-            
-            // Calcular juros compostos: M = C * (1 + i)^n
-            // Usando BigDecimal para precisão
-            BigDecimal umMaisTaxa = BigDecimal.ONE.add(taxaDiaria);
-            BigDecimal montante = conta.getValorOriginal();
-            
-            // Calcular (1 + i)^n usando multiplicação iterativa para precisão
-            for (long dia = 0; dia < diasAtraso; dia++) {
-                montante = montante.multiply(umMaisTaxa).setScale(4, RoundingMode.HALF_UP);
+            BigDecimal juros = BigDecimal.ZERO;
+            if (diasAtraso > 0 && percentualJuros > 0) {
+                // Percentual já está no formato correto (0.20 = 20%), aplicar diretamente sobre o valor
+                BigDecimal jurosDecimal = new BigDecimal(percentualJuros);
+                juros = conta.getValorOriginal()
+                    .multiply(jurosDecimal)
+                    .setScale(2, RoundingMode.HALF_UP);
             }
-            
-            // Juros = Montante - Capital
-            BigDecimal juros = montante.subtract(conta.getValorOriginal()).setScale(2, RoundingMode.HALF_UP);
             conta.setValorJuros(juros);
-        } else {
-            // Se pagamento for antes ou no vencimento, zerar juros e multa
+            conta.setValorDesconto(BigDecimal.ZERO);
+            
+            System.out.println("Pagamento DEPOIS do vencimento - Aplicando multa: " + percentualMulta + " (20% se for 0.20) = " + multa + 
+                             ", Juros: " + percentualJuros + " (20% ao mês se for 0.20) = " + juros + " (dias atraso: " + diasAtraso + ")");
+        }
+        // Se pagamento NO DIA do vencimento: sem desconto, multa ou juros
+        else {
             conta.setValorJuros(BigDecimal.ZERO);
             conta.setValorMulta(BigDecimal.ZERO);
+            conta.setValorDesconto(BigDecimal.ZERO);
+            System.out.println("Pagamento NO DIA do vencimento - Sem desconto, multa ou juros");
         }
         
-        // Calcular valor total
+        // Calcular valor total: Original + Juros + Multa - Desconto
         BigDecimal valorTotal = conta.getValorOriginal()
                 .add(conta.getValorJuros())
                 .add(conta.getValorMulta())

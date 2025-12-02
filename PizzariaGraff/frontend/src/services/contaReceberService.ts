@@ -61,13 +61,13 @@ export const receberConta = async (
   id: number,
   valorRecebido: number,
   dataRecebimento: string,
-  formaPagamentoId: number
+  formaPagamentoId?: number | undefined
 ): Promise<ContaReceber> => {
   try {
     const response = await api.post(`/contas-receber/${id}/receber`, {
       valorRecebido,
       dataRecebimento,
-      formaPagamentoId
+      formaPagamentoId: formaPagamentoId || null
     });
     return response.data;
   } catch (error) {
@@ -103,6 +103,22 @@ export const deleteContaReceber = async (id: number): Promise<void> => {
     await api.delete(`/contas-receber/${id}`);
   } catch (error) {
     console.error(`Erro ao deletar conta a receber:`, error);
+    throw error;
+  }
+};
+
+// Calcula o valor total a ser recebido (incluindo multa e juros se aplicável)
+export const calcularValorTotalRecebimento = async (
+  id: number,
+  dataRecebimento: string
+): Promise<number> => {
+  try {
+    const response = await api.get(`/contas-receber/${id}/calcular-valor`, {
+      params: { dataRecebimento }
+    });
+    return response.data.valorTotal;
+  } catch (error) {
+    console.error('Erro ao calcular valor total:', error);
     throw error;
   }
 };
